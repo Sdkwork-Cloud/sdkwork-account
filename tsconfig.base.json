@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@sdkwork/appbase-pc-react": ["../sdkwork-appbase/packages/pc-react/foundation/sdkwork-appbase-pc-react/src/index.ts"],
+      "@sdkwork/ui-pc-react": ["../sdkwork-ui/sdkwork-ui-pc-react/src/index.ts"],
+      "@sdkwork/ui-pc-react/theme": ["../sdkwork-ui/sdkwork-ui-pc-react/src/theme/index.ts"],
+      "@sdkwork/utils": ["../sdkwork-utils/packages/sdkwork-utils-typescript/src/index.ts"],
+      "@sdkwork/account-contracts": ["packages/common/account/sdkwork-account-contracts/src/index.ts"],
+      "@sdkwork/account-service": ["packages/common/account/sdkwork-account-service/src/index.ts"],
+      "@sdkwork/account-sdk-ports": ["packages/common/account/sdkwork-account-sdk-ports/src/index.ts"],
+      "@sdkwork/account-pc-core": ["apps/sdkwork-account-pc/packages/sdkwork-account-pc-core/src/index.ts"],
+      "@sdkwork/account-pc-shell": ["apps/sdkwork-account-pc/packages/sdkwork-account-pc-shell/src/index.tsx"],
+      "@sdkwork/account-pc-wallet": ["apps/sdkwork-account-pc/packages/sdkwork-account-pc-wallet/src/index.ts"]
+    },
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "types": ["node", "@testing-library/jest-dom"]
+  }
+}

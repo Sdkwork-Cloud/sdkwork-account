@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 3,
+  "kind": "sdkwork.app",
+  "app": {
+    "key": "sdkwork-account-pc",
+    "name": "SDKWork Account PC",
+    "displayName": "SDKWork Account PC",
+    "description": "Account and wallet capability PC surface for balances, points, recharge, and withdrawals.",
+    "vendor": "SDKWork",
+    "appType": "APP_REACT",
+    "versionSource": "package.json",
+    "identifiers": {
+      "desktopAppId": "com.sdkwork.account.pc.desktop",
+      "containerImage": "registry.sdkwork.com/apps/sdkwork-account-pc"
+    }
+  },
+  "backend": {
+    "profileKey": "backend-root-admin",
+    "ownerMode": "tenant",
+    "grantMode": "current",
+    "platform": "WEB",
+    "tenantId": "100001",
+    "organizationId": "0"
+  },
+  "runtime": {
+    "family": "web",
+    "framework": "react",
+    "runtimes": ["WEB", "BROWSER"],
+    "deliveryModes": ["WEB_URL"],
+    "supportedDeploymentProfiles": ["standalone", "cloud"],
+    "defaultDeploymentProfile": "standalone"
+  },
+  "publish": {
+    "config": {
+      "workspaceRoot": "sdkwork-account",
+      "managedBy": "sdkwork-account-workspace"
+    }
+  },
+  "devApp": {
+    "sourceRoot": "apps/sdkwork-account-pc"
+  },
+  "metadata": {
+    "standardOwner": "sdkwork-account",
+    "initializedAt": "2026-06-24T00:00:00.000Z"
+  }
+}
