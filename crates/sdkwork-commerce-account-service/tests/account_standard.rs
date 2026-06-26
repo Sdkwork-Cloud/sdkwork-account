@@ -8,9 +8,9 @@ use sdkwork_commerce_contract_service::{
 
 #[test]
 fn creates_empty_account_summary_for_local_private_runtime() {
-    let summary = AccountSummary::empty("tenant-1", "user-1");
+    let summary = AccountSummary::empty("100001", "user-1");
 
-    assert_eq!(summary.tenant_id, "tenant-1");
+    assert_eq!(summary.tenant_id, "100001");
     assert_eq!(summary.owner_user_id, "user-1");
     assert_eq!(summary.cash.available.as_str(), "0");
     assert_eq!(summary.points.available.as_str(), "0");
@@ -38,7 +38,7 @@ fn account_service_contract_declares_wallet_and_token_read_models() {
 fn ledger_entries_are_append_only_and_require_idempotency() {
     let policy = LedgerPolicy::standard();
     let entry = LedgerEntryDraft::new(
-        "tenant-1",
+        "100001",
         "account-1",
         "user-1",
         CommerceAccountAssetType::Cash,
@@ -58,7 +58,7 @@ fn ledger_entries_are_append_only_and_require_idempotency() {
 #[test]
 fn rejects_ledger_entries_without_request_or_idempotency_key() {
     let result = LedgerEntryDraft::new(
-        "tenant-1",
+        "100001",
         "account-1",
         "user-1",
         CommerceAccountAssetType::Cash,

@@ -487,7 +487,7 @@ mod tests {
     fn wallet_account_item_rejects_empty_account_id() {
         let error = WalletAccountItem::new(
             "",
-            "tenant-1",
+            "100001",
             None,
             "user-1",
             CommerceAccountAssetType::Points,
@@ -507,7 +507,7 @@ mod tests {
         let error = WalletTransactionItem::new(
             "ledger-1",
             "account-1",
-            "tenant-1",
+            "100001",
             None,
             "user-1",
             CommerceAccountAssetType::Points,

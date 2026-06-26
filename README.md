@@ -3,7 +3,7 @@
 SDKWork commerce **account** capability building-block repository (domain `commerce`).
 
 - Standards: `../sdkwork-specs/README.md`
-- Composition consumer: `../sdkwork-commerce` (T0 platform)
+- Composition consumer: `../sdkwork-clawrouter/vendor/sdkwork-commerce` (archived transitional platform snapshot)
 - Domain service: `crates/sdkwork-commerce-account-service/`
 - Repository SQL: `crates/sdkwork-commerce-account-repository-sqlx/`
 - HTTP API server: `crates/sdkwork-account-api-server/`

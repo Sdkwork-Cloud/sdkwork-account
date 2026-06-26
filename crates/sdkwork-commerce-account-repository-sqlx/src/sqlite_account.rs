@@ -1409,8 +1409,8 @@ mod tests {
 
     fn credit_command(idempotency_key: &str) -> AppendLedgerEntryCommand {
         AppendLedgerEntryCommand::new(
-            "tenant-1",
-            Some("org-1"),
+            "100001",
+            Some("0"),
             "account-1",
             "user-1",
             CommerceAccountAssetType::Points,
@@ -1470,8 +1470,8 @@ mod tests {
         let accounts = store
             .list_wallet_accounts(
                 WalletAccountListQuery::new(
-                    "tenant-1",
-                    Some("org-1"),
+                    "100001",
+                    Some("0"),
                     "user-1",
                     Some(CommerceAccountAssetType::Points),
                 )
@@ -1538,8 +1538,8 @@ mod tests {
         let store = super::SqliteCommerceAccountStore::new(pool);
 
         let command = AppendLedgerEntryCommand::new(
-            "tenant-1",
-            Some("org-1"),
+            "100001",
+            Some("0"),
             "account-1",
             "user-1",
             CommerceAccountAssetType::Points,
@@ -1576,7 +1576,7 @@ mod tests {
                 (id, tenant_id, organization_id, owner_user_id, asset_type, currency_code,
                  available_amount, frozen_amount, version, status, created_at, updated_at)
             VALUES
-                ('account-1', 'tenant-1', 'org-1', 'user-1', 'points', 'POINT',
+                ('account-1', '100001', '0', 'user-1', 'points', 'POINT',
                  ?, '0', 0, 'active', '2026-05-26 00:00:00', '2026-05-26 00:00:00')
             "#,
         )
@@ -1586,8 +1586,8 @@ mod tests {
         .expect("seed overflow account");
 
         let command = AppendLedgerEntryCommand::new(
-            "tenant-1",
-            Some("org-1"),
+            "100001",
+            Some("0"),
             "account-1",
             "user-1",
             CommerceAccountAssetType::Points,
@@ -1611,7 +1611,7 @@ mod tests {
 
         assert_eq!(error.code(), "storage");
         let ledger_count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(1) FROM commerce_account_ledger_entry WHERE tenant_id = 'tenant-1'",
+            "SELECT COUNT(1) FROM commerce_account_ledger_entry WHERE tenant_id = '100001'",
         )
         .fetch_one(&pool)
         .await
@@ -1632,8 +1632,8 @@ mod tests {
         let pool = migrated_pool().await;
         let store = super::SqliteCommerceAccountStore::new(pool.clone());
         let command = AppendLedgerEntryCommand::new(
-            "tenant-1",
-            Some("org-1"),
+            "100001",
+            Some("0"),
             "account-1",
             "user-1",
             CommerceAccountAssetType::Points,
@@ -1657,7 +1657,7 @@ mod tests {
 
         assert_eq!("validation", error.code());
         let ledger_count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(1) FROM commerce_account_ledger_entry WHERE tenant_id = 'tenant-1'",
+            "SELECT COUNT(1) FROM commerce_account_ledger_entry WHERE tenant_id = '100001'",
         )
         .fetch_one(&pool)
         .await
@@ -1682,8 +1682,8 @@ mod tests {
         let transactions = store
             .list_wallet_transactions(
                 WalletTransactionListQuery::new(
-                    "tenant-1",
-                    Some("org-1"),
+                    "100001",
+                    Some("0"),
                     "user-1",
                     None,
                     Some(CommerceAccountAssetType::Points),
@@ -1700,8 +1700,8 @@ mod tests {
         let transaction = store
             .retrieve_wallet_transaction(
                 WalletTransactionDetailQuery::new(
-                    "tenant-1",
-                    Some("org-1"),
+                    "100001",
+                    Some("0"),
                     "user-1",
                     &outcome.ledger_entry.id,
                 )
@@ -1714,7 +1714,7 @@ mod tests {
 
         let operation = store
             .retrieve_wallet_operation(
-                WalletOperationQuery::new("tenant-1", Some("org-1"), "user-1", "request-1")
+                WalletOperationQuery::new("100001", Some("0"), "user-1", "request-1")
                     .expect("operation query"),
             )
             .await
