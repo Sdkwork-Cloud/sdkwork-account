@@ -1,8 +1,14 @@
 # Account Technical Architecture
+Specs: ARCHITECTURE_DECISION_SPEC.md, DOCUMENTATION_SPEC.md
 
 Status: active
 Owner: SDKWork maintainers
 Updated: 2026-06-24
+
+## 1. Architecture Overview
+
+Describe the repository/application architecture.
+
 
 ## Capability stack
 
@@ -10,8 +16,8 @@ Updated: 2026-06-24
 
 | Layer | Path |
 | --- | --- |
-| Domain (Rust) | `crates/sdkwork-commerce-account-service/` (and related wallet crates) |
-| HTTP routers | `crates/sdkwork-router-account-*-api/` |
+| Domain (Rust) | `crates/sdkwork-commerce-account-service/` (wallet domain; migrating naming) |
+| HTTP routers | `crates/sdkwork-routes-account-*-api/` |
 | API server | `crates/sdkwork-account-api-server/` |
 | PC client | `apps/sdkwork-account-pc/` |
 | Client facade | `packages/common/account/sdkwork-account-service/` |
