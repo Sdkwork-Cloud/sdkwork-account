@@ -18,7 +18,7 @@ Describe the repository/application architecture.
 | --- | --- |
 | Domain (Rust) | `crates/sdkwork-commerce-account-service/` (wallet domain; migrating naming) |
 | HTTP routers | `crates/sdkwork-routes-account-*-api/` |
-| API server | `crates/sdkwork-account-api-server/` |
+| API server | `crates/sdkwork-account-standalone-gateway/` |
 | PC client | `apps/sdkwork-account-pc/` |
 | Client facade | `packages/common/account/sdkwork-account-service/` |
 
@@ -48,5 +48,4 @@ pnpm verify
 
 ## Related docs
 
-- [Commerce PC distribution](../../../sdkwork-commerce/docs/architecture/tech/TECH-2026-06-24-commerce-pc-capability-distribution.md)
-- [Commerce repository dissolution](../../../sdkwork-commerce/docs/architecture/tech/TECH-2026-06-24-commerce-repository-dissolution.md)
+- Commerce repository dissolution: `../../sdkwork-specs/MIGRATION_SPEC.md` §8

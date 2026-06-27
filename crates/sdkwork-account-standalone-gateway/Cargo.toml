@@ -1,12 +1,12 @@
 [package]
-name = "sdkwork-account-api-server"
+name = "sdkwork-account-standalone-gateway"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
 
 [[bin]]
-name = "account-server"
+name = "sdkwork-account-standalone-gateway"
 path = "src/main.rs"
 
 [dependencies]

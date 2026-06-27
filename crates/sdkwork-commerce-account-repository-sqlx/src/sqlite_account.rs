@@ -1412,7 +1412,7 @@ mod tests {
             "100001",
             Some("0"),
             "account-1",
-            "user-1",
+            "1",
             CommerceAccountAssetType::Points,
             Some("POINT"),
             CommerceLedgerDirection::Credit,
@@ -1472,7 +1472,7 @@ mod tests {
                 WalletAccountListQuery::new(
                     "100001",
                     Some("0"),
-                    "user-1",
+                    "1",
                     Some(CommerceAccountAssetType::Points),
                 )
                 .expect("query"),
@@ -1541,7 +1541,7 @@ mod tests {
             "100001",
             Some("0"),
             "account-1",
-            "user-1",
+            "1",
             CommerceAccountAssetType::Points,
             Some("POINT"),
             CommerceLedgerDirection::Debit,
@@ -1576,7 +1576,7 @@ mod tests {
                 (id, tenant_id, organization_id, owner_user_id, asset_type, currency_code,
                  available_amount, frozen_amount, version, status, created_at, updated_at)
             VALUES
-                ('account-1', '100001', '0', 'user-1', 'points', 'POINT',
+                ('account-1', '100001', '0', '1', 'points', 'POINT',
                  ?, '0', 0, 'active', '2026-05-26 00:00:00', '2026-05-26 00:00:00')
             "#,
         )
@@ -1589,7 +1589,7 @@ mod tests {
             "100001",
             Some("0"),
             "account-1",
-            "user-1",
+            "1",
             CommerceAccountAssetType::Points,
             Some("POINT"),
             CommerceLedgerDirection::Credit,
@@ -1635,7 +1635,7 @@ mod tests {
             "100001",
             Some("0"),
             "account-1",
-            "user-1",
+            "1",
             CommerceAccountAssetType::Points,
             Some("POINT"),
             CommerceLedgerDirection::Credit,
@@ -1684,7 +1684,7 @@ mod tests {
                 WalletTransactionListQuery::new(
                     "100001",
                     Some("0"),
-                    "user-1",
+                    "1",
                     None,
                     Some(CommerceAccountAssetType::Points),
                     Some(1),
@@ -1702,7 +1702,7 @@ mod tests {
                 WalletTransactionDetailQuery::new(
                     "100001",
                     Some("0"),
-                    "user-1",
+                    "1",
                     &outcome.ledger_entry.id,
                 )
                 .expect("detail query"),
@@ -1714,7 +1714,7 @@ mod tests {
 
         let operation = store
             .retrieve_wallet_operation(
-                WalletOperationQuery::new("100001", Some("0"), "user-1", "request-1")
+                WalletOperationQuery::new("100001", Some("0"), "1", "request-1")
                     .expect("operation query"),
             )
             .await

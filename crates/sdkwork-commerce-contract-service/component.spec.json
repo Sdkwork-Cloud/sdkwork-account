@@ -6,10 +6,10 @@
     "displayName": "SDKWork Commerce Core",
     "version": "0.1.0",
     "type": "rust-crate",
-    "root": "sdkwork-commerce/crates/sdkwork-commerce-contract-service",
+    "root": "crates/sdkwork-commerce-contract-service",
     "domain": "commerce",
     "declaredDomain": null,
-    "capability": "commerce",
+    "capability": "contract",
     "status": "stable",
     "languages": [
       "rust"

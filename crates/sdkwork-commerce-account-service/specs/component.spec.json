@@ -6,10 +6,10 @@
     "displayName": "SDKWork Commerce Account",
     "version": "0.1.0",
     "type": "rust-crate",
-    "root": "sdkwork-commerce/crates/sdkwork-commerce-account-service",
-    "domain": "iam",
+    "root": "crates/sdkwork-commerce-account-service",
+    "domain": "commerce",
     "declaredDomain": null,
-    "capability": "commerce",
+    "capability": "account",
     "status": "stable",
     "languages": [
       "rust"

@@ -8,13 +8,13 @@ Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md
 
 ## Document Map
 
-- Platform split alignment (commerce T0): `../sdkwork-commerce/docs/architecture/tech/TECH-2026-06-24-commerce-capability-repo-split-alignment.md`
+- Commerce repository dissolution: `../sdkwork-specs/MIGRATION_SPEC.md` §8
 
 ## 1. Background And Problem
 
 Wallet balances, ledger entries, account summaries, and billing history must be append-only, version-guarded, and tenant-isolated.
 
-This repository is a **T1 commerce capability building block**. `sdkwork-commerce` remains the T0 composition layer (gateway, IAM wrappers, composed SDK). This repository owns domain logic, persistence, and HTTP route builders for the **account** capability.
+This repository is a **T1 commerce capability building block**. The `sdkwork-commerce` monolith has been dissolved; this repository is self-contained with its own domain logic, persistence, HTTP route builders, API server, and IAM middleware for the **account** capability.
 
 ## 2. Target Users
 
@@ -52,7 +52,7 @@ Migration status: **complete**.
 ## 6. Success Metrics
 
 - Repository tests validate version-guarded balance updates.
-- Commerce wallet routes pass via thin IAM wrappers.
+- Commerce wallet routes pass via T1 standalone-gateway IAM wrappers.
 
 ## 7. Phases
 
@@ -61,10 +61,10 @@ Migration status: **complete**.
 
 ## 8. Linked Requirements
 
-- Commerce capability split alignment: `../sdkwork-commerce/docs/architecture/tech/TECH-2026-06-24-commerce-capability-repo-split-alignment.md`
+- Commerce repository dissolution: `../sdkwork-specs/MIGRATION_SPEC.md` §8
 - Component contract: `specs/component.spec.json` (when present)
 - Machine contracts: local `specs/`, future `apis/`, and generated `sdks/`
 
 ## 9. Open Questions
 
-- Whether backend wallet admin routes belong in this repo or commerce T0 only.
+- Whether backend wallet admin routes belong in this repo or a dedicated admin standalone-gateway.
