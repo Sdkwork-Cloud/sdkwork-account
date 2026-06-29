@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.database.module",
+  "moduleId": "account",
+  "serviceCode": "ACCOUNT",
+  "displayName": "Account Database",
+  "owner": "sdkwork-account",
+  "engines": ["postgres", "sqlite"],
+  "defaultEngine": "postgres",
+  "tablePrefix": "commerce_",
+  "contractVersion": "1.0.0",
+  "baselineStrategy": "migrations-only",
+  "modules": [],
+  "lifecycle": {
+    "autoMigrate": true,
+    "seedOnBoot": false,
+    "defaultSeedLocale": "zh-CN",
+    "defaultSeedProfile": "standard",
+    "activeSeedLocales": ["zh-CN"],
+    "driftCheckIntervalSec": 60
+  },
+  "paths": {
+    "contract": "contract/schema.yaml",
+    "migrations": "migrations",
+    "seeds": "seeds",
+    "driftPolicy": "drift/policy.yaml"
+  },
+  "spi": {
+    "provider": "default",
+    "hooks": []
+  }
+}

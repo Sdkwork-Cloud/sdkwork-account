@@ -1,0 +1,31 @@
+schema_version: 1
+kind: sdkwork.database.schema
+module_id: account
+contract_version: 1.0.0
+owner_team: sdkwork-account
+compliance_level: L2
+engines:
+  - postgres
+  - sqlite
+table_prefix: commerce_
+tables:
+  - name: commerce_idempotency_key
+    profile: system_entity
+    compliance_level: L2
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Idempotency keys for account ledger and wallet mutations.
+
+  - name: commerce_account
+    profile: user_entity
+    compliance_level: L2
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Owner-scoped wallet and points balances.
+
+  - name: commerce_account_ledger_entry
+    profile: ledger
+    compliance_level: L2
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Immutable account balance movement ledger entries.

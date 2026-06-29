@@ -3,9 +3,9 @@
 SDKWork commerce **account** capability building-block repository (domain `commerce`).
 
 - Standards: `../sdkwork-specs/README.md`
-- Composition consumer: `../sdkwork-clawrouter/vendor/sdkwork-commerce` (archived transitional platform snapshot)
-- Domain service: `crates/sdkwork-commerce-account-service/`
-- Repository SQL: `crates/sdkwork-commerce-account-repository-sqlx/`
+- Composition consumer: `../sdkwork-clawrouter/vendor/sdkwork-commerce (deleted)` (archived transitional platform snapshot)
+- Domain service: `crates/sdkwork-commerce (deleted)-account-service/`
+- Repository SQL: `crates/sdkwork-commerce (deleted)-account-repository-sqlx/`
 - HTTP API server: `crates/sdkwork-account-standalone-gateway/`
 
 ## Quick start

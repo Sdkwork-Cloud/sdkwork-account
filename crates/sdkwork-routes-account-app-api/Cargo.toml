@@ -13,9 +13,9 @@ axum = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sqlx = { workspace = true }
-sdkwork_commerce_account_repository_sqlx.workspace = true
-sdkwork_commerce_account_service.workspace = true
-sdkwork_commerce_contract_service.workspace = true
+sdkwork_account_repository_sqlx.workspace = true
+sdkwork_account_service.workspace = true
+sdkwork_contract_service.workspace = true
 sdkwork_iam_context_service.workspace = true
 sdkwork_account_service_host.workspace = true
 sdkwork_database_sqlx.workspace = true
