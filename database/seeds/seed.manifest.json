@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.database.seed",
+  "moduleId": "account",
+  "defaultLocale": "zh-CN",
+  "profiles": {
+    "standard": {
+      "common": [],
+      "locales": {}
+    }
+  }
+}

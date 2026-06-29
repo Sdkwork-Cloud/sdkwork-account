@@ -1,0 +1,7 @@
+{
+  "tables": [
+    "commerce_idempotency_key",
+    "commerce_account",
+    "commerce_account_ledger_entry"
+  ]
+}

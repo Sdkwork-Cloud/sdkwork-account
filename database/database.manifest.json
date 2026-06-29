@@ -9,13 +9,22 @@
   "defaultEngine": "postgres",
   "tablePrefix": "commerce_",
   "contractVersion": "1.0.0",
-  "baselineStrategy": "migrations-only",
+  "baselineStrategy": "baseline-plus-migrations",
   "modules": [],
   "lifecycle": {
     "autoMigrate": true,
     "seedOnBoot": false,
     "defaultSeedLocale": "zh-CN",
     "defaultSeedProfile": "standard",
+    "supportedSeedLocales": [
+      "zh-CN",
+      "en-US",
+      "ja-JP",
+      "de-DE",
+      "fr-FR",
+      "ru-RU",
+      "ko-KR"
+    ],
     "activeSeedLocales": ["zh-CN"],
     "driftCheckIntervalSec": 60
   },
