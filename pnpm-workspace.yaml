@@ -1,13 +1,19 @@
 packages:
-  - "packages/common/account/*"
+  - "apps/sdkwork-account-common"
+  - "apps/sdkwork-account-common/packages/*"
   - "apps/sdkwork-account-pc"
   - "apps/sdkwork-account-pc/packages/*"
+  - "sdks/*"
+  - "sdks/sdkwork-account-app-sdk/sdkwork-account-app-sdk-typescript/generated/server-openapi"
+  - "sdks/sdkwork-account-backend-sdk/sdkwork-account-backend-sdk-typescript/generated/server-openapi"
   - "../sdkwork-appbase/packages/common/foundation/sdkwork-runtime-bootstrap"
   - "../sdkwork-appbase/packages/pc-react/foundation/sdkwork-appbase-pc-react"
   - "../sdkwork-appbase/packages/pc-react/foundation/sdkwork-i18n-pc-react"
   - "../sdkwork-ui/sdkwork-ui-pc-react"
   - "../sdkwork-utils/packages/sdkwork-utils-typescript"
   - "../sdkwork-sdk-commons/sdkwork-sdk-common-typescript"
+  - "../sdkwork-order/apps/sdkwork-order-common/packages/*"
+  - "../sdkwork-order/sdks/sdkwork-order-app-sdk/sdkwork-order-app-sdk-typescript/generated/server-openapi"
 
 catalog:
   "@types/react": ^19.2.14

@@ -19,11 +19,18 @@ import type { SdkworkWalletController } from "../wallet-controller";
 import { useSdkworkWalletControllerState } from "../wallet-controller";
 import { createDefaultSdkworkWalletWithdrawDestinations } from "../wallet";
 import { useSdkworkWalletIntl } from "../wallet-intl";
+import {
+  navigateWalletWithdrawPayout,
+  type SdkworkWalletPayoutFlow,
+} from "../wallet-payout-navigation";
 
 export interface SdkworkWalletWithdrawDialogProps {
   controller: SdkworkWalletController;
+  onNavigate?: (route: string) => void;
   onOpenChange?: (open: boolean) => void;
   open: boolean;
+  payoutBasePath?: string;
+  payoutFlow?: SdkworkWalletPayoutFlow;
 }
 
 function sanitizeAmount(value: string): string {
@@ -35,10 +42,14 @@ function sanitizeAmount(value: string): string {
 
 export function SdkworkWalletWithdrawDialog({
   controller,
+  onNavigate,
   onOpenChange,
   open,
+  payoutBasePath,
+  payoutFlow = "direct",
 }: SdkworkWalletWithdrawDialogProps) {
   const state = useSdkworkWalletControllerState(controller);
+  const usesCheckoutFlow = payoutFlow === "checkout" && Boolean(onNavigate);
   const destinations = useMemo(() => createDefaultSdkworkWalletWithdrawDestinations(), []);
   const [amountInput, setAmountInput] = useState("");
   const [accountName, setAccountName] = useState("");
@@ -255,6 +266,12 @@ export function SdkworkWalletWithdrawDialog({
               </span>
             </div>
           ) : null}
+
+          {usesCheckoutFlow ? (
+            <div className="rounded-[1.25rem] border border-dashed border-[var(--sdk-color-border-default)] px-4 py-4 text-sm text-[var(--sdk-color-text-secondary)]">
+              {copy.withdrawDialog.payoutFlowDescription}
+            </div>
+          ) : null}
         </div>
 
         <DialogFooter>
@@ -266,6 +283,18 @@ export function SdkworkWalletWithdrawDialog({
             loading={state.isMutating}
             onClick={() => {
               if (!canSubmit) {
+                return;
+              }
+
+              if (usesCheckoutFlow && onNavigate) {
+                if (
+                  navigateWalletWithdrawPayout({
+                    onNavigate,
+                    payoutBasePath,
+                  })
+                ) {
+                  onOpenChange?.(false);
+                }
                 return;
               }
 
@@ -283,7 +312,7 @@ export function SdkworkWalletWithdrawDialog({
             }}
             type="button"
           >
-            {copy.actions.confirmWithdraw}
+            {usesCheckoutFlow ? copy.actions.continueToCheckout : copy.actions.confirmWithdraw}
           </Button>
         </DialogFooter>
       </DialogContent>

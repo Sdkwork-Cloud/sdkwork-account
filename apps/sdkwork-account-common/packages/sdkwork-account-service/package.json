@@ -1,0 +1,14 @@
+{
+  "name": "@sdkwork/account-service",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@sdkwork/account-app-sdk": "workspace:*",
+    "@sdkwork/account-backend-sdk": "workspace:*",
+    "@sdkwork/account-sdk-ports": "workspace:*",
+    "@sdkwork/sdk-common": "workspace:*",
+    "@sdkwork/utils": "workspace:*"
+  }
+}

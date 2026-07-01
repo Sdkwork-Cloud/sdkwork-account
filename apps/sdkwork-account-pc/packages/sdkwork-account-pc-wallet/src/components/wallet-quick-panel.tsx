@@ -1,17 +1,5 @@
-﻿import {
-  ArrowRight,
-  Banknote,
-  Coins,
-  Sparkles,
-} from "lucide-react";
+﻿import { ArrowRight } from "lucide-react";
 import { Button } from "@sdkwork/ui-pc-react";
-import {
-  createSdkworkWalletGlassStyle,
-  createSdkworkWalletHeroStyle,
-  createSdkworkWalletHeroTextStyle,
-  createSdkworkWalletPanelStyle,
-  createSdkworkWalletToneStyle,
-} from "../wallet-appearance";
 import { useSdkworkWalletIntl } from "../wallet-intl";
 import type { SdkworkWalletOverview } from "../wallet-service";
 
@@ -28,176 +16,82 @@ export function SdkworkWalletQuickPanel({
   onWithdraw,
   overview,
 }: SdkworkWalletQuickPanelProps) {
-  const featuredRechargePackage =
-    overview.rechargePackages.find((rechargePackage) => rechargePackage.recommended)
-    ?? overview.rechargePackages[0]
-    ?? null;
   const recentTransactions = overview.transactions.slice(0, 4);
   const {
     copy,
-    formatAccountLevelLabel,
     formatAccountLevelSummary,
     formatCurrencyCny,
     formatPoints,
     formatPointsRate,
-    formatRechargePackageSummary,
     formatWalletDelta,
   } = useSdkworkWalletIntl();
-  const primaryHeroTextStyle = createSdkworkWalletHeroTextStyle();
-  const mutedHeroTextStyle = createSdkworkWalletHeroTextStyle("muted");
-  const subtleHeroTextStyle = createSdkworkWalletHeroTextStyle("subtle");
 
   return (
-    <div
-      className="w-[24rem] rounded-[1.5rem] border border-[var(--sdk-color-border-default)] p-4 shadow-[var(--sdk-shadow-lg)]"
-      style={createSdkworkWalletPanelStyle("neutral", {
-        backgroundWeight: 4,
-        borderWeight: 18,
-        surfaceWeight: 94,
-      })}
-    >
-      <div
-        className="rounded-[1.25rem] border border-[color-mix(in_srgb,var(--sdk-color-border-default)_72%,transparent)] p-4 text-white shadow-[var(--sdk-shadow-sm)]"
-        style={createSdkworkWalletHeroStyle()}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-[0.7rem] font-semibold uppercase tracking-[0.18em]" style={subtleHeroTextStyle}>
-              {copy.quickPanel.availablePointsLabel}
-            </div>
-            <div className="mt-2 text-3xl font-semibold tracking-tight" style={primaryHeroTextStyle}>
-              {formatPoints(overview.account.availablePoints)}
-            </div>
-            <div className="mt-1 text-sm" style={mutedHeroTextStyle}>
-              {overview.isAuthenticated
-                ? formatAccountLevelSummary(overview.account)
-                : copy.quickPanel.signInToUnlock}
-            </div>
-          </div>
-          <div
-            className="flex h-11 w-11 items-center justify-center rounded-[1rem] border"
-            style={createSdkworkWalletToneStyle("brand", {
-              backgroundWeight: 14,
-              borderWeight: 24,
-            })}
-          >
-            <Coins className="h-5 w-5" />
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <div
-            className="rounded-[1rem] border px-3 py-2"
-            style={createSdkworkWalletGlassStyle("neutral", {
-              backgroundWeight: 10,
-              borderWeight: 22,
-              surfaceWeight: 78,
-            })}
-          >
-            <div className="flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.16em]" style={subtleHeroTextStyle}>
-              <Banknote className="h-3.5 w-3.5" />
-              {copy.quickPanel.cashAvailableLabel}
-            </div>
-            <div className="mt-1 text-sm font-semibold" style={primaryHeroTextStyle}>
-              {formatCurrencyCny(overview.account.cashAvailable)}
-            </div>
-          </div>
-          <div
-            className="rounded-[1rem] border px-3 py-2"
-            style={createSdkworkWalletGlassStyle("accent", {
-              backgroundWeight: 10,
-              borderWeight: 22,
-              surfaceWeight: 78,
-            })}
-          >
-            <div className="flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.16em]" style={subtleHeroTextStyle}>
-              <Sparkles className="h-3.5 w-3.5" />
-              {copy.quickPanel.currentAccountLabel}
-            </div>
-            <div className="mt-1 text-sm font-semibold" style={primaryHeroTextStyle}>
-              {formatAccountLevelLabel(overview.account)}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 text-xs" style={subtleHeroTextStyle}>
-          {copy.quickPanel.rateLabel}: {formatPointsRate(overview.pointsToCashRate)}
+    <div className="w-[20rem] rounded-[var(--sdk-radius-panel)] border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)] shadow-[var(--sdk-shadow-md)]">
+      <div className="border-b border-[var(--sdk-color-border-subtle)] px-4 py-4">
+        <p className="text-xs text-[var(--sdk-color-text-muted)]">
+          {copy.quickPanel.availablePointsLabel}
+        </p>
+        <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[var(--sdk-color-text-primary)]">
+          {formatPoints(overview.account.availablePoints)}
+        </p>
+        <p className="mt-1 text-xs text-[var(--sdk-color-text-secondary)]">
+          {overview.isAuthenticated
+            ? formatAccountLevelSummary(overview.account)
+            : copy.quickPanel.signInToUnlock}
+        </p>
+        <div className="mt-3 flex gap-4 text-xs text-[var(--sdk-color-text-muted)]">
+          <span>
+            {copy.quickPanel.cashAvailableLabel}: {formatCurrencyCny(overview.account.cashAvailable)}
+          </span>
+          <span>
+            {copy.quickPanel.rateLabel}: {formatPointsRate(overview.pointsToCashRate)}
+          </span>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <Button className="justify-start" onClick={onRecharge} size="sm" type="button" variant="secondary">
-          <Coins className="h-4 w-4" />
+      <div className="grid grid-cols-2 gap-2 border-b border-[var(--sdk-color-border-subtle)] p-3">
+        <Button onClick={onRecharge} size="sm" type="button">
           {copy.actions.recharge}
         </Button>
-        <Button className="justify-start" onClick={onWithdraw} size="sm" type="button" variant="outline">
-          <Banknote className="h-4 w-4" />
+        <Button onClick={onWithdraw} size="sm" type="button" variant="outline">
           {copy.actions.withdraw}
         </Button>
       </div>
 
-      <div
-        className="mt-5 rounded-[1.1rem] border px-4 py-3"
-        style={createSdkworkWalletPanelStyle("accent", {
-          backgroundWeight: 8,
-          borderWeight: 24,
-          surfaceWeight: 90,
-        })}
-      >
-        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--sdk-color-text-muted)]">
-          {copy.quickPanel.rechargeLaneLabel}
-        </div>
-        <div className="mt-2 text-sm font-semibold text-[var(--sdk-color-text-primary)]">
-          {featuredRechargePackage ? featuredRechargePackage.title : copy.balancePanel.noRechargePackagePublished}
-        </div>
-        <div className="mt-1 text-xs text-[var(--sdk-color-text-secondary)]">
-          {featuredRechargePackage
-            ? formatRechargePackageSummary(featuredRechargePackage)
-            : copy.quickPanel.noRechargePackageDescription}
-        </div>
-      </div>
-
-      <div className="mt-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-[var(--sdk-color-text-primary)]">
+      <div className="p-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-medium text-[var(--sdk-color-text-primary)]">
             {copy.quickPanel.recentActivityTitle}
-          </div>
+          </p>
           <button
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--sdk-color-brand-primary)]"
+            className="inline-flex items-center gap-1 text-xs text-[var(--sdk-color-brand-primary)] hover:underline"
             onClick={onOpenPage}
             type="button"
           >
             {copy.quickPanel.openCenterAction}
-            <ArrowRight className="h-3.5 w-3.5" />
+            <ArrowRight className="h-3 w-3" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="mt-3 space-y-3">
+        <div className="mt-2 space-y-1">
           {recentTransactions.length === 0 ? (
-            <div className="rounded-[1rem] border border-dashed border-[var(--sdk-color-border-default)] px-4 py-4 text-sm text-[var(--sdk-color-text-secondary)]">
+            <p className="rounded-[var(--sdk-radius-field)] border border-dashed border-[var(--sdk-color-border-default)] px-3 py-3 text-xs text-[var(--sdk-color-text-secondary)]">
               {copy.quickPanel.noRecentActivity}
-            </div>
+            </p>
           ) : recentTransactions.map((transaction) => (
             <div
-              className="rounded-[1rem] border border-[var(--sdk-color-border-subtle)] bg-[var(--sdk-color-surface-panel-muted)] px-4 py-3"
+              className="flex items-center justify-between gap-2 rounded-[var(--sdk-radius-field)] px-2 py-2 hover:bg-[var(--sdk-color-surface-panel-muted)]"
               key={transaction.id}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold text-[var(--sdk-color-text-primary)]">
-                    {transaction.title}
-                  </div>
-                  <div className="mt-1 text-xs text-[var(--sdk-color-text-secondary)]">
-                    {transaction.transactionTypeName || transaction.transactionType || copy.transactionList.fallbackType}
-                  </div>
-                </div>
-                <div className={transaction.pointsDelta >= 0 ? "text-emerald-500" : "text-[var(--sdk-color-text-primary)]"}>
-                  {formatWalletDelta(transaction.pointsDelta)}
-                </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium text-[var(--sdk-color-text-primary)]">
+                  {transaction.title}
+                </p>
               </div>
-              <div className="mt-2 text-[0.7rem] text-[var(--sdk-color-text-muted)]">
-                {formatCurrencyCny(transaction.cashAmountCny)}
-              </div>
+              <span className={`shrink-0 text-xs tabular-nums ${transaction.pointsDelta >= 0 ? "text-[var(--sdk-color-state-success)]" : "text-[var(--sdk-color-text-primary)]"}`}>
+                {formatWalletDelta(transaction.pointsDelta)}
+              </span>
             </div>
           ))}
         </div>

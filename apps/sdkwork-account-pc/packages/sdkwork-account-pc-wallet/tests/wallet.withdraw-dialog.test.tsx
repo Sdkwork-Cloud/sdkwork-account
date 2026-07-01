@@ -29,6 +29,7 @@ const overview = {
   pointsToCashRate: 200,
   rechargePackages: [],
   transactions: [],
+  holds: [],
 };
 
 function createDialogController(withdrawCash = vi.fn()) {

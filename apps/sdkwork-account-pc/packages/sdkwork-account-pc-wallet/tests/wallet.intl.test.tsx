@@ -50,6 +50,7 @@ function createOverview() {
         transactionTypeName: "Points usage",
       },
     ],
+    holds: [],
   };
 }
 
@@ -72,6 +73,7 @@ function createEmptyOverview() {
     pointsToCashRate: null,
     rechargePackages: [],
     transactions: [],
+    holds: [],
   };
 }
 

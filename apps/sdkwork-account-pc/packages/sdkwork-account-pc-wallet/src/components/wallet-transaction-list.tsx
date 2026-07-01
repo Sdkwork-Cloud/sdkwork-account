@@ -18,58 +18,65 @@ export function SdkworkWalletTransactionList({
   } = useSdkworkWalletIntl();
 
   return (
-    <section className="rounded-[1.75rem] border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)] p-5 shadow-[var(--sdk-shadow-sm)]">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-[var(--sdk-color-text-primary)]">{copy.transactionList.title}</h2>
-          <p className="mt-1 text-sm text-[var(--sdk-color-text-secondary)]">
-            {copy.transactionList.description}
-          </p>
-        </div>
+    <section className="rounded-[var(--sdk-radius-panel)] border border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)]">
+      <div className="border-b border-[var(--sdk-color-border-subtle)] px-5 py-4 sm:px-6">
+        <h2 className="text-sm font-semibold text-[var(--sdk-color-text-primary)]">
+          {copy.transactionList.title}
+        </h2>
+        <p className="mt-1 text-sm text-[var(--sdk-color-text-secondary)]">
+          {copy.transactionList.description}
+        </p>
       </div>
 
       {transactions.length === 0 ? (
-        <StatusNotice className="mt-5" title={copy.transactionList.emptyTitle}>
-          {copy.transactionList.emptyDescription}
-        </StatusNotice>
+        <div className="px-5 py-6 sm:px-6">
+          <StatusNotice title={copy.transactionList.emptyTitle}>
+            {copy.transactionList.emptyDescription}
+          </StatusNotice>
+        </div>
       ) : (
-        <div className="mt-5 space-y-3">
-          {transactions.map((transaction) => {
-            const isPositive = transaction.pointsDelta > 0;
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[36rem] text-sm">
+            <thead>
+              <tr className="border-b border-[var(--sdk-color-border-subtle)] text-left text-xs text-[var(--sdk-color-text-muted)]">
+                <th className="px-5 py-3 font-medium sm:px-6">{copy.transactionList.columnDescription}</th>
+                <th className="px-5 py-3 font-medium sm:px-6">{copy.transactionList.columnPoints}</th>
+                <th className="px-5 py-3 font-medium sm:px-6">{copy.transactionList.columnAmount}</th>
+                <th className="px-5 py-3 font-medium sm:px-6">{copy.transactionList.columnStatus}</th>
+                <th className="px-5 py-3 text-right font-medium sm:px-6">{copy.transactionList.columnTime}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--sdk-color-border-subtle)]">
+              {transactions.map((transaction) => {
+                const isPositive = transaction.pointsDelta > 0;
 
-            return (
-              <article
-                className="rounded-[1.25rem] border border-[var(--sdk-color-border-subtle)] bg-[var(--sdk-color-surface-panel-muted)] px-4 py-4"
-                key={transaction.id}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-[var(--sdk-color-text-primary)]">
-                      {transaction.title}
-                    </div>
-                    <div className="mt-1 text-sm text-[var(--sdk-color-text-secondary)]">
-                      {transaction.transactionTypeName || transaction.transactionType || copy.transactionList.fallbackType}
-                    </div>
-                    <div className="mt-2 text-xs text-[var(--sdk-color-text-muted)]">
-                      {formatTransactionTimestamp(transaction.createdAt)}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-start gap-2 text-left sm:items-end sm:text-right">
-                    <div className={isPositive ? "text-emerald-500" : "text-[var(--sdk-color-text-primary)]"}>
+                return (
+                  <tr className="hover:bg-[var(--sdk-color-surface-panel-muted)]" key={transaction.id}>
+                    <td className="px-5 py-3 sm:px-6">
+                      <div className="font-medium text-[var(--sdk-color-text-primary)]">
+                        {transaction.title}
+                      </div>
+                      <div className="mt-0.5 text-xs text-[var(--sdk-color-text-muted)]">
+                        {transaction.transactionTypeName || transaction.transactionType || copy.transactionList.fallbackType}
+                      </div>
+                    </td>
+                    <td className={`px-5 py-3 tabular-nums sm:px-6 ${isPositive ? "text-[var(--sdk-color-state-success)]" : "text-[var(--sdk-color-text-primary)]"}`}>
                       {formatWalletDelta(transaction.pointsDelta)}
-                    </div>
-                    <div className="text-xs text-[var(--sdk-color-text-secondary)]">
+                    </td>
+                    <td className="px-5 py-3 tabular-nums text-[var(--sdk-color-text-secondary)] sm:px-6">
                       {formatCurrencyCny(transaction.cashAmountCny)}
-                    </div>
-                    <div className="rounded-full border border-[var(--sdk-color-border-default)] px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--sdk-color-text-muted)]">
+                    </td>
+                    <td className="px-5 py-3 text-[var(--sdk-color-text-secondary)] sm:px-6">
                       {formatTransactionStatus(transaction.status)}
-                    </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+                    </td>
+                    <td className="px-5 py-3 text-right text-xs text-[var(--sdk-color-text-muted)] sm:px-6">
+                      {formatTransactionTimestamp(transaction.createdAt)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </section>

@@ -1,5 +1,5 @@
-use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_account_database_host::{bootstrap_account_database_from_env, AccountDatabaseHost};
+use sdkwork_database_sqlx::DatabasePool;
 
 pub struct AccountServiceHost {
     database: AccountDatabaseHost,
@@ -7,7 +7,9 @@ pub struct AccountServiceHost {
 
 impl AccountServiceHost {
     pub async fn new() -> Self {
-        Self::from_env().await.expect("account service host bootstrap failed")
+        Self::from_env()
+            .await
+            .expect("account service host bootstrap failed")
     }
 
     pub async fn from_env() -> Result<Self, String> {

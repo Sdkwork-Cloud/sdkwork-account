@@ -75,7 +75,7 @@ export function getSdkworkWalletAccountLevelLabel(
 }
 
 export function createWalletWorkspaceManifest({
-  description = "Wallet workspace for balances, recharge, withdraw, and account overview surfaces.",
+  description = "Wallet workspace for balances, holds, ledger history, and commerce checkout navigation.",
   host,
   id = "sdkwork-wallet",
   packageNames = ["@sdkwork/account-pc-wallet"],

@@ -3,19 +3,20 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use axum::extract::{Extension, Query, State};
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::Response;
 use axum::routing::get;
-use axum::{Json, Router};
-use sdkwork_account_service::{BillingHistoryItem, BillingHistoryListQuery};
-use sdkwork_contract_service::CommerceServiceError;
+use axum::Router;
 use sdkwork_account_repository_sqlx::{
     PostgresCommerceBillingHistoryStore, SqliteCommerceBillingHistoryStore,
 };
+use sdkwork_account_service::{BillingHistoryItem, BillingHistoryListQuery};
+use sdkwork_contract_service::CommerceServiceError;
 use sdkwork_iam_context_service::IamAppContext;
+use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, SqlitePool};
 
+use crate::api_response::{success_items, unauthorized, validation};
 use crate::subject::app_runtime_subject_from_extension;
 
 pub type CommerceBillingHistoryFuture<'a, T> =
@@ -42,21 +43,6 @@ struct BillingHistoryQueryParams {
     #[serde(rename = "pageSize", alias = "page_size")]
     page_size: Option<i64>,
     cursor: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AppBillingApiResult<T: Serialize> {
-    code: String,
-    msg: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<T>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct BillingHistoryCollectionResponse {
-    items: Vec<BillingHistoryItemResponse>,
 }
 
 #[derive(Debug, Serialize)]
@@ -99,26 +85,6 @@ impl CommerceBillingHistoryStore for PostgresCommerceBillingHistoryStore {
     }
 }
 
-impl<T: Serialize> AppBillingApiResult<T> {
-    fn success(data: T) -> Self {
-        Self {
-            code: "2000".to_owned(),
-            msg: "SUCCESS".to_owned(),
-            data: Some(data),
-        }
-    }
-}
-
-impl AppBillingApiResult<()> {
-    fn error(code: impl Into<String>, msg: impl Into<String>) -> Self {
-        Self {
-            code: code.into(),
-            msg: msg.into(),
-            data: None,
-        }
-    }
-}
-
 pub fn app_billing_history_router_with_sqlite_pool(pool: SqlitePool) -> Router {
     build_app_billing_history_router(Arc::new(SqliteCommerceBillingHistoryStore::new(pool)))
 }
@@ -127,24 +93,24 @@ pub fn app_billing_history_router_with_postgres_pool(pool: PgPool) -> Router {
     build_app_billing_history_router(Arc::new(PostgresCommerceBillingHistoryStore::new(pool)))
 }
 
-pub fn build_app_billing_history_router(
-    store: Arc<dyn CommerceBillingHistoryStore>,
-) -> Router {
+pub fn build_app_billing_history_router(store: Arc<dyn CommerceBillingHistoryStore>) -> Router {
     Router::new()
-            .route("/app/v3/api/billing/history", get(fetch_billing_history))
-            .with_state(AppBillingHistoryState { store })
+        .route("/app/v3/api/billing/history", get(fetch_billing_history))
+        .with_state(AppBillingHistoryState { store })
 }
 
 async fn fetch_billing_history(
     State(state): State<AppBillingHistoryState>,
+    request_context: Extension<WebRequestContext>,
     runtime_context: Option<Extension<IamAppContext>>,
     Query(params): Query<BillingHistoryQueryParams>,
 ) -> Response {
+    let ctx = request_context.0;
     let subject = match app_runtime_subject_from_extension(runtime_context) {
         Ok(subject) => subject,
-        Err(message) => return unauthorized_response(message),
+        Err(message) => return unauthorized(Some(&ctx), message),
     };
-    let query = match BillingHistoryListQuery::new(
+    let list_query = match BillingHistoryListQuery::new(
         &subject.tenant_id,
         subject.organization_id.as_deref(),
         &subject.user_id,
@@ -155,17 +121,19 @@ async fn fetch_billing_history(
         params.cursor.as_deref(),
     ) {
         Ok(query) => query,
-        Err(error) => return validation_response(error.message()),
+        Err(error) => return validation(Some(&ctx), error.message()),
     };
+    let page = list_query.page.unwrap_or(1);
+    let page_size = list_query.limit();
 
-    match state.store.list_billing_history(query).await {
-        Ok(items) => Json(AppBillingApiResult::success(
-            BillingHistoryCollectionResponse {
-                items: items.into_iter().map(map_billing_history_item).collect(),
-            },
-        ))
-        .into_response(),
-        Err(error) => billing_system_response("billing history read model is unavailable", error),
+    match state.store.list_billing_history(list_query).await {
+        Ok(items) => success_items(
+            Some(&ctx),
+            items.into_iter().map(map_billing_history_item).collect(),
+            page,
+            page_size,
+        ),
+        Err(error) => crate::api_response::map_service_error(Some(&ctx), error),
     }
 }
 
@@ -188,31 +156,4 @@ fn map_billing_history_item(value: BillingHistoryItem) -> BillingHistoryItemResp
         payment_method: value.payment_method,
         occurred_at: value.occurred_at,
     }
-}
-
-fn unauthorized_response(message: String) -> Response {
-    (
-        StatusCode::UNAUTHORIZED,
-        Json(AppBillingApiResult::error("4010", message)),
-    )
-        .into_response()
-}
-
-fn validation_response(message: impl Into<String>) -> Response {
-    (
-        StatusCode::BAD_REQUEST,
-        Json(AppBillingApiResult::error("4001", message)),
-    )
-        .into_response()
-}
-
-fn billing_system_response(context: &str, error: CommerceServiceError) -> Response {
-    (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(AppBillingApiResult::error(
-            "5000",
-            format!("{context}: {}", error.message()),
-        )),
-    )
-        .into_response()
 }

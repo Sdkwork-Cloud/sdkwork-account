@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "sdkwork.component.spec",
   "component": {
-    "name": "sdkwork-commerce-account-service",
-    "displayName": "SDKWork Commerce Account",
+    "name": "sdkwork-account-service",
+    "displayName": "SDKWork Account Service",
     "version": "0.1.0",
     "type": "rust-crate",
-    "root": "crates/sdkwork-commerce-account-service",
+    "root": "crates/sdkwork-account-service",
     "domain": "commerce",
     "declaredDomain": null,
     "capability": "account",
@@ -120,7 +120,7 @@
   },
   "verification": {
     "commands": [
-      "cargo test --manifest-path crates/sdkwork-commerce-account-service/Cargo.toml"
+      "cargo test --manifest-path crates/sdkwork-account-service/Cargo.toml"
     ]
   },
   "metadata": {

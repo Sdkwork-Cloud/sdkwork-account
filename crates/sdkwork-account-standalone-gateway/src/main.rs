@@ -1,4 +1,3 @@
-use axum::Router;
 use sdkwork_account_gateway_assembly::assemble_application_router;
 use sdkwork_account_service_host::AccountServiceHost;
 use sdkwork_web_bootstrap::{service_router, ServiceRouterConfig};
@@ -9,7 +8,9 @@ use tower_http::cors::CorsLayer;
 async fn main() {
     tracing_subscriber::fmt::init();
     let host = Arc::new(AccountServiceHost::new().await);
-    let business = assemble_application_router(host).await.router
+    let business = assemble_application_router(host)
+        .await
+        .router
         .layer(CorsLayer::permissive());
     let app = service_router(business, ServiceRouterConfig::default().with_always_ready());
     let addr = std::env::var("ACCOUNT_API_BIND").unwrap_or_else(|_| "0.0.0.0:18095".to_owned());

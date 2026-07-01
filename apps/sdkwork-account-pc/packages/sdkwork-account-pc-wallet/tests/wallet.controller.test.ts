@@ -47,6 +47,7 @@ function createOverview(
         transactionTypeName: "Points usage",
       },
     ],
+    holds: [],
     ...overrides,
   };
 }
@@ -85,6 +86,7 @@ describe("sdkwork-account-pc-wallet controller", () => {
             pointsToCashRate: null,
             rechargePackages: [],
             transactions: [],
+            holds: [],
           }),
         ),
         getOverview,
@@ -146,6 +148,7 @@ describe("sdkwork-account-pc-wallet controller", () => {
             pointsToCashRate: null,
             rechargePackages: [],
             transactions: [],
+            holds: [],
           }),
         ),
         getOverview,

@@ -1,7 +1,9 @@
 ﻿import {
   Suspense,
   useEffect,
+  useRef,
   useState,
+  type ComponentType,
 } from "react";
 import {
   Coins,
@@ -14,7 +16,7 @@ import {
 } from "../wallet-controller";
 import { createSdkworkWalletToneStyle } from "../wallet-appearance";
 import { useSdkworkWalletIntl } from "../wallet-intl";
-import { SdkworkWalletQuickPanel } from "./wallet-quick-panel";
+import { SdkworkWalletQuickPanel, type SdkworkWalletQuickPanelProps } from "./wallet-quick-panel";
 import { SdkworkWalletRechargeDialog } from "./wallet-recharge-dialog";
 import { SdkworkWalletWithdrawDialog } from "./wallet-withdraw-dialog";
 import {
@@ -24,23 +26,31 @@ import {
 } from "../wallet-checkout-navigation";
 
 export interface SdkworkWalletHeaderEntryProps {
+  accountLabel?: string;
   checkoutBasePath?: string;
   controller?: SdkworkWalletController;
   onNavigate?: (route: string) => void;
   onOpenPage?: () => void;
+  quickPanelClassName?: string;
+  QuickPanel?: ComponentType<SdkworkWalletQuickPanelProps>;
   rechargeFlow?: SdkworkWalletRechargeFlow;
 }
 
 export function SdkworkWalletHeaderEntry({
+  accountLabel,
   checkoutBasePath,
   controller: controllerProp,
   onNavigate,
   onOpenPage,
+  quickPanelClassName,
+  QuickPanel: QuickPanelComponent,
   rechargeFlow,
 }: SdkworkWalletHeaderEntryProps) {
   const controller = useSdkworkWalletController(controllerProp);
   const state = useSdkworkWalletControllerState(controller);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const entryRef = useRef<HTMLDivElement>(null);
+  const PanelComponent = QuickPanelComponent ?? SdkworkWalletQuickPanel;
   const {
     copy,
     formatAccountLevelSummary,
@@ -70,13 +80,41 @@ export function SdkworkWalletHeaderEntry({
   }
 
   useEffect(() => {
-    if (!state.isBootstrapped && !state.isLoading) {
-      void controller.bootstrap();
+    if (!state.isBootstrapped && !state.isLoading && !state.lastError) {
+      void controller.bootstrap().catch(() => undefined);
     }
-  }, [controller, state.isBootstrapped, state.isLoading]);
+  }, [controller, state.isBootstrapped, state.isLoading, state.lastError]);
+
+  useEffect(() => {
+    if (!isPanelOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (entryRef.current?.contains(event.target as Node)) {
+        return;
+      }
+
+      setIsPanelOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsPanelOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPanelOpen]);
 
   return (
-    <div className="relative flex items-center gap-2">
+    <div className="relative flex items-center gap-2" ref={entryRef}>
       <button
         className="inline-flex h-9 items-center gap-2 rounded-[1rem] border px-3 text-sm font-medium"
         onClick={() => {
@@ -89,10 +127,12 @@ export function SdkworkWalletHeaderEntry({
         type="button"
       >
         <ShieldCheck className="h-4 w-4" />
-        {formatAccountLevelSummary(state.overview.account)}
+        {accountLabel ?? formatAccountLevelSummary(state.overview.account)}
       </button>
 
       <button
+        aria-expanded={isPanelOpen}
+        aria-haspopup="dialog"
         aria-label={copy.headerEntry.balanceAriaLabel}
         className="inline-flex h-9 items-center gap-2 rounded-[1rem] border border-[var(--sdk-color-border-subtle)] bg-[var(--sdk-color-surface-panel-muted)] px-3 text-sm font-medium text-[var(--sdk-color-text-primary)]"
         onClick={() => setIsPanelOpen((current) => !current)}
@@ -103,9 +143,13 @@ export function SdkworkWalletHeaderEntry({
       </button>
 
       {isPanelOpen ? (
-        <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50">
+        <div
+          className={quickPanelClassName ?? "absolute right-0 top-[calc(100%+0.75rem)] z-50"}
+          role="dialog"
+          aria-label={copy.headerEntry.balanceAriaLabel}
+        >
           <Suspense fallback={null}>
-            <SdkworkWalletQuickPanel
+            <PanelComponent
               onOpenPage={() => {
                 setIsPanelOpen(false);
                 onOpenPage?.();

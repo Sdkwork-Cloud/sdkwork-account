@@ -45,6 +45,7 @@ export interface SdkworkWalletIntlValue {
     rechargePackage: Pick<SdkworkWalletRechargePackage, "points" | "priceCny">,
   ) => string;
   formatTransactionStatus: (status: string | undefined) => string;
+  formatHoldStatus: (status: string | undefined) => string;
   formatTransactionTimestamp: (value: string) => string;
   formatWalletDelta: (value: number) => string;
   formatWithdrawDestinationDescription: (code: SdkworkWalletWithdrawDestinationCode | string | undefined) => string;
@@ -208,6 +209,23 @@ function createSdkworkWalletIntlValue(
       }
 
       return copy.status.pending;
+    },
+    formatHoldStatus(status) {
+      const normalized = String(status || "").trim().toLowerCase();
+
+      if (normalized === "settled") {
+        return copy.holdStatus.settled;
+      }
+
+      if (normalized === "released") {
+        return copy.holdStatus.released;
+      }
+
+      if (normalized === "expired") {
+        return copy.holdStatus.expired;
+      }
+
+      return copy.holdStatus.held;
     },
     formatTransactionTimestamp(value) {
       const timestamp = new Date(value);

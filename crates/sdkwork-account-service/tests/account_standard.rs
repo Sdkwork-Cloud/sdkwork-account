@@ -2,9 +2,7 @@ use sdkwork_account_service::{
     account_service_contract, AccountBalance, AccountSummary, LedgerEntryDraft, LedgerPolicy,
     PreholdStatus, PreholdTransition,
 };
-use sdkwork_contract_service::{
-    CommerceAccountAssetType, CommerceLedgerDirection, CommerceMoney,
-};
+use sdkwork_contract_service::{CommerceAccountAssetType, CommerceLedgerDirection, CommerceMoney};
 
 #[test]
 fn creates_empty_account_summary_for_local_private_runtime() {
@@ -27,10 +25,21 @@ fn account_service_contract_declares_wallet_and_token_read_models() {
         .read_queries
         .contains(&"accounts.current.summary.retrieve"));
     assert!(contract.read_queries.contains(&"wallet.accounts.list"));
+    assert!(contract.read_queries.contains(&"wallet.accounts.points.retrieve"));
+    assert!(contract.read_queries.contains(&"wallet.points.lots.list"));
     assert!(contract.read_queries.contains(&"wallet.tokens.retrieve"));
     assert!(contract
         .write_commands
         .contains(&"wallet.adjustments.create"));
+    assert!(contract
+        .write_commands
+        .contains(&"wallet.adjustments.points.create"));
+    assert!(contract.write_commands.contains(&"wallet.holds.create"));
+    assert!(contract.write_commands.contains(&"wallet.holds.settle"));
+    assert!(contract.write_commands.contains(&"wallet.holds.release"));
+    assert!(contract.write_commands.contains(&"wallet.transfers.create"));
+    assert!(contract.read_queries.contains(&"wallet.holds.list"));
+    assert!(contract.read_queries.contains(&"wallet.holds.retrieve"));
     assert!(contract.ports.contains(&"account.wallet.read"));
 }
 

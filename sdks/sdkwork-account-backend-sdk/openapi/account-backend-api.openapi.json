@@ -1,0 +1,1222 @@
+{
+  "openapi": "3.1.2",
+  "info": {
+    "title": "SDKWork Account Backend API",
+    "version": "2.0.0",
+    "description": "Backend wallet write commands and operational health for integrators.",
+    "x-sdkwork-owner": "sdkwork-account",
+    "x-sdkwork-api-authority": "sdkwork-account.backend"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "wallet",
+      "description": "Wallet backend commands."
+    }
+  ],
+  "paths": {
+    "/backend/v3/api/wallet/health": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.health.retrieve",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "type": "object",
+                              "required": [
+                                "status"
+                              ],
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "ok"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/backend/v3/api/wallet/adjustments": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.adjustments.create",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWalletAdjustmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/wallet/adjustments/cash": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.adjustments.cash.create",
+        "description": "Creates a cash ledger adjustment. `assetType` is forced to `cash`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWalletAdjustmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/wallet/adjustments/points": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.adjustments.points.create",
+        "description": "Creates a points ledger adjustment and applies FIFO lot movement.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWalletAdjustmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/wallet/adjustments/tokens": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.adjustments.tokens.create",
+        "description": "Creates a token ledger adjustment. `assetType` is forced to `token`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWalletAdjustmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/wallet/holds": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.holds.create",
+        "description": "Creates a hold moving balance from available to frozen.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccountHoldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletHoldMutationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/wallet/holds/{holdId}/settle": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.holds.settle",
+        "parameters": [
+          {
+            "name": "holdId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettleAccountHoldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletHoldMutationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/wallet/holds/{holdId}/release": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.holds.release",
+        "parameters": [
+          {
+            "name": "holdId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseAccountHoldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletHoldMutationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/wallet/transfers": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.transfers.create",
+        "description": "Atomically transfers available balance between two accounts of the same asset type.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccountTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletTransferMutationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SdkWorkApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
+          },
+          "data": {
+            "type": "object"
+          },
+          "traceId": {
+            "type": "string"
+          }
+        }
+      },
+      "ProblemDetail": {
+        "type": "object",
+        "required": [
+          "code",
+          "traceId",
+          "title",
+          "detail"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateWalletAdjustmentRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "ownerUserId",
+          "assetType",
+          "direction",
+          "amount",
+          "businessType",
+          "transactionNo",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "points",
+              "token"
+            ]
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "credit",
+              "debit"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "transactionNo": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletAdjustmentResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "accepted",
+                      "replayed",
+                      "account",
+                      "ledgerEntry"
+                    ],
+                    "properties": {
+                      "accepted": {
+                        "type": "boolean"
+                      },
+                      "replayed": {
+                        "type": "boolean"
+                      },
+                      "account": {
+                        "$ref": "#/components/schemas/WalletAccountItem"
+                      },
+                      "ledgerEntry": {
+                        "$ref": "#/components/schemas/WalletLedgerEntryItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "WalletAccountItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "tenantId",
+          "ownerUserId",
+          "assetType",
+          "availableAmount",
+          "frozenAmount",
+          "pendingAmount",
+          "status",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "availableAmount": {
+            "type": "string"
+          },
+          "frozenAmount": {
+            "type": "string"
+          },
+          "pendingAmount": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "WalletLedgerEntryItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "accountId",
+          "tenantId",
+          "ownerUserId",
+          "assetType",
+          "direction",
+          "amount",
+          "balanceBefore",
+          "balanceAfter",
+          "businessType",
+          "transactionNo",
+          "requestNo",
+          "idempotencyKey",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "credit",
+              "debit"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "balanceBefore": {
+            "type": "string"
+          },
+          "balanceAfter": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "transactionNo": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateAccountHoldRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "ownerUserId",
+          "assetType",
+          "amount",
+          "businessType",
+          "businessNo",
+          "sourceType",
+          "sourceId",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "points",
+              "token"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "businessNo": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SettleAccountHoldRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "businessType",
+          "transactionNo",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "transactionNo": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "ReleaseAccountHoldRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateAccountTransferRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "fromAccountId",
+          "toAccountId",
+          "ownerUserId",
+          "assetType",
+          "amount",
+          "businessType",
+          "businessNo",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "fromAccountId": {
+            "type": "string"
+          },
+          "toAccountId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "points",
+              "token"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "businessNo": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AccountHoldItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "tenantId",
+          "accountId",
+          "ownerUserId",
+          "assetType",
+          "amount",
+          "settledAmount",
+          "releasedAmount",
+          "status",
+          "businessType",
+          "businessNo",
+          "sourceType",
+          "sourceId",
+          "requestNo",
+          "idempotencyKey",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "settledAmount": {
+            "type": "string"
+          },
+          "releasedAmount": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "businessNo": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "settledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "releasedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AccountTransferItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "tenantId",
+          "fromAccountId",
+          "toAccountId",
+          "ownerUserId",
+          "assetType",
+          "amount",
+          "status",
+          "businessType",
+          "businessNo",
+          "requestNo",
+          "idempotencyKey",
+          "journalId",
+          "traceId",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "fromAccountId": {
+            "type": "string"
+          },
+          "toAccountId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "businessNo": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "journalId": {
+            "type": "string"
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WalletHoldMutationResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "accepted",
+                      "replayed",
+                      "hold",
+                      "account"
+                    ],
+                    "properties": {
+                      "accepted": {
+                        "type": "boolean"
+                      },
+                      "replayed": {
+                        "type": "boolean"
+                      },
+                      "hold": {
+                        "$ref": "#/components/schemas/AccountHoldItem"
+                      },
+                      "account": {
+                        "$ref": "#/components/schemas/WalletAccountItem"
+                      },
+                      "ledgerEntry": {
+                        "$ref": "#/components/schemas/WalletLedgerEntryItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "WalletTransferMutationResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "accepted",
+                      "replayed",
+                      "transfer",
+                      "fromAccount",
+                      "toAccount",
+                      "debitEntry",
+                      "creditEntry"
+                    ],
+                    "properties": {
+                      "accepted": {
+                        "type": "boolean"
+                      },
+                      "replayed": {
+                        "type": "boolean"
+                      },
+                      "transfer": {
+                        "$ref": "#/components/schemas/AccountTransferItem"
+                      },
+                      "fromAccount": {
+                        "$ref": "#/components/schemas/WalletAccountItem"
+                      },
+                      "toAccount": {
+                        "$ref": "#/components/schemas/WalletAccountItem"
+                      },
+                      "debitEntry": {
+                        "$ref": "#/components/schemas/WalletLedgerEntryItem"
+                      },
+                      "creditEntry": {
+                        "$ref": "#/components/schemas/WalletLedgerEntryItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "securitySchemes": {
+      "AuthToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "SDKWork auth token carried as Authorization: Bearer <auth_token>."
+      },
+      "AccessToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Access-Token",
+        "description": "SDKWork access isolation token."
+      }
+    }
+  },
+  "security": [
+    {
+      "AuthToken": [],
+      "AccessToken": []
+    }
+  ]
+}

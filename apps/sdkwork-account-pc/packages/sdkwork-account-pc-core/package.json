@@ -30,5 +30,10 @@
       "import": "./src/composition/index.ts",
       "default": "./src/composition/index.ts"
     }
+  },
+  "dependencies": {
+    "@sdkwork/account-service": "workspace:*",
+    "@sdkwork/order-service": "workspace:*",
+    "@sdkwork/sdk-common": "workspace:*"
   }
 }

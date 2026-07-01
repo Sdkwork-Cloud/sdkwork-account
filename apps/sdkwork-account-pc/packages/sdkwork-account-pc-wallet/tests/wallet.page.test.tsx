@@ -32,6 +32,7 @@ describe("sdkwork-account-pc-wallet page", () => {
           pointsToCashRate: null,
           rechargePackages: [],
           transactions: [],
+          holds: [],
         }),
         getOverview: vi.fn().mockResolvedValue({
           account: {
@@ -73,6 +74,7 @@ describe("sdkwork-account-pc-wallet page", () => {
               transactionTypeName: "Points usage",
             },
           ],
+          holds: [],
         }),
         rechargePoints: vi.fn().mockResolvedValue({
           cashAmountCny: 24,
@@ -99,7 +101,7 @@ describe("sdkwork-account-pc-wallet page", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: /wallet center/i,
+        name: /wallet/i,
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("Points usage").length).toBeGreaterThan(0);

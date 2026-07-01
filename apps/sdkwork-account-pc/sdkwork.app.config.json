@@ -5,7 +5,7 @@
     "key": "sdkwork-account-pc",
     "name": "SDKWork Account PC",
     "displayName": "SDKWork Account PC",
-    "description": "Account and wallet capability PC surface for balances, points, recharge, and withdrawals.",
+    "description": "Account and wallet PC surface for balances, holds, ledger history, and commerce checkout navigation.",
     "vendor": "SDKWork",
     "appType": "APP_REACT",
     "versionSource": "package.json",

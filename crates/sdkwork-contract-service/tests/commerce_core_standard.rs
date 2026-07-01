@@ -321,14 +321,12 @@ fn exposes_standard_transaction_boundary_contracts() {
     assert_eq!(scope.operation_id(), "payments.intents.create");
     assert_eq!(scope.service_name(), "commerce.payment");
     assert!(scope.requires_transaction());
-    assert!(
-        sdkwork_contract_service::CommerceTransactionScope::new(
-            "",
-            "commerce.payment",
-            TransactionBoundaryKind::Required,
-        )
-        .is_err()
-    );
+    assert!(sdkwork_contract_service::CommerceTransactionScope::new(
+        "",
+        "commerce.payment",
+        TransactionBoundaryKind::Required,
+    )
+    .is_err());
 }
 
 #[test]

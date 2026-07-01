@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "sdkwork.component.spec",
   "component": {
-    "name": "sdkwork-commerce-contract-service",
-    "displayName": "SDKWork Commerce Core",
+    "name": "sdkwork-contract-service",
+    "displayName": "SDKWork Commerce Contract",
     "version": "0.1.0",
     "type": "rust-crate",
-    "root": "crates/sdkwork-commerce-contract-service",
+    "root": "crates/sdkwork-contract-service",
     "domain": "commerce",
     "declaredDomain": null,
     "capability": "contract",
@@ -120,7 +120,7 @@
   },
   "verification": {
     "commands": [
-      "cargo test --manifest-path crates/sdkwork-commerce-contract-service/Cargo.toml"
+      "cargo test --manifest-path crates/sdkwork-contract-service/Cargo.toml"
     ]
   },
   "metadata": {

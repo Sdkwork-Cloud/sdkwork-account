@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.commerce.integration.spec",
+  "capability": "account",
+  "domain": "commerce",
+  "role": "ledger-foundation",
+  "ownedTables": [
+    "commerce_account",
+    "commerce_account_ledger",
+    "commerce_account_journal",
+    "commerce_account_journal_line",
+    "commerce_points_lot",
+    "commerce_account_hold",
+    "commerce_account_transfer",
+    "commerce_idempotency_record",
+    "commerce_outbox_event",
+    "commerce_billing_history"
+  ],
+  "ownedApiPrefixes": {
+    "app": [
+      "/app/v3/api/wallet",
+      "/app/v3/api/billing",
+      "/app/v3/api/accounts"
+    ],
+    "backend": [
+      "/backend/v3/api/wallet"
+    ]
+  },
+  "upstreamDependencies": [],
+  "downstreamConsumers": [
+    {
+      "capability": "order",
+      "integration": "backend-api wallet adjustments / holds after order fulfillment"
+    },
+    {
+      "capability": "payment",
+      "integration": "indirect via order saga only; no direct account calls"
+    }
+  ],
+  "forbidden": [
+    "commerce_order writes",
+    "commerce_recharge_package ownership",
+    "app-api /recharges/* routes",
+    "payment provider execution",
+    "recharges.* in account-app-sdk or account-service facade"
+  ],
+  "sdkFamilies": {
+    "owned": [
+      "sdkwork-account-app-sdk",
+      "sdkwork-account-backend-sdk"
+    ],
+    "forbiddenInFacade": [
+      "sdkwork-order-app-sdk",
+      "sdkwork-payment-app-sdk"
+    ]
+  },
+  "pcPackages": {
+    "account-pc-wallet": {
+      "ownedUi": [
+        "balances",
+        "holds",
+        "ledger",
+        "recharge-dialog",
+        "withdraw-dialog"
+      ],
+      "requiredSdkDependencies": [
+        {
+          "family": "sdkwork-order-app-sdk",
+          "via": "@sdkwork/order-service",
+          "methods": [
+            "recharges.packages.list",
+            "recharges.settings.retrieve",
+            "recharges.orders.create",
+            "recharges.orders.retrieve",
+            "orders.pay"
+          ],
+          "purpose": "Recharge packages and recharge order lifecycle; not account domain"
+        }
+      ],
+      "forbiddenSdkUsage": [
+        "raw HTTP to /recharges/*",
+        "recharges.* on account-service"
+      ]
+    }
+  },
+  "implementationPhases": [
+    {
+      "id": "A1",
+      "title": "Boundary specs frozen",
+      "status": "complete",
+      "repos": [
+        "sdkwork-account",
+        "sdkwork-order",
+        "sdkwork-payment"
+      ]
+    },
+    {
+      "id": "A2",
+      "title": "Account PC wallet-recharge-service + order SDK bootstrap",
+      "status": "complete",
+      "repos": [
+        "sdkwork-account"
+      ],
+      "blockedBy": [
+        "O2"
+      ]
+    },
+    {
+      "id": "A3",
+      "title": "Remove wallet-service recharge delegation throws; wire order SDK",
+      "status": "complete",
+      "repos": [
+        "sdkwork-account"
+      ],
+      "blockedBy": [
+        "A2",
+        "O3"
+      ]
+    }
+  ]
+}

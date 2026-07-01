@@ -1,31 +1,84 @@
 schema_version: 1
 kind: sdkwork.database.schema
 module_id: account
-contract_version: 1.0.0
+contract_version: 2.0.0
 owner_team: sdkwork-account
-compliance_level: L2
+compliance_level: L3
 engines:
   - postgres
   - sqlite
 table_prefix: commerce_
+id_strategy:
+  type: snowflake
+  provider: sdkwork-database-id
+  public_id: uuid
 tables:
-  - name: commerce_idempotency_key
-    profile: system_entity
-    compliance_level: L2
-    system_of_record: true
-    write_owner: sdkwork-account
-    description: Idempotency keys for account ledger and wallet mutations.
-
   - name: commerce_account
-    profile: user_entity
-    compliance_level: L2
+    profile: tenant_entity
+    compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
-    description: Owner-scoped wallet and points balances.
+    description: Owner-scoped wallet balances with available, frozen, and pending dimensions.
 
-  - name: commerce_account_ledger_entry
-    profile: ledger
-    compliance_level: L2
+  - name: commerce_account_ledger
+    profile: ledger_entry
+    compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
-    description: Immutable account balance movement ledger entries.
+    description: Immutable append-only account balance movement ledger.
+
+  - name: commerce_account_journal
+    profile: core_entity
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Double-entry journal header for balanced account mutations.
+
+  - name: commerce_account_journal_line
+    profile: ledger_entry
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Double-entry journal lines referencing ledger entries.
+
+  - name: commerce_account_hold
+    profile: core_entity
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Pre-authorization holds moving balance from available to frozen.
+
+  - name: commerce_account_transfer
+    profile: core_entity
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Atomic inter-account transfer records.
+
+  - name: commerce_points_lot
+    profile: core_entity
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: FIFO points lot batches with optional expiry.
+
+  - name: commerce_idempotency_record
+    profile: event_log
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Scoped idempotency records for account write commands.
+
+  - name: commerce_outbox_event
+    profile: outbox_event
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Transactional outbox for account domain events.
+
+  - name: commerce_billing_history
+    profile: projection
+    compliance_level: L2
+    system_of_record: false
+    write_owner: sdkwork-account
+    description: User-facing billing history projection.

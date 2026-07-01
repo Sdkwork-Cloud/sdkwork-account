@@ -3,12 +3,23 @@
   hasSdkworkAccountSession,
   requireSdkworkAccountSession,
   toNullableSdkworkAccountNumber,
-  toSdkworkAccountMutationStatus,
   toSdkworkAccountNumber,
   toSdkworkAccountOptionalString,
-  unwrapSdkworkAccountResponse,
+  unwrapSdkworkAccountPage,
+  unwrapSdkworkAccountResource,
   type SdkworkAccountAppService,
 } from "@sdkwork/account-service";
+import type { SdkworkOrderAppService } from "@sdkwork/order-service";
+import {
+  assertWalletCommerceDelegated,
+  SdkworkWalletCommerceDelegationError,
+} from "./wallet-commerce-delegation.ts";
+import {
+  createSdkworkWalletRechargeService,
+  type SdkworkWalletRechargeService,
+} from "./wallet-recharge-service.ts";
+
+export { SdkworkWalletCommerceDelegationError } from "./wallet-commerce-delegation.ts";
 
 export interface SdkworkWalletAccount {
   availablePoints: number;
@@ -42,6 +53,21 @@ export interface SdkworkWalletTransaction {
   transactionTypeName?: string;
 }
 
+export interface SdkworkWalletHold {
+  id: string;
+  holdId: string;
+  accountId: string;
+  assetType: string;
+  amount: number;
+  settledAmount: number;
+  releasedAmount: number;
+  status: string;
+  businessType: string;
+  businessNo: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SdkworkWalletRechargePackage {
   description?: string;
   id: number;
@@ -54,6 +80,7 @@ export interface SdkworkWalletRechargePackage {
 
 export interface SdkworkWalletOverview {
   account: SdkworkWalletAccount;
+  holds: SdkworkWalletHold[];
   isAuthenticated: boolean;
   pointsToCashRate: number | null;
   rechargePackages: SdkworkWalletRechargePackage[];
@@ -106,6 +133,8 @@ export interface SdkworkWalletWithdrawResult {
 
 export interface CreateSdkworkWalletServiceOptions {
   accountAppService?: SdkworkAccountAppService;
+  orderAppService?: SdkworkOrderAppService;
+  rechargeService?: SdkworkWalletRechargeService;
 }
 
 export interface SdkworkWalletService {
@@ -115,83 +144,54 @@ export interface SdkworkWalletService {
   withdrawCash(input: SdkworkWalletWithdrawInput): Promise<SdkworkWalletWithdrawResult>;
 }
 
-interface RemoteAccountSummary {
-  cashAvailable?: number | string;
-  cashFrozen?: number | string;
-  hasPayPassword?: boolean;
-  pointsAvailable?: number | string;
-  pointsFrozen?: number | string;
-  tokenAvailable?: number | string;
-  tokenFrozen?: number | string;
+interface RemoteCashAccount {
+  availableAmount?: number | string;
+  frozenAmount?: number | string;
+  pendingAmount?: number | string;
 }
 
 interface RemotePointsAccount {
   availablePoints?: number | string;
-  experience?: number | string;
   frozenPoints?: number | string;
-  level?: number | string;
-  levelName?: string;
+  pendingPoints?: number | string;
   status?: string;
-  statusName?: string;
-  tokenBalance?: number | string;
-  totalEarned?: number | string;
   totalPoints?: number | string;
-  totalSpent?: number | string;
 }
 
-interface RemoteHistoryItem {
+interface RemoteTokenAccount {
+  availableAmount?: number | string;
+  frozenAmount?: number | string;
+}
+
+interface RemoteLedgerEntry {
   amount?: number | string;
-  createdAt?: string;
-  historyId?: string;
-  points?: number | string;
-  pointsAfter?: number | string;
-  pointsBefore?: number | string;
-  remarks?: string;
-  status?: string;
-  statusName?: string;
-  transactionId?: string;
-  transactionType?: string;
-  transactionTypeName?: string;
-}
-
-interface RemoteRechargePackage {
-  description?: string;
-  id?: number | string;
-  name?: string;
-  pointAmount?: number | string;
-  price?: number | string;
-  sortWeight?: number | string;
-}
-
-interface RemoteRechargeResult {
-  cashAmount?: number | string;
-  paymentMethod?: string;
-  points?: number | string;
-  processedAt?: string;
-  remainingPoints?: number | string;
-  requestNo?: string;
-  status?: string;
-  transactionId?: string;
-}
-
-interface RemoteWithdrawResult {
-  amount?: number | string;
+  assetType?: string;
   balanceAfter?: number | string;
+  balanceBefore?: number | string;
+  businessType?: string;
   createdAt?: string;
-  estimatedArrivalTime?: string;
-  fromBalanceAfter?: number | string;
-  frozenBalance?: number | string;
-  processedAt?: string;
-  requestNo?: string;
+  direction?: string;
+  id?: string;
+  uuid?: string;
+}
+
+interface RemoteHoldEntry {
+  id?: string;
+  uuid?: string;
+  accountId?: string;
+  assetType?: string;
+  amount?: number | string;
+  settledAmount?: number | string;
+  releasedAmount?: number | string;
   status?: string;
-  transactionId?: string;
+  businessType?: string;
+  businessNo?: string;
+  createdAt?: string;
   updatedAt?: string;
-  channel?: string;
-  withdrawMethod?: string;
 }
 
 const DEFAULT_HISTORY_PAGE_SIZE = 50;
-const SDKWORK_WALLET_REQUEST_NO_PATTERN = /^[A-Za-z0-9_-]{6,64}$/;
+const DEFAULT_HOLDS_PAGE_SIZE = 20;
 
 export function createEmptySdkworkWalletOverview(): SdkworkWalletOverview {
   return {
@@ -211,123 +211,88 @@ export function createEmptySdkworkWalletOverview(): SdkworkWalletOverview {
     isAuthenticated: false,
     pointsToCashRate: null,
     rechargePackages: [],
+    holds: [],
     transactions: [],
   };
 }
 
+function signedAmount(entry: RemoteLedgerEntry): number {
+  const amount = toSdkworkAccountNumber(entry.amount);
+  const direction = toSdkworkAccountOptionalString(entry.direction)?.toLowerCase();
+  return direction === "debit" ? -amount : amount;
+}
+
 function mapAccount(
-  summary: RemoteAccountSummary | null | undefined,
+  cash: RemoteCashAccount | null | undefined,
   points: RemotePointsAccount | null | undefined,
+  token: RemoteTokenAccount | null | undefined,
 ): SdkworkWalletAccount {
-  const availablePoints = toSdkworkAccountNumber(points?.availablePoints, toSdkworkAccountNumber(summary?.pointsAvailable));
-  const frozenPoints = toSdkworkAccountNumber(points?.frozenPoints, toSdkworkAccountNumber(summary?.pointsFrozen));
+  const availablePoints = toSdkworkAccountNumber(points?.availablePoints);
+  const frozenPoints = toSdkworkAccountNumber(points?.frozenPoints);
+  const pendingPoints = toSdkworkAccountNumber(points?.pendingPoints);
 
   return {
     availablePoints,
-    cashAvailable: toSdkworkAccountNumber(summary?.cashAvailable),
-    cashFrozen: toSdkworkAccountNumber(summary?.cashFrozen),
-    experience: toNullableSdkworkAccountNumber(points?.experience),
+    cashAvailable: toSdkworkAccountNumber(cash?.availableAmount),
+    cashFrozen: toSdkworkAccountNumber(cash?.frozenAmount),
+    experience: null,
     frozenPoints,
-    hasPayPassword: Boolean(summary?.hasPayPassword),
-    level: toNullableSdkworkAccountNumber(points?.level),
-    levelName: toSdkworkAccountOptionalString(points?.levelName),
+    hasPayPassword: false,
+    level: null,
     status: toSdkworkAccountOptionalString(points?.status),
-    statusName: toSdkworkAccountOptionalString(points?.statusName),
-    tokenBalance: toSdkworkAccountNumber(points?.tokenBalance, toSdkworkAccountNumber(summary?.tokenAvailable)),
-    totalEarned: toSdkworkAccountNumber(points?.totalEarned),
-    totalPoints: toSdkworkAccountNumber(points?.totalPoints, availablePoints + frozenPoints),
-    totalSpent: toSdkworkAccountNumber(points?.totalSpent),
+    tokenBalance: toSdkworkAccountNumber(token?.availableAmount),
+    totalEarned: 0,
+    totalPoints: toSdkworkAccountNumber(points?.totalPoints, availablePoints + frozenPoints + pendingPoints),
+    totalSpent: 0,
   };
 }
 
-function resolveTransactionTitle(item: RemoteHistoryItem): string {
-  return (
-    toSdkworkAccountOptionalString(item.transactionTypeName)
-    || toSdkworkAccountOptionalString(item.remarks)
-    || "Wallet transaction"
-  );
-}
+function mapTransaction(entry: RemoteLedgerEntry): SdkworkWalletTransaction {
+  const assetType = toSdkworkAccountOptionalString(entry.assetType)?.toLowerCase() ?? "";
+  const delta = signedAmount(entry);
 
-function mapTransaction(item: RemoteHistoryItem): SdkworkWalletTransaction {
   return {
-    cashAmountCny: toNullableSdkworkAccountNumber(item.amount),
-    createdAt: toSdkworkAccountOptionalString(item.createdAt) || new Date(0).toISOString(),
-    id:
-      toSdkworkAccountOptionalString(item.historyId)
-      || toSdkworkAccountOptionalString(item.transactionId)
-      || `wallet-transaction-${Date.now()}`,
-    pointsAfter: toNullableSdkworkAccountNumber(item.pointsAfter),
-    pointsBefore: toNullableSdkworkAccountNumber(item.pointsBefore),
-    pointsDelta: toSdkworkAccountNumber(item.points),
-    status: toSdkworkAccountOptionalString(item.status),
-    statusName: toSdkworkAccountOptionalString(item.statusName),
-    title: resolveTransactionTitle(item),
-    transactionId: toSdkworkAccountOptionalString(item.transactionId),
-    transactionType: toSdkworkAccountOptionalString(item.transactionType),
-    transactionTypeName: toSdkworkAccountOptionalString(item.transactionTypeName),
+    cashAmountCny: assetType === "cash" ? Math.abs(delta) : null,
+    createdAt: toSdkworkAccountOptionalString(entry.createdAt) || new Date(0).toISOString(),
+    id: toSdkworkAccountOptionalString(entry.uuid) || toSdkworkAccountOptionalString(entry.id) || `wallet-${Date.now()}`,
+    pointsAfter: assetType === "points" ? toNullableSdkworkAccountNumber(entry.balanceAfter) : null,
+    pointsBefore: assetType === "points" ? toNullableSdkworkAccountNumber(entry.balanceBefore) : null,
+    pointsDelta: assetType === "points" ? delta : 0,
+    title: toSdkworkAccountOptionalString(entry.businessType) || "Wallet transaction",
+    transactionId: toSdkworkAccountOptionalString(entry.uuid) || toSdkworkAccountOptionalString(entry.id),
+    transactionType: toSdkworkAccountOptionalString(entry.businessType),
+    transactionTypeName: toSdkworkAccountOptionalString(entry.businessType),
   };
 }
 
-function mapRechargePackages(
-  rechargePackages: RemoteRechargePackage[],
-): SdkworkWalletRechargePackage[] {
-  const sorted = [...rechargePackages]
-    .map((rechargePackage) => ({
-      description: toSdkworkAccountOptionalString(rechargePackage.description),
-      id: toSdkworkAccountNumber(rechargePackage.id),
-      points: toSdkworkAccountNumber(rechargePackage.pointAmount),
-      priceCny: toSdkworkAccountNumber(rechargePackage.price),
-      sortWeight: toNullableSdkworkAccountNumber(rechargePackage.sortWeight),
-      title: toSdkworkAccountOptionalString(rechargePackage.name) || "Recharge package",
-    }))
-    .sort((left, right) => (
-      (right.sortWeight ?? 0) - (left.sortWeight ?? 0)
-      || right.points - left.points
-      || left.id - right.id
-    ));
+function mapHold(entry: RemoteHoldEntry): SdkworkWalletHold {
+  const holdId = toSdkworkAccountOptionalString(entry.uuid) || toSdkworkAccountOptionalString(entry.id) || "";
 
-  return sorted.map((rechargePackage, index) => ({
-    ...rechargePackage,
-    recommended: index === 0,
-  }));
-}
-
-function mapRechargeResult(result: RemoteRechargeResult | null | undefined): SdkworkWalletRechargeResult {
   return {
-    cashAmountCny: toNullableSdkworkAccountNumber(result?.cashAmount),
-    paymentMethod: toSdkworkAccountOptionalString(result?.paymentMethod),
-    points: toSdkworkAccountNumber(result?.points),
-    processedAt: toSdkworkAccountOptionalString(result?.processedAt),
-    remainingPoints: toNullableSdkworkAccountNumber(result?.remainingPoints),
-    requestNo: toSdkworkAccountOptionalString(result?.requestNo),
-    status: toSdkworkAccountMutationStatus(toSdkworkAccountOptionalString(result?.status)),
-    transactionId: toSdkworkAccountOptionalString(result?.transactionId),
-  };
-}
-
-function mapWithdrawResult(
-  result: RemoteWithdrawResult | null | undefined,
-): SdkworkWalletWithdrawResult {
-  return {
-    amountCny: toNullableSdkworkAccountNumber(result?.amount),
-    destinationCode: toSdkworkAccountOptionalString(result?.channel) || toSdkworkAccountOptionalString(result?.withdrawMethod),
-    estimatedArrivalTime: toSdkworkAccountOptionalString(result?.estimatedArrivalTime),
-    frozenCashAmountCny: toNullableSdkworkAccountNumber(result?.frozenBalance),
-    processedAt:
-      toSdkworkAccountOptionalString(result?.processedAt)
-      || toSdkworkAccountOptionalString(result?.updatedAt)
-      || toSdkworkAccountOptionalString(result?.createdAt),
-    requestNo: toSdkworkAccountOptionalString(result?.requestNo),
-    remainingCashAvailable: toNullableSdkworkAccountNumber(result?.fromBalanceAfter ?? result?.balanceAfter),
-    status: toSdkworkAccountMutationStatus(toSdkworkAccountOptionalString(result?.status)),
-    transactionId: toSdkworkAccountOptionalString(result?.transactionId),
+    id: holdId,
+    holdId,
+    accountId: toSdkworkAccountOptionalString(entry.accountId) || "",
+    assetType: toSdkworkAccountOptionalString(entry.assetType) || "",
+    amount: toSdkworkAccountNumber(entry.amount),
+    settledAmount: toSdkworkAccountNumber(entry.settledAmount),
+    releasedAmount: toSdkworkAccountNumber(entry.releasedAmount),
+    status: toSdkworkAccountOptionalString(entry.status) || "held",
+    businessType: toSdkworkAccountOptionalString(entry.businessType) || "",
+    businessNo: toSdkworkAccountOptionalString(entry.businessNo) || "",
+    createdAt: toSdkworkAccountOptionalString(entry.createdAt) || new Date(0).toISOString(),
+    updatedAt: toSdkworkAccountOptionalString(entry.updatedAt) || new Date(0).toISOString(),
   };
 }
 
 export function createSdkworkWalletService(
   options: CreateSdkworkWalletServiceOptions = {},
 ): SdkworkWalletService {
-  const getaccountAppService = () => options.accountAppService ?? getSdkworkAccountService();
+  const getAccountAppService = () => options.accountAppService ?? getSdkworkAccountService();
+  const rechargeService =
+    options.rechargeService
+    ?? (options.orderAppService
+      ? createSdkworkWalletRechargeService({ orderAppService: options.orderAppService })
+      : undefined);
 
   return {
     getEmptyOverview() {
@@ -340,102 +305,63 @@ export function createSdkworkWalletService(
       }
 
       const pageSize = config.pageSize ?? DEFAULT_HISTORY_PAGE_SIZE;
-      const accountAppService = getaccountAppService();
+      const accountAppService = getAccountAppService();
 
-      const [
-        summaryPayload,
-        historyPagePayload,
-        pointsAccountPayload,
-        pointsToCashRatePayload,
-        rechargePackagesPayload,
-      ] = await Promise.all([
-        accountAppService.accounts.current.summary.retrieve(),
-        accountAppService.wallet.ledgerEntries.points.list({
-              pageNum: 1,
-              pageSize,
-              sortDirection: "desc",
-              sortField: "createdAt",
-        }),
+      const [cashPayload, pointsPayload, tokenPayload, ledgerPayload, holdsPayload] = await Promise.all([
+        accountAppService.wallet.accounts.cash.retrieve(),
         accountAppService.wallet.accounts.points.retrieve(),
-        accountAppService.wallet.exchangeRate.retrieve(),
-        accountAppService.recharges.packages.list(),
+        accountAppService.wallet.accounts.tokens.retrieve(),
+        accountAppService.wallet.ledgerEntries.points.list({
+          page: 1,
+          pageSize,
+        }),
+        accountAppService.wallet.holds.list({
+          page: 1,
+          pageSize: DEFAULT_HOLDS_PAGE_SIZE,
+        }),
       ]);
-      const summary = unwrapSdkworkAccountResponse<RemoteAccountSummary | null>(summaryPayload);
-      const historyPage = unwrapSdkworkAccountResponse<{ content?: RemoteHistoryItem[] }>(historyPagePayload);
-      const pointsAccount = unwrapSdkworkAccountResponse<RemotePointsAccount | null>(pointsAccountPayload);
-      const pointsToCashRate = unwrapSdkworkAccountResponse<number | null>(pointsToCashRatePayload);
-      const rechargePackages = unwrapSdkworkAccountResponse<RemoteRechargePackage[]>(rechargePackagesPayload);
+
+      const cash = unwrapSdkworkAccountResource<RemoteCashAccount>(cashPayload);
+      const points = unwrapSdkworkAccountResource<RemotePointsAccount>(pointsPayload);
+      const token = unwrapSdkworkAccountResource<RemoteTokenAccount>(tokenPayload);
+      const ledgerEntries = unwrapSdkworkAccountPage<RemoteLedgerEntry>(ledgerPayload);
+      const holds = unwrapSdkworkAccountPage<RemoteHoldEntry>(holdsPayload);
+
+      let rechargePackages: SdkworkWalletRechargePackage[] = [];
+      let pointsToCashRate: number | null = null;
+      if (rechargeService) {
+        try {
+          [rechargePackages, pointsToCashRate] = await Promise.all([
+            rechargeService.listPackages(),
+            rechargeService.retrievePointsToCashRate(),
+          ]);
+        } catch {
+          rechargePackages = [];
+          pointsToCashRate = null;
+        }
+      }
 
       return {
-        account: mapAccount(summary, pointsAccount),
+        account: mapAccount(cash, points, token),
+        holds: holds.map(mapHold),
         isAuthenticated: true,
-        pointsToCashRate: toNullableSdkworkAccountNumber(pointsToCashRate),
-        rechargePackages: mapRechargePackages(rechargePackages),
-        transactions: (historyPage.content ?? []).map(mapTransaction),
+        pointsToCashRate,
+        rechargePackages,
+        transactions: ledgerEntries.map(mapTransaction),
       };
     },
 
     async rechargePoints(input) {
       requireSdkworkAccountSession("Please sign in to manage wallet balances.");
-      const result = unwrapSdkworkAccountResponse<RemoteRechargeResult>(
-        await getaccountAppService().recharges.orders.create({
-          paymentMethod: toSdkworkAccountOptionalString(input.paymentMethod),
-          points: input.points,
-          remarks: toSdkworkAccountOptionalString(input.remarks),
-          requestNo: toSdkworkAccountOptionalString(input.requestNo),
-        }),
-        "Failed to recharge points.",
-      );
-
-      return mapRechargeResult(result);
+      if (rechargeService) {
+        return rechargeService.createRechargeOrder(input);
+      }
+      assertWalletCommerceDelegated("recharge", "order");
     },
 
-    async withdrawCash(input) {
+    async withdrawCash() {
       requireSdkworkAccountSession("Please sign in to manage wallet balances.");
-
-      if (!(input.amountCny > 0)) {
-        throw new Error("Withdrawal amount must be greater than zero.");
-      }
-
-      const destinationCode = toSdkworkAccountOptionalString(input.destinationCode);
-      if (!destinationCode) {
-        throw new Error("Select a withdrawal destination before submitting.");
-      }
-
-      const accountName = toSdkworkAccountOptionalString(input.accountName);
-      if (!accountName) {
-        throw new Error("Enter the payout account holder name before submitting.");
-      }
-
-      const accountNo = toSdkworkAccountOptionalString(input.accountNo);
-      if (!accountNo) {
-        throw new Error("Enter the payout account number before submitting.");
-      }
-
-      const bankName = toSdkworkAccountOptionalString(input.bankName);
-      if (destinationCode === "bank_account" && !bankName) {
-        throw new Error("Enter the settlement bank name before submitting.");
-      }
-
-      const requestNo = toSdkworkAccountOptionalString(input.requestNo);
-      if (requestNo && !SDKWORK_WALLET_REQUEST_NO_PATTERN.test(requestNo)) {
-        throw new Error("Request no must use 6-64 letters, numbers, underscores, or hyphens.");
-      }
-
-      const result = unwrapSdkworkAccountResponse<RemoteWithdrawResult>(
-        await getaccountAppService().wallet.withdrawalTransfers.create({
-          accountName,
-          accountNo,
-          amount: input.amountCny,
-          bankName,
-          remarks: toSdkworkAccountOptionalString(input.remarks),
-          requestNo,
-          withdrawMethod: destinationCode,
-        }),
-        "Failed to withdraw cash.",
-      );
-
-      return mapWithdrawResult(result);
+      assertWalletCommerceDelegated("withdraw", "payment");
     },
   };
 }

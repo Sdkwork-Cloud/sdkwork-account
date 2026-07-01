@@ -6,6 +6,8 @@
   "exports": { ".": "./src/index.tsx" },
   "dependencies": {
     "@sdkwork/account-pc-core": "workspace:*",
+    "@sdkwork/account-pc-wallet": "workspace:*",
+    "@sdkwork/ui-pc-react": "workspace:*",
     "react": "catalog:"
   },
   "peerDependencies": {

@@ -63,6 +63,35 @@ pub struct BillingHistoryListQuery {
     pub tenant_id: String,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PointsLotListQuery {
+    pub organization_id: Option<String>,
+    pub owner_user_id: String,
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    pub tenant_id: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountHoldListQuery {
+    pub account_id: Option<String>,
+    pub asset_type: Option<CommerceAccountAssetType>,
+    pub organization_id: Option<String>,
+    pub owner_user_id: String,
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    pub status: Option<String>,
+    pub tenant_id: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountHoldDetailQuery {
+    pub hold_id: String,
+    pub organization_id: Option<String>,
+    pub owner_user_id: String,
+    pub tenant_id: String,
+}
+
 impl AccountSummaryQuery {
     pub fn new(
         tenant_id: &str,
@@ -234,6 +263,110 @@ impl BillingHistoryListQuery {
     pub fn offset(&self) -> i64 {
         let page = self.page.unwrap_or(1).max(1);
         (page - 1) * self.limit()
+    }
+}
+
+impl PointsLotListQuery {
+    pub fn new(
+        tenant_id: &str,
+        organization_id: Option<&str>,
+        owner_user_id: &str,
+        page: Option<i64>,
+        page_size: Option<i64>,
+    ) -> Result<Self, CommerceServiceError> {
+        if let Some(page) = page {
+            if page < 1 {
+                return Err(CommerceServiceError::validation(
+                    "page must be greater than or equal to 1",
+                ));
+            }
+        }
+        if let Some(page_size) = page_size {
+            if !(1..=200).contains(&page_size) {
+                return Err(CommerceServiceError::validation(
+                    "page_size must be between 1 and 200",
+                ));
+            }
+        }
+        Ok(Self {
+            organization_id: optional_text(organization_id),
+            owner_user_id: required_text("owner_user_id", owner_user_id)?,
+            page,
+            page_size,
+            tenant_id: required_text("tenant_id", tenant_id)?,
+        })
+    }
+
+    pub fn limit(&self) -> i64 {
+        self.page_size.unwrap_or(50).clamp(1, 200)
+    }
+
+    pub fn offset(&self) -> i64 {
+        let page = self.page.unwrap_or(1).max(1);
+        (page - 1) * self.limit()
+    }
+}
+
+impl AccountHoldListQuery {
+    pub fn new(
+        tenant_id: &str,
+        organization_id: Option<&str>,
+        owner_user_id: &str,
+        account_id: Option<&str>,
+        asset_type: Option<CommerceAccountAssetType>,
+        status: Option<&str>,
+        page: Option<i64>,
+        page_size: Option<i64>,
+    ) -> Result<Self, CommerceServiceError> {
+        if let Some(page) = page {
+            if page < 1 {
+                return Err(CommerceServiceError::validation(
+                    "page must be greater than or equal to 1",
+                ));
+            }
+        }
+        if let Some(page_size) = page_size {
+            if !(1..=200).contains(&page_size) {
+                return Err(CommerceServiceError::validation(
+                    "page_size must be between 1 and 200",
+                ));
+            }
+        }
+        Ok(Self {
+            account_id: optional_text(account_id),
+            asset_type,
+            organization_id: optional_text(organization_id),
+            owner_user_id: required_text("owner_user_id", owner_user_id)?,
+            page,
+            page_size,
+            status: optional_text(status),
+            tenant_id: required_text("tenant_id", tenant_id)?,
+        })
+    }
+
+    pub fn limit(&self) -> i64 {
+        self.page_size.unwrap_or(50).clamp(1, 200)
+    }
+
+    pub fn offset(&self) -> i64 {
+        let page = self.page.unwrap_or(1).max(1);
+        (page - 1) * self.limit()
+    }
+}
+
+impl AccountHoldDetailQuery {
+    pub fn new(
+        tenant_id: &str,
+        organization_id: Option<&str>,
+        owner_user_id: &str,
+        hold_id: &str,
+    ) -> Result<Self, CommerceServiceError> {
+        Ok(Self {
+            hold_id: required_text("hold_id", hold_id)?,
+            organization_id: optional_text(organization_id),
+            owner_user_id: required_text("owner_user_id", owner_user_id)?,
+            tenant_id: required_text("tenant_id", tenant_id)?,
+        })
     }
 }
 

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "workspace": "sdkwork-account-backend-sdk",
+  "title": "SDKWork Account Backend API SDK",
+  "apiVersion": "2.0.0",
+  "openapiVersion": "3.1.2",
+  "sdkOwner": "sdkwork-account",
+  "apiAuthority": "sdkwork-account.backend",
+  "sourceAuthoritySpec": "../../apis/backend-api/account/account-backend-api.openapi.json",
+  "authoritySpec": "openapi/account-backend-api.openapi.json",
+  "generationInputSpec": "openapi/account-backend-api.sdkgen.yaml",
+  "derivedSpecs": {
+    "default": "openapi/account-backend-api.sdkgen.yaml"
+  },
+  "discoverySurface": {
+    "sdkTarget": "backend",
+    "apiPrefix": "/backend/v3/api",
+    "schemaUrl": "/backend/v3/api/openapi.json",
+    "generatedProtocols": ["http-openapi"],
+    "manualTransports": []
+  },
+  "languages": [
+    {
+      "language": "typescript",
+      "workspace": "sdkwork-account-backend-sdk-typescript",
+      "generationState": "generated",
+      "releaseState": "not_published",
+      "generatedPath": "sdkwork-account-backend-sdk-typescript/generated/server-openapi",
+      "manifestPath": "sdkwork-account-backend-sdk-typescript/generated/server-openapi/package.json",
+      "name": "@sdkwork/account-backend-sdk",
+      "version": "0.1.0",
+      "description": "Generator-owned TypeScript transport SDK for sdkwork-account.backend.",
+      "consumerSurface": {
+        "primaryClient": "SdkworkAccountBackendClient",
+        "apiPrefix": "/backend/v3/api"
+      }
+    }
+  ],
+  "sdkDependencies": [],
+  "dependencyApiExports": [],
+  "dependencyApiSurfaces": [],
+  "metadata": {
+    "standardVersion": "2026-06-29",
+    "materializationState": "authority-ready",
+    "managedBy": "sdkwork-account"
+  }
+}

@@ -88,6 +88,7 @@ pub struct LedgerEntryDraft {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WalletAccountItem {
     pub id: String,
+    pub uuid: String,
     pub tenant_id: String,
     pub organization_id: Option<String>,
     pub owner_user_id: String,
@@ -95,6 +96,7 @@ pub struct WalletAccountItem {
     pub currency_code: Option<String>,
     pub available_amount: CommerceMoney,
     pub frozen_amount: CommerceMoney,
+    pub pending_amount: CommerceMoney,
     pub status: String,
     pub version: i64,
 }
@@ -105,8 +107,31 @@ pub struct WalletOverview {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PointsAccountSnapshot {
+    pub account: WalletAccountItem,
+    pub active_lot_count: i64,
+    pub expiring_points: i64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PointsLotItem {
+    pub id: String,
+    pub uuid: String,
+    pub account_id: String,
+    pub granted_amount: i64,
+    pub remaining_amount: i64,
+    pub source_type: String,
+    pub source_id: String,
+    pub expires_at: Option<String>,
+    pub status: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WalletTransactionItem {
     pub id: String,
+    pub uuid: String,
     pub account_id: String,
     pub tenant_id: String,
     pub organization_id: Option<String>,
@@ -114,6 +139,7 @@ pub struct WalletTransactionItem {
     pub asset_type: CommerceAccountAssetType,
     pub direction: CommerceLedgerDirection,
     pub amount: CommerceMoney,
+    pub balance_before: CommerceMoney,
     pub balance_after: CommerceMoney,
     pub business_type: String,
     pub transaction_no: String,
@@ -156,6 +182,72 @@ pub struct WalletOperation {
 pub struct AppendLedgerEntryOutcome {
     pub account: WalletAccountItem,
     pub ledger_entry: WalletTransactionItem,
+    pub replayed: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountHoldItem {
+    pub id: String,
+    pub uuid: String,
+    pub tenant_id: String,
+    pub organization_id: Option<String>,
+    pub account_id: String,
+    pub owner_user_id: String,
+    pub asset_type: String,
+    pub amount: String,
+    pub settled_amount: String,
+    pub released_amount: String,
+    pub status: String,
+    pub business_type: String,
+    pub business_no: String,
+    pub source_type: String,
+    pub source_id: String,
+    pub request_no: String,
+    pub idempotency_key: String,
+    pub expires_at: Option<String>,
+    pub settled_at: Option<String>,
+    pub released_at: Option<String>,
+    pub version: i64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountTransferItem {
+    pub id: String,
+    pub uuid: String,
+    pub tenant_id: String,
+    pub organization_id: Option<String>,
+    pub from_account_id: String,
+    pub to_account_id: String,
+    pub owner_user_id: String,
+    pub asset_type: String,
+    pub amount: String,
+    pub status: String,
+    pub business_type: String,
+    pub business_no: String,
+    pub request_no: String,
+    pub idempotency_key: String,
+    pub journal_id: String,
+    pub trace_id: String,
+    pub created_at: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct HoldMutationOutcome {
+    pub hold: AccountHoldItem,
+    pub account: WalletAccountItem,
+    pub ledger_entry: Option<WalletTransactionItem>,
+    pub replayed: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TransferMutationOutcome {
+    pub transfer: AccountTransferItem,
+    pub from_account: WalletAccountItem,
+    pub to_account: WalletAccountItem,
+    pub debit_entry: WalletTransactionItem,
+    pub credit_entry: WalletTransactionItem,
     pub replayed: bool,
 }
 
@@ -267,6 +359,7 @@ impl WalletAccountItem {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: &str,
+        uuid: &str,
         tenant_id: &str,
         organization_id: Option<&str>,
         owner_user_id: &str,
@@ -274,10 +367,12 @@ impl WalletAccountItem {
         currency_code: Option<&str>,
         available_amount: &str,
         frozen_amount: &str,
+        pending_amount: &str,
         status: &str,
         version: i64,
     ) -> Result<Self, CommerceServiceError> {
         require_non_empty_service("id", id)?;
+        require_non_empty_service("uuid", uuid)?;
         require_non_empty_service("tenant_id", tenant_id)?;
         require_non_empty_service("owner_user_id", owner_user_id)?;
         require_non_empty_service("status", status)?;
@@ -289,6 +384,7 @@ impl WalletAccountItem {
 
         Ok(Self {
             id: id.to_string(),
+            uuid: uuid.to_string(),
             tenant_id: tenant_id.to_string(),
             organization_id: normalize_optional_text(organization_id),
             owner_user_id: owner_user_id.to_string(),
@@ -298,9 +394,34 @@ impl WalletAccountItem {
                 .map_err(CommerceServiceError::validation)?,
             frozen_amount: CommerceMoney::new(frozen_amount)
                 .map_err(CommerceServiceError::validation)?,
+            pending_amount: CommerceMoney::new(pending_amount)
+                .map_err(CommerceServiceError::validation)?,
             status: status.to_string(),
             version,
         })
+    }
+
+    pub fn zero_for_owner(
+        tenant_id: &str,
+        organization_id: Option<&str>,
+        owner_user_id: &str,
+        asset_type: CommerceAccountAssetType,
+        currency_code: Option<&str>,
+    ) -> Result<Self, CommerceServiceError> {
+        Self::new(
+            "0",
+            "00000000-0000-0000-0000-000000000000",
+            tenant_id,
+            organization_id,
+            owner_user_id,
+            asset_type,
+            currency_code,
+            "0",
+            "0",
+            "0",
+            "ACTIVE",
+            0,
+        )
     }
 }
 
@@ -314,6 +435,7 @@ impl WalletTransactionItem {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: &str,
+        uuid: &str,
         account_id: &str,
         tenant_id: &str,
         organization_id: Option<&str>,
@@ -321,6 +443,7 @@ impl WalletTransactionItem {
         asset_type: CommerceAccountAssetType,
         direction: CommerceLedgerDirection,
         amount: &str,
+        balance_before: &str,
         balance_after: &str,
         business_type: &str,
         transaction_no: &str,
@@ -329,6 +452,7 @@ impl WalletTransactionItem {
         created_at: &str,
     ) -> Result<Self, CommerceServiceError> {
         require_non_empty_service("id", id)?;
+        require_non_empty_service("uuid", uuid)?;
         require_non_empty_service("account_id", account_id)?;
         require_non_empty_service("tenant_id", tenant_id)?;
         require_non_empty_service("owner_user_id", owner_user_id)?;
@@ -340,6 +464,7 @@ impl WalletTransactionItem {
 
         Ok(Self {
             id: id.to_string(),
+            uuid: uuid.to_string(),
             account_id: account_id.to_string(),
             tenant_id: tenant_id.to_string(),
             organization_id: normalize_optional_text(organization_id),
@@ -347,6 +472,8 @@ impl WalletTransactionItem {
             asset_type,
             direction,
             amount: CommerceMoney::new(amount).map_err(CommerceServiceError::validation)?,
+            balance_before: CommerceMoney::new(balance_before)
+                .map_err(CommerceServiceError::validation)?,
             balance_after: CommerceMoney::new(balance_after)
                 .map_err(CommerceServiceError::validation)?,
             business_type: business_type.to_string(),
@@ -487,11 +614,13 @@ mod tests {
     fn wallet_account_item_rejects_empty_account_id() {
         let error = WalletAccountItem::new(
             "",
+            "uuid-1",
             "100001",
             None,
             "1",
             CommerceAccountAssetType::Points,
             Some("POINT"),
+            "0",
             "0",
             "0",
             "active",
@@ -506,6 +635,7 @@ mod tests {
     fn wallet_transaction_item_requires_request_no_and_idempotency_key() {
         let error = WalletTransactionItem::new(
             "ledger-1",
+            "ledger-uuid-1",
             "account-1",
             "100001",
             None,
@@ -513,6 +643,7 @@ mod tests {
             CommerceAccountAssetType::Points,
             CommerceLedgerDirection::Credit,
             "10",
+            "0",
             "10",
             "recharge",
             "txn-1",

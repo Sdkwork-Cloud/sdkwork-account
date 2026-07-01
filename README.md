@@ -1,16 +1,21 @@
 # sdkwork-account
+repository-kind: application
 
-SDKWork commerce **account** capability building-block repository (domain `commerce`).
+SDKWork commerce **account / wallet** capability repository (domain `commerce`, capability `account`).
 
 - Standards: `../sdkwork-specs/README.md`
-- Composition consumer: `../sdkwork-clawrouter/vendor/sdkwork-commerce (deleted)` (archived transitional platform snapshot)
-- Domain service: `crates/sdkwork-commerce (deleted)-account-service/`
-- Repository SQL: `crates/sdkwork-commerce (deleted)-account-repository-sqlx/`
-- HTTP API server: `crates/sdkwork-account-standalone-gateway/`
+- Domain service: `crates/sdkwork-account-service/`
+- Repository (sqlx): `crates/sdkwork-account-repository-sqlx/`
+- HTTP routers: `crates/sdkwork-routes-account-app-api/`, `crates/sdkwork-routes-account-backend-api/`
+- Gateway: `crates/sdkwork-account-standalone-gateway/`
+- PC surface: `apps/sdkwork-account-pc/`
+- API authorities: `apis/app-api/account/`, `apis/backend-api/account/`
 
 ## Quick start
 
-```bash
+```powershell
+pnpm install
+pnpm verify
 cargo test --workspace
 ```
 

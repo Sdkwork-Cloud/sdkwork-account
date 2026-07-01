@@ -1,0 +1,1792 @@
+{
+  "openapi": "3.1.2",
+  "info": {
+    "title": "SDKWork Account App API",
+    "version": "2.0.0",
+    "description": "Read-only wallet, billing, and account summary surfaces for authenticated app users.",
+    "x-sdkwork-owner": "sdkwork-account",
+    "x-sdkwork-api-authority": "sdkwork-account.app"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "wallet",
+      "description": "Wallet read models."
+    },
+    {
+      "name": "billing",
+      "description": "Billing history read models."
+    },
+    {
+      "name": "accounts",
+      "description": "Account summary read models."
+    }
+  ],
+  "paths": {
+    "/app/v3/api/wallet/overview": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.overview.retrieve",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletOverviewResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/accounts": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.accounts.list",
+        "parameters": [
+          {
+            "name": "assetType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cash",
+                "points",
+                "token"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAccountListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/accounts/cash": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.accounts.cash.retrieve",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashAccountResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/accounts/points": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.accounts.points.retrieve",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointsAccountResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/accounts/tokens": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.accounts.tokens.retrieve",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAccountItemResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/ledger_entries": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.ledgerEntries.list",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assetType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cash",
+                "points",
+                "token"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletLedgerListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/ledger_entries/cash": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.ledgerEntries.cash.list",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletLedgerListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/ledger_entries/points": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.ledgerEntries.points.list",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletLedgerListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/ledger_entries/{ledgerEntryId}": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.ledgerEntries.retrieve",
+        "parameters": [
+          {
+            "name": "ledgerEntryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletLedgerEntryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/points/lots": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.points.lots.list",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointsLotListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/tokens": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.tokens.retrieve",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenBalanceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/billing/history": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "operationId": "billing.history.list",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingHistoryListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/holds": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.holds.list",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assetType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cash",
+                "points",
+                "token"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountHoldListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/holds/{holdId}": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.holds.retrieve",
+        "parameters": [
+          {
+            "name": "holdId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountHoldDetailResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/accounts/current/summary": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "operationId": "accounts.current.summary.retrieve",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSummaryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SdkWorkApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
+          },
+          "data": {
+            "type": "object"
+          },
+          "traceId": {
+            "type": "string"
+          }
+        }
+      },
+      "ProblemDetail": {
+        "type": "object",
+        "required": [
+          "code",
+          "traceId",
+          "title",
+          "detail"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletOverviewResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "data"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "accounts"
+                    ],
+                    "properties": {
+                      "accounts": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/WalletAccountItem"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "WalletAccountListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "items",
+                  "pageInfo"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/WalletAccountItem"
+                    }
+                  },
+                  "pageInfo": {
+                    "$ref": "#/components/schemas/PageInfo"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "WalletLedgerListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "items",
+                  "pageInfo"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/WalletLedgerEntryItem"
+                    }
+                  },
+                  "pageInfo": {
+                    "$ref": "#/components/schemas/PageInfo"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TokenBalanceResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "availableTokens",
+                      "frozenTokens"
+                    ],
+                    "properties": {
+                      "availableTokens": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "frozenTokens": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BillingHistoryListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "items",
+                  "pageInfo"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BillingHistoryItem"
+                    }
+                  },
+                  "pageInfo": {
+                    "$ref": "#/components/schemas/PageInfo"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AccountSummaryResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "$ref": "#/components/schemas/AccountSummaryItem"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AccountSummaryItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "isVerified",
+          "tier",
+          "organization",
+          "availableCredits",
+          "estDaysRemaining",
+          "monthlyConsumption"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "tier": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          },
+          "availableCredits": {
+            "type": "number"
+          },
+          "estDaysRemaining": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyConsumption": {
+            "type": "number"
+          },
+          "consumptionByService": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "invoiceSettings": {
+            "type": "object"
+          },
+          "security": {
+            "type": "object"
+          },
+          "loginLogs": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "CashAccountResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "$ref": "#/components/schemas/CashAccountItem"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CashAccountItem": {
+        "type": "object",
+        "required": [
+          "accountId",
+          "accountUuid",
+          "tenantId",
+          "ownerUserId",
+          "availableAmount",
+          "frozenAmount",
+          "pendingAmount",
+          "status",
+          "version"
+        ],
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "accountUuid": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "availableAmount": {
+            "type": "string"
+          },
+          "frozenAmount": {
+            "type": "string"
+          },
+          "pendingAmount": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PointsAccountResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "$ref": "#/components/schemas/PointsAccountItem"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PointsAccountItem": {
+        "type": "object",
+        "required": [
+          "accountId",
+          "accountUuid",
+          "tenantId",
+          "ownerUserId",
+          "availablePoints",
+          "frozenPoints",
+          "pendingPoints",
+          "totalPoints",
+          "activeLotCount",
+          "expiringPoints",
+          "status",
+          "version"
+        ],
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "accountUuid": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "availablePoints": {
+            "type": "string"
+          },
+          "frozenPoints": {
+            "type": "string"
+          },
+          "pendingPoints": {
+            "type": "string"
+          },
+          "totalPoints": {
+            "type": "string"
+          },
+          "activeLotCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expiringPoints": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "WalletAccountItemResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "$ref": "#/components/schemas/WalletAccountItem"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "WalletLedgerEntryResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "$ref": "#/components/schemas/WalletLedgerEntryItem"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PointsLotListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "items",
+                  "pageInfo"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PointsLotItem"
+                    }
+                  },
+                  "pageInfo": {
+                    "$ref": "#/components/schemas/PageInfo"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PointsLotItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "accountId",
+          "grantedAmount",
+          "remainingAmount",
+          "sourceType",
+          "sourceId",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "grantedAmount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remainingAmount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WalletAccountItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "tenantId",
+          "ownerUserId",
+          "assetType",
+          "availableAmount",
+          "frozenAmount",
+          "pendingAmount",
+          "status",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "availableAmount": {
+            "type": "string"
+          },
+          "frozenAmount": {
+            "type": "string"
+          },
+          "pendingAmount": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "WalletLedgerEntryItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "accountId",
+          "tenantId",
+          "ownerUserId",
+          "assetType",
+          "direction",
+          "amount",
+          "balanceBefore",
+          "balanceAfter",
+          "businessType",
+          "transactionNo",
+          "requestNo",
+          "idempotencyKey",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "credit",
+              "debit"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "balanceBefore": {
+            "type": "string"
+          },
+          "balanceAfter": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "transactionNo": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BillingHistoryItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "historyNo",
+          "type",
+          "direction",
+          "assetType",
+          "amount",
+          "pointsDelta",
+          "status",
+          "title",
+          "sourceType",
+          "sourceId",
+          "occurredAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "historyNo": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "pointsDelta": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "referenceNo": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "relatedOrderNo": {
+            "type": "string"
+          },
+          "paymentMethod": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AccountHoldItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "tenantId",
+          "accountId",
+          "ownerUserId",
+          "assetType",
+          "amount",
+          "settledAmount",
+          "releasedAmount",
+          "status",
+          "businessType",
+          "businessNo",
+          "sourceType",
+          "sourceId",
+          "requestNo",
+          "idempotencyKey",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "settledAmount": {
+            "type": "string"
+          },
+          "releasedAmount": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "businessNo": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "settledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "releasedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AccountHoldListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "items",
+                  "pageInfo"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AccountHoldItem"
+                    }
+                  },
+                  "pageInfo": {
+                    "$ref": "#/components/schemas/PageInfo"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AccountHoldDetailResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "$ref": "#/components/schemas/AccountHoldItem"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PageInfo": {
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "offset",
+              "cursor"
+            ]
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalItems": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextCursor": {
+            "type": "string"
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "AuthToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "SDKWork auth token carried as Authorization: Bearer <auth_token>."
+      },
+      "AccessToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Access-Token",
+        "description": "SDKWork access isolation token."
+      }
+    }
+  },
+  "security": [
+    {
+      "AuthToken": [],
+      "AccessToken": []
+    }
+  ]
+}

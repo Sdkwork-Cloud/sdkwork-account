@@ -82,11 +82,15 @@ export interface SdkworkWalletMessages {
     estimatedPriceLabel: string;
     noPackagesDescription: string;
     noPackagesTitle: string;
+    packageGridLabel: string;
     paymentMethodLabel: string;
     rateLabel: string;
+    recommendedBadge: string;
+    selectedLabel: string;
     selectionEyebrow: string;
     signInRequiredDescription: string;
     signInRequiredTitle: string;
+    summaryEyebrow: string;
     title: string;
   };
   status: {
@@ -101,11 +105,31 @@ export interface SdkworkWalletMessages {
     totalSpentLabel: string;
   };
   transactionList: {
+    columnAmount: string;
+    columnDescription: string;
+    columnPoints: string;
+    columnStatus: string;
+    columnTime: string;
     description: string;
     emptyDescription: string;
     emptyTitle: string;
     fallbackType: string;
     title: string;
+  };
+  holdList: {
+    assetTypeLabel: string;
+    description: string;
+    emptyDescription: string;
+    emptyTitle: string;
+    fallbackType: string;
+    title: string;
+    unknownAsset: string;
+  };
+  holdStatus: {
+    expired: string;
+    held: string;
+    released: string;
+    settled: string;
   };
   withdrawDestination: {
     ALIPAY: {
@@ -136,6 +160,7 @@ export interface SdkworkWalletMessages {
     insufficientTitle: string;
     invalidRequestNoDescription: string;
     invalidRequestNoTitle: string;
+    payoutFlowDescription: string;
     payoutRailLabel: string;
     requestNoLabel: string;
     requestNoPlaceholder: string;
@@ -200,7 +225,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     accountLevelLabel: "Account level",
     availablePointsLabel: "Available points",
     cashAvailableLabel: "Cash available",
-    description: "Manage balances, recharge premium credits, and keep wallet operations in one reusable desktop commerce surface.",
+    description: "View balance, recharge, and transaction history.",
     exchangeRateLabel: "Exchange rate",
     eyebrow: "Commerce",
     noRechargePackagePublished: "No recharge package published",
@@ -209,7 +234,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     primaryAction: "Recharge wallet",
     rechargeLaneLabel: "Recharge lane",
     signInToUnlock: "Sign in to unlock wallet billing.",
-    title: "Wallet Center",
+    title: "Wallet",
     accountStatusLabel: "Account status",
   },
   common: {
@@ -254,18 +279,22 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     signInToUnlock: "Sign in to unlock wallet billing.",
   },
   rechargeDialog: {
-    checkoutFlowDescription: "Payment method and coupon selection continue in checkout.",
+    checkoutFlowDescription: "Checkout creates a unified commerce_order via sdkwork-order and continues in sdkwork-payment.",
     customAmountLabel: "Custom amount",
     customAmountPlaceholder: "Enter points",
-    description: "Top up wallet credits through the shared commerce lane and keep the same payment flow used across SDKWORK apps.",
+    description: "Add points to your balance with a package or custom amount.",
     estimatedPriceLabel: "Estimated price",
-    noPackagesDescription: "Publish recharge packages in the commerce backend or enter a custom amount below.",
+    noPackagesDescription: "Recharge packages are published by sdkwork-order. Continue to checkout to create a commerce_order (subject=points_recharge) or enter a custom amount.",
     noPackagesTitle: "No recharge packages available",
+    packageGridLabel: "Choose a package",
     paymentMethodLabel: "Payment method",
     rateLabel: "Rate",
-    selectionEyebrow: "Selection",
+    recommendedBadge: "Popular",
+    selectedLabel: "Selected",
+    selectionEyebrow: "Top up",
     signInRequiredDescription: "Recharge actions require an authenticated wallet session.",
     signInRequiredTitle: "Sign in required",
+    summaryEyebrow: "Order summary",
     title: "Recharge balance",
   },
   status: {
@@ -280,11 +309,31 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     totalSpentLabel: "Total spent",
   },
   transactionList: {
+    columnAmount: "Amount",
+    columnDescription: "Description",
+    columnPoints: "Points",
+    columnStatus: "Status",
+    columnTime: "Time",
     description: "Unified recharge, consumption, withdrawal, and balance events.",
     emptyDescription: "Once balance events start flowing, they will appear here.",
     emptyTitle: "No wallet activity yet",
     fallbackType: "Wallet transaction",
     title: "Wallet activity",
+  },
+  holdList: {
+    assetTypeLabel: "Asset",
+    description: "Active and recent pre-authorization holds on wallet balances.",
+    emptyDescription: "When checkout or order flows create holds, they will appear here.",
+    emptyTitle: "No holds yet",
+    fallbackType: "Wallet hold",
+    title: "Balance holds",
+    unknownAsset: "unknown",
+  },
+  holdStatus: {
+    expired: "Expired",
+    held: "Held",
+    released: "Released",
+    settled: "Settled",
   },
   withdrawDestination: {
     ALIPAY: {
@@ -315,6 +364,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     insufficientTitle: "Insufficient available cash",
     invalidRequestNoDescription: "Request no must use 6-64 letters, numbers, underscores, or hyphens.",
     invalidRequestNoTitle: "Invalid request number",
+    payoutFlowDescription: "Payout settlement continues in sdkwork-payment; account debits after payout completes.",
     payoutRailLabel: "Payout rail",
     requestNoLabel: "Request no",
     requestNoPlaceholder: "Optional idempotency key",
@@ -344,7 +394,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     accountLevelLabel: "\u8d26\u6237\u7b49\u7ea7",
     availablePointsLabel: "\u53ef\u7528\u79ef\u5206",
     cashAvailableLabel: "\u53ef\u63d0\u73b0\u4f59\u989d",
-    description: "\u5728\u4e00\u4e2a\u53ef\u590d\u7528\u7684\u684c\u9762\u5546\u4e1a\u5316\u754c\u9762\u91cc\u7edf\u4e00\u7ba1\u7406\u4f59\u989d\u3001\u5145\u503c\u79ef\u5206\u548c\u94b1\u5305\u64cd\u4f5c\u80fd\u529b\u3002",
+    description: "\u67e5\u770b\u4f59\u989d\u3001\u5145\u503c\u4e0e\u4ea4\u6613\u8bb0\u5f55\u3002",
     exchangeRateLabel: "\u5151\u6362\u6bd4\u4f8b",
     eyebrow: "\u5546\u4e1a\u5316",
     noRechargePackagePublished: "\u5f53\u524d\u672a\u53d1\u5e03\u5145\u503c\u5305",
@@ -353,7 +403,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     primaryAction: "\u5145\u503c\u94b1\u5305",
     rechargeLaneLabel: "\u5145\u503c\u901a\u9053",
     signInToUnlock: "\u767b\u5f55\u540e\u5373\u53ef\u89e3\u9501\u94b1\u5305\u5546\u4e1a\u5316\u80fd\u529b\u3002",
-    title: "\u94b1\u5305\u4e2d\u5fc3",
+    title: "\u94b1\u5305",
     accountStatusLabel: "\u8d26\u6237\u72b6\u6001",
   },
   common: {
@@ -398,18 +448,22 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     signInToUnlock: "\u767b\u5f55\u540e\u5373\u53ef\u89e3\u9501\u94b1\u5305\u5546\u4e1a\u5316\u80fd\u529b\u3002",
   },
   rechargeDialog: {
-    checkoutFlowDescription: "\u652f\u4ed8\u65b9\u5f0f\u4e0e\u4f18\u60e0\u5238\u9009\u62e9\u5c06\u5728\u7ed3\u7b97\u9875\u7ee7\u7eed\u3002",
+    checkoutFlowDescription: "\u7ed3\u7b97\u9875\u7531 sdkwork-order \u521b\u5efa\u7edf\u4e00 commerce_order\uff08subject=points_recharge\uff09\uff0c\u7531 sdkwork-payment \u7ee7\u7eed\u6536\u6b3e\u3002",
     customAmountLabel: "\u81ea\u5b9a\u4e49\u6570\u91cf",
     customAmountPlaceholder: "\u8f93\u5165\u79ef\u5206\u6570\u91cf",
-    description: "\u901a\u8fc7\u7edf\u4e00\u7684\u5546\u4e1a\u5316\u5145\u503c\u901a\u9053\u8865\u5145\u94b1\u5305\u79ef\u5206\uff0c\u5e76\u4fdd\u6301 SDKWORK \u5e94\u7528\u4e00\u81f4\u7684\u652f\u4ed8\u4f53\u9a8c\u3002",
+    description: "\u9009\u62e9\u5957\u9910\u6216\u81ea\u5b9a\u4e49\u91d1\u989d\u4e3a\u8d26\u6237\u5145\u503c\u3002",
     estimatedPriceLabel: "\u9884\u8ba1\u4ef7\u683c",
-    noPackagesDescription: "\u8bf7\u5148\u5728\u5546\u4e1a\u5316\u540e\u7aef\u53d1\u5e03\u5145\u503c\u5305\uff0c\u6216\u76f4\u63a5\u5728\u4e0b\u65b9\u8f93\u5165\u81ea\u5b9a\u4e49\u5145\u503c\u6570\u91cf\u3002",
+    noPackagesDescription: "\u5145\u503c\u5305\u7531 sdkwork-order \u53d1\u5e03\u3002\u524d\u5f80\u7ed3\u7b97\u521b\u5efa\u7edf\u4e00\u8ba2\u5355\uff08subject=points_recharge\uff09\uff0c\u6216\u5728\u4e0b\u65b9\u8f93\u5165\u81ea\u5b9a\u4e49\u6570\u91cf\u3002",
     noPackagesTitle: "\u6682\u65e0\u5145\u503c\u5305",
+    packageGridLabel: "\u9009\u62e9\u5145\u503c\u5957\u9910",
     paymentMethodLabel: "\u652f\u4ed8\u65b9\u5f0f",
     rateLabel: "\u5151\u6362\u6bd4\u4f8b",
-    selectionEyebrow: "\u5f53\u524d\u9009\u62e9",
+    recommendedBadge: "\u63a8\u8350",
+    selectedLabel: "\u5df2\u9009\u62e9",
+    selectionEyebrow: "\u5145\u503c",
     signInRequiredDescription: "\u5145\u503c\u64cd\u4f5c\u9700\u8981\u5df2\u767b\u5f55\u7684\u94b1\u5305\u4f1a\u8bdd\u3002",
     signInRequiredTitle: "\u9700\u8981\u767b\u5f55",
+    summaryEyebrow: "\u8ba2\u5355\u6458\u8981",
     title: "\u5145\u503c\u4f59\u989d",
   },
   status: {
@@ -424,11 +478,31 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     totalSpentLabel: "\u7d2f\u8ba1\u6d88\u8017",
   },
   transactionList: {
+    columnAmount: "\u91d1\u989d",
+    columnDescription: "\u8bf4\u660e",
+    columnPoints: "\u79ef\u5206",
+    columnStatus: "\u72b6\u6001",
+    columnTime: "\u65f6\u95f4",
     description: "\u7edf\u4e00\u5c55\u793a\u5145\u503c\u3001\u6d88\u8017\u3001\u63d0\u73b0\u548c\u4f59\u989d\u4e8b\u4ef6\u3002",
     emptyDescription: "\u5f53\u4f59\u989d\u4e8b\u4ef6\u5f00\u59cb\u6d41\u8f6c\u540e\uff0c\u5b83\u4eec\u4f1a\u51fa\u73b0\u5728\u8fd9\u91cc\u3002",
     emptyTitle: "\u6682\u65e0\u94b1\u5305\u6d3b\u52a8",
     fallbackType: "\u94b1\u5305\u4ea4\u6613",
     title: "\u94b1\u5305\u6d3b\u52a8",
+  },
+  holdList: {
+    assetTypeLabel: "\u8d44\u4ea7",
+    description: "\u94b1\u5305\u4f59\u989d\u7684\u9884\u6263\u4e0e\u6700\u8fd1\u72b6\u6001\u3002",
+    emptyDescription: "\u5f53\u652f\u4ed8\u6216\u8ba2\u5355\u6d41\u7a0b\u521b\u5efa\u9884\u6263\u540e\uff0c\u8bb0\u5f55\u4f1a\u51fa\u73b0\u5728\u8fd9\u91cc\u3002",
+    emptyTitle: "\u6682\u65e0\u9884\u6263\u8bb0\u5f55",
+    fallbackType: "\u94b1\u5305\u9884\u6263",
+    title: "\u4f59\u989d\u9884\u6263",
+    unknownAsset: "\u672a\u77e5",
+  },
+  holdStatus: {
+    expired: "\u5df2\u8fc7\u671f",
+    held: "\u9884\u6263\u4e2d",
+    released: "\u5df2\u91ca\u653e",
+    settled: "\u5df2\u7ed3\u7b97",
   },
   withdrawDestination: {
     ALIPAY: {
@@ -459,6 +533,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     insufficientTitle: "\u53ef\u63d0\u73b0\u4f59\u989d\u4e0d\u8db3",
     invalidRequestNoDescription: "\u8bf7\u6c42\u53f7\u5fc5\u987b\u4f7f\u7528 6-64 \u4f4d\u5b57\u6bcd\u3001\u6570\u5b57\u3001\u4e0b\u5212\u7ebf\u6216\u8fde\u5b57\u7b26\u3002",
     invalidRequestNoTitle: "\u8bf7\u6c42\u53f7\u683c\u5f0f\u65e0\u6548",
+    payoutFlowDescription: "\u63d0\u73b0\u6253\u6b3e\u5728 sdkwork-payment \u7ee7\u7eed\u5904\u7406\uff1b\u8d26\u6237\u51fa\u8d26\u5728\u6253\u6b3e\u6210\u529f\u540e\u7531 account \u5165\u8d26\u3002",
     payoutRailLabel: "\u63d0\u73b0\u901a\u9053",
     requestNoLabel: "\u8bf7\u6c42\u53f7",
     requestNoPlaceholder: "\u53ef\u9009\u7684\u5e42\u7b49\u8bf7\u6c42\u6807\u8bc6",

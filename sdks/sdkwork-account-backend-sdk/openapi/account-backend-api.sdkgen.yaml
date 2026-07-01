@@ -1,0 +1,15 @@
+schemaVersion: 1
+kind: sdkwork.sdkgen.config
+input: account-backend-api.openapi.json
+output: ../sdkwork-account-backend-sdk-typescript/generated/server-openapi
+sdkOwner: sdkwork-account
+apiAuthority: sdkwork-account.backend
+sdkFamily: sdkwork-account-backend-sdk
+standardProfile: sdkwork-v3
+languageTargets:
+  - typescript
+ownerOnly: true
+domain: commerce
+capability: account
+prefix: /backend/v3/api
+surface: backend-api

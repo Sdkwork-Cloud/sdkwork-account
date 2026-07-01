@@ -14,9 +14,9 @@ export function createAccountAppServiceMock(
   overrides: DeepPartial<SdkworkAccountAppService> = {},
 ): SdkworkAccountAppService {
   const base: SdkworkAccountAppService = {
+    billing: createMissingBillingTree(),
     wallet: createMissingWalletTree(),
     accounts: createMissingAccountsTree(),
-    recharges: createMissingRechargesTree(),
   };
   return mergeAccountAppService(base, overrides);
 }
@@ -34,10 +34,14 @@ export function resetAccountServiceMockSession(): void {
 function createMissingWalletTree(): SdkworkAccountAppService["wallet"] {
   const tree: Record<string, unknown> = {};
   for (const method of [
+    "overview.retrieve",
     "ledgerEntries.points.list",
+    "accounts.cash.retrieve",
     "accounts.points.retrieve",
-    "exchangeRate.retrieve",
-    "withdrawalTransfers.create",
+    "accounts.tokens.retrieve",
+    "points.lots.list",
+    "holds.list",
+    "holds.retrieve",
   ]) {
     addMissingMethod(tree, method);
   }
@@ -50,12 +54,10 @@ function createMissingAccountsTree(): SdkworkAccountAppService["accounts"] {
   return tree as SdkworkAccountAppService["accounts"];
 }
 
-function createMissingRechargesTree(): SdkworkAccountAppService["recharges"] {
+function createMissingBillingTree(): SdkworkAccountAppService["billing"] {
   const tree: Record<string, unknown> = {};
-  for (const method of ["packages.list", "orders.create"]) {
-    addMissingMethod(tree, method);
-  }
-  return tree as SdkworkAccountAppService["recharges"];
+  addMissingMethod(tree, "history.list");
+  return tree as SdkworkAccountAppService["billing"];
 }
 
 function addMissingMethod(root: Record<string, unknown>, method: string): void {

@@ -1,40 +1,21 @@
-# sdkwork-commerce (deleted)-account-service
+# sdkwork-account-service
 
-Domain: iam
-Capability: commerce
-Package type: rust-crate
-Status: stable
+Domain: `commerce`  
+Capability: `account`  
+Package type: `rust-crate`  
+Status: `stable`
 
-This README is the SDKWork module entrypoint for `sdkwork-commerce (deleted)-account-service`. The machine-readable component contract is `specs/component.spec.json`; canonical standards are under `../../../sdkwork-specs/`.
+Domain rules for wallet accounts, ledger append, points lots (FIFO), billing history queries, and account summary projections. Persistence is implemented in `sdkwork-account-repository-sqlx`; HTTP surfaces live in `sdkwork-routes-account-*-api`.
+
+Machine-readable contract: `specs/component.spec.json`. Canonical standards: `../../../sdkwork-specs/`.
 
 ## Public API
 
-- `.`
-
-## Required SDK Surface
-
-- None declared in `specs/component.spec.json`.
-
-## Configuration
-
-Configuration keys, runtime entrypoints, and integration contracts are declared in `specs/component.spec.json`. Shared modules must receive configuration through typed bootstrap or service boundaries rather than reading host-local environment state directly.
-
-## SaaS/Private/Local Behavior
-
-This component follows the deployment and runtime rules referenced by its `canonicalSpecs` entries. SaaS, private, and local behavior must stay compatible with the relevant SDKWork specs before implementation changes are made.
-
-## Security
-
-Do not add secrets, live tokens, manual auth headers, or app-local credential handling to this module. Protected API and SDK access must use the generated SDK or approved service boundary declared in the component contract.
-
-## Extension Points
-
-Extension points are limited to public exports, runtime entrypoints, SDK clients, events, and config keys declared in `specs/component.spec.json`.
+- Domain types and query objects under `sdkwork_account_service::*`
+- Consumed by repository and route crates; not an HTTP entrypoint
 
 ## Verification
 
-- `cargo test --manifest-path crates/sdkwork-commerce (deleted)-account-service/Cargo.toml`
-
-## Owner And Status
-
-Owner and lifecycle status are tracked in `specs/component.spec.json`. Update that contract before changing public integration behavior.
+```bash
+cargo test --manifest-path crates/sdkwork-account-service/Cargo.toml
+```

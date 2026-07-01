@@ -15,113 +15,84 @@ describe("sdkwork-account-pc-wallet service", () => {
     resetAccountServiceMockSession();
   });
 
-  it("maps account, points history, and recharge packages into a wallet-owned overview", async () => {
+  it("maps dedicated cash, points, and points ledger endpoints into a wallet overview", async () => {
     const accountAppService = createAccountAppServiceMock({
-      accounts: {
-        current: {
-          summary: {
+      wallet: {
+        accounts: {
+          cash: {
             retrieve: vi.fn().mockResolvedValue({
-              code: "2000",
+              code: 0,
               data: {
-                cashAvailable: 88.5,
-                cashFrozen: 10,
-                hasPayPassword: true,
-                pointsAvailable: 1200,
-                pointsFrozen: 30,
-                tokenAvailable: 42,
-                tokenFrozen: 0,
+                item: {
+                  availableAmount: "88.50",
+                  frozenAmount: "10.00",
+                  pendingAmount: "0",
+                },
+              },
+            }),
+          },
+          points: {
+            retrieve: vi.fn().mockResolvedValue({
+              code: 0,
+              data: {
+                item: {
+                  availablePoints: "1200",
+                  frozenPoints: "30",
+                  pendingPoints: "0",
+                  totalPoints: "1230",
+                  status: "active",
+                },
+              },
+            }),
+          },
+          tokens: {
+            retrieve: vi.fn().mockResolvedValue({
+              code: 0,
+              data: {
+                item: {
+                  availableAmount: "42",
+                  frozenAmount: "0",
+                },
               },
             }),
           },
         },
-      },
-      wallet: {
         ledgerEntries: {
           points: {
             list: vi.fn().mockResolvedValue({
-              code: "2000",
+              code: 0,
               data: {
-                content: [
+                items: [
                   {
-                    amount: 6,
+                    amount: "240",
+                    assetType: "points",
+                    balanceAfter: "1200",
+                    balanceBefore: "1440",
+                    businessType: "POINTS_USAGE",
                     createdAt: "2026-04-01T12:00:00.000Z",
-                    historyId: "history-2",
-                    points: -240,
-                    pointsAfter: 1200,
-                    pointsBefore: 1440,
-                    remarks: "Image generation",
-                    status: "SUCCESS",
-                    statusName: "Success",
-                    transactionType: "POINTS_USAGE",
-                    transactionTypeName: "Points usage",
-                  },
-                  {
-                    amount: 12,
-                    createdAt: "2026-03-25T09:30:00.000Z",
-                    historyId: "history-1",
-                    points: 1200,
-                    pointsAfter: 1440,
-                    pointsBefore: 240,
-                    remarks: "Top up points",
-                    status: "SUCCESS",
-                    statusName: "Success",
-                    transactionType: "POINTS_RECHARGE",
-                    transactionTypeName: "Points recharge",
+                    direction: "debit",
+                    uuid: "history-2",
                   },
                 ],
               },
             }),
           },
         },
-        accounts: {
-          points: {
-            retrieve: vi.fn().mockResolvedValue({
-              code: "2000",
-              data: {
-                availablePoints: 1200,
-                experience: 18,
-                frozenPoints: 30,
-                level: 2,
-                levelName: "Silver",
-                status: "ACTIVE",
-                statusName: "Active",
-                tokenBalance: 42,
-                totalEarned: 9600,
-                totalPoints: 1230,
-                totalSpent: 8370,
-              },
-            }),
-          },
-        },
-        exchangeRate: {
-          retrieve: vi.fn().mockResolvedValue({
-            code: "2000",
-            data: 200,
-          }),
-        },
-      },
-      recharges: {
-        packages: {
+        holds: {
           list: vi.fn().mockResolvedValue({
-            code: "2000",
-            data: [
-              {
-                description: "Starter recharge",
-                id: 101,
-                name: "Starter 1.2K",
-                pointAmount: 1200,
-                price: 6,
-                sortWeight: 10,
-              },
-              {
-                description: "Growth recharge",
-                id: 202,
-                name: "Growth 5K",
-                pointAmount: 5000,
-                price: 24,
-                sortWeight: 20,
-              },
-            ],
+            code: 0,
+            data: {
+              items: [
+                {
+                  amount: "15.00",
+                  assetType: "cash",
+                  businessNo: "ORDER-1001",
+                  createdAt: "2026-04-01T10:00:00.000Z",
+                  uuid: "hold-1",
+                  status: "held",
+                },
+              ],
+            },
           }),
         },
       },
@@ -138,22 +109,21 @@ describe("sdkwork-account-pc-wallet service", () => {
     expect(overview.isAuthenticated).toBe(true);
     expect(overview.account.availablePoints).toBe(1200);
     expect(overview.account.cashAvailable).toBe(88.5);
-    expect(overview.account.totalEarned).toBe(9600);
-    expect(overview.pointsToCashRate).toBe(200);
-    expect(overview.transactions).toHaveLength(2);
+    expect(overview.account.tokenBalance).toBe(42);
+    expect(overview.transactions).toHaveLength(1);
     expect(overview.transactions[0]).toMatchObject({
-      cashAmountCny: 6,
       id: "history-2",
       pointsDelta: -240,
-      title: "Points usage",
+      title: "POINTS_USAGE",
     });
-    expect(overview.rechargePackages[0]).toMatchObject({
-      id: 202,
-      points: 5000,
-      priceCny: 24,
-      title: "Growth 5K",
+    expect(overview.holds).toHaveLength(1);
+    expect(overview.holds[0]).toMatchObject({
+      amount: 15,
+      assetType: "cash",
+      businessNo: "ORDER-1001",
+      holdId: "hold-1",
+      status: "held",
     });
-    expect(`recharge${"Packs"}` in overview).toBe(false);
   });
 
   it("returns a guest-safe empty overview when runtime auth is missing", async () => {
@@ -165,154 +135,96 @@ describe("sdkwork-account-pc-wallet service", () => {
     expect(overview.isAuthenticated).toBe(false);
     expect(overview.account.availablePoints).toBe(0);
     expect(overview.transactions).toEqual([]);
-    expect(overview.rechargePackages).toEqual([]);
-    expect(`recharge${"Packs"}` in overview).toBe(false);
+    expect(overview.holds).toEqual([]);
   });
 
-  it("recharges points and withdraws cash through the generated SDK boundaries", async () => {
-    const rechargePoints = vi.fn().mockResolvedValue({
-      code: "2000",
-      data: {
-        cashAmount: 6,
-        paymentMethod: "WECHAT",
-        points: 1200,
-        processedAt: "2026-04-02T12:00:00.000Z",
-        remainingPoints: 2400,
-        requestNo: "REQ-200",
-        status: "SUCCESS",
-        transactionId: "TXN-200",
-      },
-    });
-    const withdraw = vi.fn().mockResolvedValue({
-      code: "2000",
-      data: {
-        amount: 12.5,
-        channel: "bank_account",
-        fromBalanceAfter: 76,
-        frozenBalance: 12.5,
-        processedAt: "2026-04-02T13:00:00.000Z",
-        requestNo: "REQ_WITHDRAW_300",
-        status: "PENDING",
-        transactionId: "TXN-300",
-      },
-    });
-    const accountAppService = createAccountAppServiceMock({
-      recharges: {
-        orders: {
-          create: rechargePoints,
-        },
-      },
-      wallet: {
-        withdrawalTransfers: {
-          create: withdraw,
-        },
-      },
-    });
+  it("rejects recharge without order SDK and withdraw until payout flows are implemented", async () => {
     const service = createSdkworkWalletService({
-      accountAppService,
+      accountAppService: createAccountAppServiceMock(),
     });
 
     await expect(
       service.rechargePoints({
         paymentMethod: "WECHAT",
         points: 1200,
-        remarks: "Team recharge",
       }),
-    ).resolves.toMatchObject({
-      cashAmountCny: 6,
-      paymentMethod: "WECHAT",
-      points: 1200,
-      requestNo: "REQ-200",
-      status: "completed",
-      transactionId: "TXN-200",
-    });
+    ).rejects.toThrow(/sdkwork-order/i);
 
     await expect(
       service.withdrawCash({
         accountName: "SDKWORK Ops",
         accountNo: "6222020202020202",
         amountCny: 12.5,
-        bankName: "SDKWORK Bank",
         destinationCode: "bank_account",
-        remarks: "Team payout",
-        requestNo: "REQ_WITHDRAW_300",
       }),
-    ).resolves.toMatchObject({
-      amountCny: 12.5,
-      destinationCode: "bank_account",
-      remainingCashAvailable: 76,
-      requestNo: "REQ_WITHDRAW_300",
-      status: "pending",
-      transactionId: "TXN-300",
-    });
-
-    expect(rechargePoints).toHaveBeenCalledWith({
-      paymentMethod: "WECHAT",
-      points: 1200,
-      remarks: "Team recharge",
-      requestNo: undefined,
-    });
-    expect(withdraw).toHaveBeenCalledWith({
-      accountName: "SDKWORK Ops",
-      accountNo: "6222020202020202",
-      amount: 12.5,
-      bankName: "SDKWORK Bank",
-      remarks: "Team payout",
-      requestNo: "REQ_WITHDRAW_300",
-      withdrawMethod: "bank_account",
-    });
+    ).rejects.toThrow(/sdkwork-payment/i);
   });
 
-  it("rejects withdraw requests missing required settlement fields before calling the wallet sdk", async () => {
-    const withdraw = vi.fn();
-    const service = createSdkworkWalletService({
-      accountAppService: createAccountAppServiceMock({
-        wallet: {
-          withdrawalTransfers: {
-            create: withdraw,
-          },
+  it("maps recharge packages from order SDK into wallet overview", async () => {
+    const accountAppService = createAccountAppServiceMock({
+      wallet: {
+        accounts: {
+          cash: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
+          points: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
+          tokens: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
         },
-      }),
+        ledgerEntries: {
+          points: { list: vi.fn().mockResolvedValue({ code: 0, data: { items: [] } }) },
+        },
+        holds: { list: vi.fn().mockResolvedValue({ code: 0, data: { items: [] } }) },
+      },
+    });
+    const orderAppService = {
+      recharges: {
+        packages: {
+          list: vi.fn().mockResolvedValue({
+            code: 0,
+            data: {
+              items: [
+                {
+                  id: "pkg-1",
+                  points: "1000",
+                  priceAmount: "10.00",
+                  currencyCode: "CNY",
+                  title: "Starter pack",
+                },
+              ],
+            },
+          }),
+        },
+        settings: {
+          retrieve: vi.fn().mockResolvedValue({
+            code: 0,
+            data: {
+              item: {
+                basePointsPerCny: "100",
+              },
+            },
+          }),
+        },
+        orders: {
+          create: vi.fn(),
+          retrieve: vi.fn(),
+          list: vi.fn(),
+          cancel: vi.fn(),
+        },
+      },
+      orders: {} as never,
+    };
+
+    const service = createSdkworkWalletService({
+      accountAppService,
+      orderAppService,
     });
 
-    await expect(
-      service.withdrawCash({
-        accountName: " ",
-        accountNo: "6222020202020202",
-        amountCny: 12.5,
-        destinationCode: "ALIPAY",
-      }),
-    ).rejects.toThrow(/account holder name/i);
-
-    await expect(
-      service.withdrawCash({
-        accountName: "SDKWORK Ops",
-        accountNo: " ",
-        amountCny: 12.5,
-        destinationCode: "ALIPAY",
-      }),
-    ).rejects.toThrow(/account number/i);
-
-    await expect(
-      service.withdrawCash({
-        accountName: "SDKWORK Ops",
-        accountNo: "6222020202020202",
-        amountCny: 12.5,
-        bankName: " ",
-        destinationCode: "bank_account",
-      }),
-    ).rejects.toThrow(/bank name/i);
-
-    await expect(
-      service.withdrawCash({
-        accountName: "SDKWORK Ops",
-        accountNo: "6222020202020202",
-        amountCny: 12.5,
-        destinationCode: "ALIPAY",
-        requestNo: "bad request no",
-      }),
-    ).rejects.toThrow(/request no must use/i);
-
-    expect(withdraw).not.toHaveBeenCalled();
+    const overview = await service.getOverview();
+    expect(overview.rechargePackages).toHaveLength(1);
+    expect(overview.rechargePackages[0]).toMatchObject({
+      id: 1,
+      points: 1000,
+      priceCny: 10,
+      title: "Starter pack",
+    });
+    expect(overview.pointsToCashRate).toBe(100);
   });
 });

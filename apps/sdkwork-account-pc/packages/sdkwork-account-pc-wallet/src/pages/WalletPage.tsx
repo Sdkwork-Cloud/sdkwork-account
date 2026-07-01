@@ -9,7 +9,6 @@ import {
   useSdkworkWalletController,
   useSdkworkWalletControllerState,
 } from "../wallet-controller";
-import { createSdkworkWalletBackdropStyle } from "../wallet-appearance";
 import {
   SdkworkWalletIntlProvider,
   useSdkworkWalletIntl,
@@ -18,12 +17,18 @@ import { SdkworkWalletBalancePanel } from "../components/wallet-balance-panel";
 import { SdkworkWalletRechargeDialog } from "../components/wallet-recharge-dialog";
 import { SdkworkWalletSummaryCards } from "../components/wallet-summary-cards";
 import { SdkworkWalletTransactionList } from "../components/wallet-transaction-list";
+import { SdkworkWalletHoldsList } from "../components/wallet-holds-list";
 import { SdkworkWalletWithdrawDialog } from "../components/wallet-withdraw-dialog";
 import {
   navigateWalletRechargeCheckout,
   resolveWalletRechargeFlow,
   type SdkworkWalletRechargeFlow,
 } from "../wallet-checkout-navigation";
+import {
+  navigateWalletWithdrawPayout,
+  type SdkworkWalletPayoutFlow,
+  resolveWalletPayoutFlow,
+} from "../wallet-payout-navigation";
 
 export interface SdkworkWalletPageProps {
   checkoutBasePath?: string;
@@ -31,6 +36,8 @@ export interface SdkworkWalletPageProps {
   locale?: string | null;
   messages?: SdkworkWalletMessagesOverrides;
   onNavigate?: (route: string) => void;
+  payoutBasePath?: string;
+  payoutFlow?: SdkworkWalletPayoutFlow;
   rechargeFlow?: SdkworkWalletRechargeFlow;
 }
 
@@ -38,6 +45,8 @@ interface SdkworkWalletPageContentProps {
   checkoutBasePath?: string;
   controller?: SdkworkWalletController;
   onNavigate?: (route: string) => void;
+  payoutBasePath?: string;
+  payoutFlow?: SdkworkWalletPayoutFlow;
   rechargeFlow?: SdkworkWalletRechargeFlow;
 }
 
@@ -45,22 +54,25 @@ function SdkworkWalletPageContent({
   checkoutBasePath,
   controller: controllerProp,
   onNavigate,
+  payoutBasePath,
+  payoutFlow,
   rechargeFlow,
 }: SdkworkWalletPageContentProps) {
   const controller = useSdkworkWalletController(controllerProp);
   const state = useSdkworkWalletControllerState(controller);
   const { copy } = useSdkworkWalletIntl();
   const resolvedRechargeFlow = resolveWalletRechargeFlow(rechargeFlow, onNavigate);
+  const resolvedPayoutFlow = resolveWalletPayoutFlow(payoutFlow, onNavigate);
   const featuredRechargePackage =
     state.overview.rechargePackages.find((rechargePackage) => rechargePackage.recommended)
     ?? state.overview.rechargePackages[0]
     ?? null;
 
   useEffect(() => {
-    if (!state.isBootstrapped && !state.isLoading) {
-      void controller.bootstrap();
+    if (!state.isBootstrapped && !state.isLoading && !state.lastError) {
+      void controller.bootstrap().catch(() => undefined);
     }
-  }, [controller, state.isBootstrapped, state.isLoading]);
+  }, [controller, state.isBootstrapped, state.isLoading, state.lastError]);
 
   function openWalletRecharge() {
     if (
@@ -79,18 +91,28 @@ function SdkworkWalletPageContent({
     controller.openRecharge();
   }
 
-  return (
-    <div className="relative h-full overflow-y-auto">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-72"
-        style={createSdkworkWalletBackdropStyle()}
-      />
+  function openWalletWithdraw() {
+    if (
+      resolvedPayoutFlow === "checkout"
+      && onNavigate
+      && navigateWalletWithdrawPayout({
+        onNavigate,
+        payoutBasePath,
+      })
+    ) {
+      return;
+    }
 
-      <div className="relative px-4 py-4 sm:px-5 sm:py-5">
-        <div className="mx-auto max-w-[88rem] space-y-5">
+    controller.openWithdraw();
+  }
+
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="px-4 py-4 sm:px-5 sm:py-5">
+        <div className="mx-auto max-w-5xl space-y-4">
           <SdkworkWalletBalancePanel
             onOpenRecharge={openWalletRecharge}
-            onOpenWithdraw={() => controller.openWithdraw()}
+            onOpenWithdraw={openWalletWithdraw}
             overview={state.overview}
           />
 
@@ -103,6 +125,8 @@ function SdkworkWalletPageContent({
               {state.lastError}
             </StatusNotice>
           ) : null}
+
+          <SdkworkWalletHoldsList holds={state.overview.holds} />
 
           <SdkworkWalletTransactionList transactions={state.overview.transactions} />
         </div>
@@ -121,12 +145,15 @@ function SdkworkWalletPageContent({
         />
         <SdkworkWalletWithdrawDialog
           controller={controller}
+          onNavigate={onNavigate}
           onOpenChange={(open) => {
             if (!open) {
               controller.closeWithdraw();
             }
           }}
           open={state.isWithdrawOpen}
+          payoutBasePath={payoutBasePath}
+          payoutFlow={resolvedPayoutFlow}
         />
       </div>
     </div>

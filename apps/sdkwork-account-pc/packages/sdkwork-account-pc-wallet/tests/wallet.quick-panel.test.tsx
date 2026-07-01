@@ -57,6 +57,7 @@ describe("sdkwork-account-pc-wallet quick panel", () => {
                 transactionTypeName: "Points usage",
               },
             ],
+            holds: [],
           }}
         />
       </SdkworkThemeProvider>,
@@ -64,7 +65,6 @@ describe("sdkwork-account-pc-wallet quick panel", () => {
 
     expect(screen.getByText(/available points/i)).toBeInTheDocument();
     expect(screen.getByText(/cash available/i)).toBeInTheDocument();
-    expect(screen.getByText(/current account/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /recharge/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /withdraw/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /manage membership/i })).not.toBeInTheDocument();

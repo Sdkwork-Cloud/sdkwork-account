@@ -1,7 +1,14 @@
 {
   "tables": [
-    "commerce_idempotency_key",
     "commerce_account",
-    "commerce_account_ledger_entry"
+    "commerce_account_ledger",
+    "commerce_account_journal",
+    "commerce_account_journal_line",
+    "commerce_account_hold",
+    "commerce_account_transfer",
+    "commerce_points_lot",
+    "commerce_idempotency_record",
+    "commerce_outbox_event",
+    "commerce_billing_history"
   ]
 }

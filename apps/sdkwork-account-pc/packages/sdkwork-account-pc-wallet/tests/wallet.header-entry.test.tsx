@@ -33,6 +33,7 @@ describe("sdkwork-account-pc-wallet header entry", () => {
           pointsToCashRate: null,
           rechargePackages: [],
           transactions: [],
+          holds: [],
         }),
         getOverview: vi.fn().mockResolvedValue({
           account: {
@@ -74,6 +75,7 @@ describe("sdkwork-account-pc-wallet header entry", () => {
               transactionTypeName: "Points usage",
             },
           ],
+          holds: [],
         }),
         rechargePoints: vi.fn().mockResolvedValue({
           cashAmountCny: 24,

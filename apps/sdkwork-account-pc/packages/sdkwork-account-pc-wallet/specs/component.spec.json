@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "@sdkwork/account-pc-wallet",
+    "displayName": "SDKWork Account PC Wallet",
+    "version": "0.1.0",
+    "type": "react-package",
+    "root": "apps/sdkwork-account-pc/packages/sdkwork-account-pc-wallet",
+    "domain": "commerce",
+    "capability": "wallet",
+    "surface": "app",
+    "languages": ["typescript", "react"],
+    "generated": false,
+    "manifests": ["package.json"]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "COMMERCE_BOUNDARY_SPEC.md",
+      "path": "../../../../../specs/COMMERCE_BOUNDARY_SPEC.md",
+      "purpose": "Account capability boundaries and forbidden commerce scope."
+    },
+    {
+      "file": "APP_PC_REACT_UI_SPEC.md",
+      "path": "../../../../../../sdkwork-specs/APP_PC_REACT_UI_SPEC.md",
+      "purpose": "PC React package and SDK injection rules."
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "path": "../../../../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Multi-SDK bootstrap and TokenManager sharing."
+    },
+    {
+      "file": "MODULE_SPEC.md",
+      "path": "../../../../../../sdkwork-specs/MODULE_SPEC.md",
+      "purpose": "Package dependency direction."
+    }
+  ],
+  "contracts": {
+    "publicExports": ["."],
+    "runtimeEntrypoints": ["package.json#scripts.typecheck"],
+    "sdkClients": [],
+    "sdkDependencies": [
+      {
+        "family": "sdkwork-account-app-sdk",
+        "package": "@sdkwork/account-app-sdk",
+        "surface": "app",
+        "required": true
+      },
+      {
+        "family": "sdkwork-order-app-sdk",
+        "package": "@sdkwork/order-app-sdk",
+        "surface": "app",
+        "required": true,
+        "methods": [
+          "recharges.packages.list",
+          "recharges.settings.retrieve",
+          "recharges.orders.create",
+          "recharges.orders.retrieve",
+          "orders.pay"
+        ]
+      }
+    ],
+    "dependencyApiExports": [],
+    "routeManifest": null
+  },
+  "integration": {
+    "authority": "Account repo specs/COMMERCE_BOUNDARY_SPEC.md defines ledger vs commerce UI split.",
+    "dependencyPolicy": "Wallet reads account SDK; recharge calls order SDK via wallet-recharge-service.",
+    "sdkPolicy": "No raw HTTP; no recharges on account-service facade."
+  },
+  "verification": {
+    "commands": [
+      "pnpm --filter @sdkwork/account-pc-wallet typecheck"
+    ]
+  }
+}

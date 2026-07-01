@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Wallet balances, recharge actions, and payment method surfaces.",
+  "description": "Wallet balances, holds, ledger history, and payment checkout navigation.",
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "@sdkwork/appbase-pc-react": "workspace:*",
-    "@sdkwork/account-service": "workspace:*"
+    "@sdkwork/account-service": "workspace:*",
+    "@sdkwork/order-service": "workspace:*"
   },
   "devDependencies": {
     "@sdkwork/ui-pc-react": "workspace:*",

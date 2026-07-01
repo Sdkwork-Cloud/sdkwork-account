@@ -1,8 +1,5 @@
-﻿import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+﻿import { useEffect, useMemo, useState } from "react";
+import { Check } from "lucide-react";
 import {
   Button,
   Dialog,
@@ -14,7 +11,6 @@ import {
   Input,
   StatusNotice,
 } from "@sdkwork/ui-pc-react";
-import { createSdkworkWalletPanelStyle } from "../wallet-appearance";
 import type { SdkworkWalletController } from "../wallet-controller";
 import { useSdkworkWalletControllerState } from "../wallet-controller";
 import { useSdkworkWalletIntl } from "../wallet-intl";
@@ -86,37 +82,13 @@ export function SdkworkWalletRechargeDialog({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="w-[min(92vw,52rem)]">
-        <DialogHeader>
+      <DialogContent className="w-[min(92vw,40rem)] gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b border-[var(--sdk-color-border-subtle)] px-6 py-5">
           <DialogTitle>{copy.rechargeDialog.title}</DialogTitle>
-          <DialogDescription>
-            {copy.rechargeDialog.description}
-          </DialogDescription>
+          <DialogDescription>{copy.rechargeDialog.description}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5">
-          <div
-            className="rounded-[1.25rem] border p-4"
-            style={createSdkworkWalletPanelStyle("brand", {
-              backgroundWeight: 8,
-              borderWeight: 24,
-              surfaceWeight: 92,
-            })}
-          >
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sdk-color-text-muted)]">
-              {copy.rechargeDialog.selectionEyebrow}
-            </div>
-            <div className="mt-3 text-3xl font-semibold text-[var(--sdk-color-text-primary)]">
-              {formatPoints(effectivePoints || 0)}
-            </div>
-            <div className="mt-2 text-sm text-[var(--sdk-color-text-secondary)]">
-              {copy.rechargeDialog.rateLabel}: {formatPointsRate(state.overview.pointsToCashRate)}
-            </div>
-            <div className="mt-1 text-sm text-[var(--sdk-color-text-secondary)]">
-              {copy.rechargeDialog.estimatedPriceLabel}: {formatCurrencyCny(payableAmount)}
-            </div>
-          </div>
-
+        <div className="space-y-5 px-6 py-5">
           {!state.overview.isAuthenticated ? (
             <StatusNotice title={copy.rechargeDialog.signInRequiredTitle} tone="warning">
               {copy.rechargeDialog.signInRequiredDescription}
@@ -128,24 +100,56 @@ export function SdkworkWalletRechargeDialog({
               {copy.rechargeDialog.noPackagesDescription}
             </StatusNotice>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-3">
-              {rechargePackages.map((rechargePackage) => (
-                <Button
-                  className="h-auto min-h-20 flex-col items-start gap-1 px-4 py-3 text-left"
-                  key={rechargePackage.id}
-                  onClick={() => {
-                    setSelectedPoints(rechargePackage.points);
-                    setCustomPoints("");
-                  }}
-                  type="button"
-                  variant={selectedPoints === rechargePackage.points ? "secondary" : "outline"}
-                >
-                  <span className="text-sm font-semibold">{rechargePackage.title}</span>
-                  <span className="text-xs font-normal text-[var(--sdk-color-text-secondary)]">
-                    {formatRechargePackageSummary(rechargePackage)}
-                  </span>
-                </Button>
-              ))}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[var(--sdk-color-text-primary)]">
+                {copy.rechargeDialog.packageGridLabel}
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {rechargePackages.map((rechargePackage) => {
+                  const isSelected = selectedPoints === rechargePackage.points && !customPoints;
+
+                  return (
+                    <button
+                      className={`rounded-[var(--sdk-radius-field)] border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sdk-color-border-focus)] ${
+                        isSelected
+                          ? "border-[var(--sdk-color-brand-primary)] bg-[var(--sdk-color-brand-primary-soft)]"
+                          : "border-[var(--sdk-color-border-default)] bg-[var(--sdk-color-surface-panel)] hover:bg-[var(--sdk-color-surface-panel-muted)]"
+                      }`}
+                      key={rechargePackage.id}
+                      onClick={() => {
+                        setSelectedPoints(rechargePackage.points);
+                        setCustomPoints("");
+                      }}
+                      type="button"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-medium text-[var(--sdk-color-text-primary)]">
+                            {rechargePackage.title}
+                          </div>
+                          <div className="mt-1 text-lg font-semibold tabular-nums text-[var(--sdk-color-text-primary)]">
+                            {formatPoints(rechargePackage.points)}
+                          </div>
+                          <div className="mt-1 text-xs text-[var(--sdk-color-text-secondary)]">
+                            {formatRechargePackageSummary(rechargePackage)}
+                          </div>
+                        </div>
+                        {rechargePackage.recommended ? (
+                          <span className="rounded-full bg-[var(--sdk-color-brand-primary-soft)] px-2 py-0.5 text-[0.65rem] font-medium text-[var(--sdk-color-brand-primary)]">
+                            {copy.rechargeDialog.recommendedBadge}
+                          </span>
+                        ) : null}
+                      </div>
+                      {isSelected ? (
+                        <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[var(--sdk-color-brand-primary)]">
+                          <Check className="h-3 w-3" aria-hidden="true" />
+                          {copy.rechargeDialog.selectedLabel}
+                        </div>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -154,6 +158,7 @@ export function SdkworkWalletRechargeDialog({
               {copy.rechargeDialog.customAmountLabel}
             </label>
             <Input
+              className="h-10"
               id="sdkwork-wallet-custom-value"
               inputMode="numeric"
               onChange={(event) => {
@@ -166,34 +171,60 @@ export function SdkworkWalletRechargeDialog({
             />
           </div>
 
-          <div className="space-y-3">
-            {!usesCheckoutFlow ? (
-              <>
-                <div className="text-sm font-medium text-[var(--sdk-color-text-primary)]">
-                  {copy.rechargeDialog.paymentMethodLabel}
-                </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {PAYMENT_METHODS.map((method) => (
-                    <Button
+          {!usesCheckoutFlow ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[var(--sdk-color-text-primary)]">
+                {copy.rechargeDialog.paymentMethodLabel}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {PAYMENT_METHODS.map((method) => {
+                  const isSelected = paymentMethod === method;
+
+                  return (
+                    <button
+                      className={`rounded-[var(--sdk-radius-pill)] border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sdk-color-border-focus)] ${
+                        isSelected
+                          ? "border-[var(--sdk-color-brand-primary)] bg-[var(--sdk-color-brand-primary-soft)] text-[var(--sdk-color-brand-primary)]"
+                          : "border-[var(--sdk-color-border-default)] text-[var(--sdk-color-text-secondary)] hover:bg-[var(--sdk-color-surface-panel-muted)]"
+                      }`}
                       key={method}
                       onClick={() => setPaymentMethod(method)}
                       type="button"
-                      variant={paymentMethod === method ? "secondary" : "outline"}
                     >
                       {formatPaymentMethod(method)}
-                    </Button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="rounded-[1.25rem] border border-dashed border-[var(--sdk-color-border-default)] px-4 py-4 text-sm text-[var(--sdk-color-text-secondary)]">
-                {copy.rechargeDialog.checkoutFlowDescription}
+                    </button>
+                  );
+                })}
               </div>
-            )}
+            </div>
+          ) : (
+            <p className="rounded-[var(--sdk-radius-field)] border border-dashed border-[var(--sdk-color-border-default)] px-4 py-3 text-sm text-[var(--sdk-color-text-secondary)]">
+              {copy.rechargeDialog.checkoutFlowDescription}
+            </p>
+          )}
+
+          <div className="rounded-[var(--sdk-radius-field)] border border-[var(--sdk-color-border-subtle)] bg-[var(--sdk-color-surface-panel-muted)] px-4 py-3">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-[var(--sdk-color-text-secondary)]">{copy.rechargeDialog.rateLabel}</span>
+              <span className="font-medium text-[var(--sdk-color-text-primary)]">
+                {formatPointsRate(state.overview.pointsToCashRate)}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-sm text-[var(--sdk-color-text-secondary)]">
+                {copy.rechargeDialog.estimatedPriceLabel}
+              </span>
+              <span className="text-lg font-semibold tabular-nums text-[var(--sdk-color-text-primary)]">
+                {formatCurrencyCny(payableAmount)}
+              </span>
+            </div>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-[var(--sdk-color-text-primary)]">
+              {formatPoints(effectivePoints || 0)}
+            </p>
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="border-t border-[var(--sdk-color-border-subtle)] px-6 py-4 sm:justify-end">
           <Button onClick={() => onOpenChange?.(false)} type="button" variant="ghost">
             {copy.actions.cancel}
           </Button>
