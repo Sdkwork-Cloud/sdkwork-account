@@ -20,14 +20,18 @@ export function SdkworkWalletSummaryCards({
       label: copy.summaryCards.cashAvailableLabel,
       value: formatCurrencyCny(overview.account.cashAvailable),
     },
-    {
-      label: copy.summaryCards.totalEarnedLabel,
-      value: formatPoints(overview.account.totalEarned),
-    },
-    {
-      label: copy.summaryCards.totalSpentLabel,
-      value: formatPoints(overview.account.totalSpent),
-    },
+    ...(overview.account.totalEarned !== null
+      ? [{
+          label: copy.summaryCards.totalEarnedLabel,
+          value: formatPoints(overview.account.totalEarned),
+        }]
+      : []),
+    ...(overview.account.totalSpent !== null
+      ? [{
+          label: copy.summaryCards.totalSpentLabel,
+          value: formatPoints(overview.account.totalSpent),
+        }]
+      : []),
     {
       label: copy.summaryCards.accountLevelLabel,
       value: formatAccountLevelLabel(overview.account),

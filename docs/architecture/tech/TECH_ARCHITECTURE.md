@@ -100,9 +100,9 @@ Greenfield schema (`commerce_*` tables owned by account capability). **Cash、�
 
 | --- | --- | --- | --- |
 
-| Cash | `cash` | 法币 `available` / `frozen` / `pending` | — |
+| Cash | `cash` | 法币 `available` / `frozen` / `pending`（`pending` 当前恒为 `0`，待充值入账工作流由 order/payment 落地后再启用） | — |
 
-| Points | `points` | 整数积分余额 | `commerce_points_lot` FIFO |
+| Points | `points` | 整数积分余额 | `commerce_points_lot` FEFO + `commerce_points_lot_allocation` |
 
 | Token | `token` | 整数 Token 余额 | — |
 
@@ -110,19 +110,31 @@ Greenfield schema (`commerce_*` tables owned by account capability). **Cash、�
 
 - `commerce_account` — 按资产分行的钱包账户 + 乐观锁版本
 
-- `commerce_account_ledger` — 只追加流水，含 `balance_before` / `balance_after`
+- `commerce_account_ledger` — 只追加流水，含 `balance_before` / `balance_after`、`reversed_ledger_id`
 
 - `commerce_account_journal` + `commerce_account_journal_line` — 复式记账基础
 
-- `commerce_points_lot` — 积分批次（入账创建 lot，出账 FIFO 扣减）
+- `commerce_points_lot` — 积分批次（入账创建 lot，出账 FEFO 扣减；credit 支持 `expiresAt`）
 
-- `commerce_account_hold` / `commerce_account_transfer` — 预扣（available→frozen）与账户间转账
+- `commerce_points_lot_allocation` — 积分 debit 与 lot 的不可变分配审计链
+
+- `commerce_account_hold` / `commerce_account_transfer` — 预扣与转账（积分 transfer 同步 lot；hold 校验归属与过期）
 
 - `commerce_idempotency_record` — 写操作幂等
 
-- `commerce_outbox_event` — 领域 outbox（ledger append 写入 `account.ledger_appended`）
+- `commerce_outbox_event` — 领域 outbox（写路径同事务写入，供下游异步消费）
 
-- `commerce_billing_history` — 用户可见账单投影
+  | `event_type` | 触发 |
+  | --- | --- |
+  | `account.ledger_appended` | ledger append |
+  | `account.hold_created` | hold create |
+  | `account.hold_settled` | hold settle |
+  | `account.hold_released` | hold release |
+  | `account.hold_expired` | hold expire sweep |
+  | `account.transfer_completed` | transfer |
+  | `account.points_lots_expired` | points lot expire sweep |
+
+- `commerce_billing_history` — 用户可见账单投影（ledger append 时同步写入）
 
 
 
@@ -172,6 +184,10 @@ Implemented app routes:
 
 - `GET /app/v3/api/wallet/points/lots`
 
+- `GET /app/v3/api/wallet/points/summary` (available/frozen/pending, lot stats, `unsweptExpiredPoints`, month credit/debit)
+
+- `GET /app/v3/api/wallet/ledger_entries/{ledgerEntryId}/allocations` (points lot allocation audit for debits)
+
 - `GET /app/v3/api/wallet/holds` (optional `accountId`, `assetType`, `status`)
 
 - `GET /app/v3/api/wallet/holds/{holdId}`
@@ -192,7 +208,7 @@ Implemented backend routes:
 
 - `POST /backend/v3/api/wallet/adjustments/cash`
 
-- `POST /backend/v3/api/wallet/adjustments/points` (writes ledger + points lot FIFO)
+- `POST /backend/v3/api/wallet/adjustments/points` (writes ledger + points lot FEFO; optional `expiresAt`, `reversedLedgerId`)
 
 - `POST /backend/v3/api/wallet/adjustments/tokens`
 
@@ -202,7 +218,13 @@ Implemented backend routes:
 
 - `POST /backend/v3/api/wallet/holds/{holdId}/release`
 
+- `POST /backend/v3/api/wallet/holds/expire` (idempotent expired-hold sweep; restores frozen → available)
+
 - `POST /backend/v3/api/wallet/transfers`
+
+- `POST /backend/v3/api/wallet/points/lots/expire` (idempotent expired-lot sweep; optional `ownerUserId`, `accountId`)
+
+- `POST /backend/v3/api/wallet/points/reconciliation` (ops read: detect points accounts where lot remaining ≠ available)
 
 
 
@@ -230,9 +252,11 @@ Wallet UI consumes `@sdkwork/account-app-sdk` through `@sdkwork/account-service`
 
 - **Read path:** `bootstrapSdkworkAccountPcSdk()` → `wallet.*` app-api methods.
 
-- **Recharge / withdraw:** recharge packages and `recharges.orders.create` via `@sdkwork/order-service`; payment checkout for collection (`rechargeFlow` / `payoutFlow` = `checkout` + `onNavigate`). Withdraw and payout settlement remain in `sdkwork-payment`.
+- **Recharge / withdraw:** recharge packages and `recharges.orders.create` via `@sdkwork/order-service`; payment checkout for collection (`rechargeFlow` / `payoutFlow` = `checkout` + `onNavigate`). Checkout URLs include `returnUrl` (wallet path + `commerceRefresh=1`). Post-pay return refreshes balances via `SdkworkWalletPage`. Withdraw and payout settlement remain in `sdkwork-payment`.
 
-- **Backend integrators:** `bootstrapSdkworkAccountPcBackendSdk()` for adjustments, holds, transfers.
+- **Account summary IAM:** billing stats from `commerce_billing_history`; profile (`name`, `email`, `isVerified`, `tier`) from `IamAppContext` user fields and `standard_role_codes`.
+
+- **Backend integrators:** `bootstrapSdkworkAccountPcBackendSdk()` exposes `wallet.health`, `wallet.outbox.dispatch`, adjustments, holds (incl. expire), points reconciliation/expire, and transfers via `@sdkwork/account-service`.
 
 
 
@@ -245,6 +269,22 @@ Environment (shell):
 - `VITE_SDKWORK_PAYMENT_CHECKOUT_BASE` — recharge checkout path (default `/checkout`)
 
 - `VITE_SDKWORK_PAYMENT_PAYOUT_BASE` — payout path (default `/payments/payout`)
+
+
+
+## Operational characteristics
+
+
+
+- **Idempotency:** ledger append, holds, transfers, and expire sweeps use scoped `commerce_idempotency_record` rows. In-flight duplicates return HTTP 423 (`LOCKED`); completed keys replay stored snapshots.
+
+- **Pagination:** ledger, billing history, holds, and points lots use SQL `LIMIT` with `COUNT(*) OVER()` for offset mode (`sdkwork-utils-rust::OffsetListPageParams`, default page size 20). Ledger and billing lists also support numeric cursor or RFC3339 keyset without combined `OFFSET`. PC wallet requests one page at a time and exposes load-more for holds and merged ledger history.
+
+- **Expire sweeps:** hold and points lot expiry process rows in batches of 500 per transaction loop to avoid OOM.
+
+- **Health:** `GET /backend/v3/api/wallet/health` probes database connectivity and returns `SdkWorkApiResponse`.
+
+- **Outbox:** write paths emit `commerce_outbox_event` in the same transaction. Backend relay: `POST /backend/v3/api/wallet/outbox/dispatch` claims a batch (default 100, max 200), marks rows `PUBLISHED`, and returns event payloads for platform workers to forward to the message bus. Health reports `outboxPendingLag`.
 
 
 

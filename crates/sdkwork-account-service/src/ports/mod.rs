@@ -1,7 +1,7 @@
 use crate::{
     AccountLedgerQuery, AccountSummary, AccountSummaryQuery, AppendLedgerEntryCommand,
     AppendLedgerEntryOutcome, BillingHistoryItem, BillingHistoryListQuery, LedgerEntryDraft,
-    WalletAccountItem, WalletAccountListQuery, WalletOperation, WalletOperationQuery,
+    StoreListPage, WalletAccountItem, WalletAccountListQuery, WalletOperation, WalletOperationQuery,
     WalletOverview, WalletTransactionDetailQuery, WalletTransactionItem,
     WalletTransactionListQuery,
 };
@@ -36,7 +36,7 @@ pub trait AccountWalletReadPort {
     fn list_wallet_transactions(
         &self,
         query: &WalletTransactionListQuery,
-    ) -> Result<Vec<WalletTransactionItem>, CommerceServiceError>;
+    ) -> Result<StoreListPage<WalletTransactionItem>, CommerceServiceError>;
 
     fn retrieve_wallet_transaction(
         &self,
@@ -61,7 +61,7 @@ pub trait BillingHistoryReadPort {
     fn list_billing_history(
         &self,
         query: &BillingHistoryListQuery,
-    ) -> Result<Vec<BillingHistoryItem>, CommerceServiceError>;
+    ) -> Result<StoreListPage<BillingHistoryItem>, CommerceServiceError>;
 }
 
 pub const ACCOUNT_REPOSITORY_PORT: &str = "account.repository";

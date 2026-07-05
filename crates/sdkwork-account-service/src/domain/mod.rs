@@ -18,6 +18,13 @@ pub struct AccountSummary {
     pub token: AccountBalance<CommercePoints>,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct StoreListPage<T> {
+    pub items: Vec<T>,
+    pub total_items: i64,
+    pub has_more: bool,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct AccountSummarySnapshot {
     pub id: String,
@@ -111,6 +118,82 @@ pub struct PointsAccountSnapshot {
     pub account: WalletAccountItem,
     pub active_lot_count: i64,
     pub expiring_points: i64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PointsSummarySnapshot {
+    pub account: WalletAccountItem,
+    pub available_points: String,
+    pub frozen_points: String,
+    pub pending_points: String,
+    pub total_points: String,
+    pub active_lot_count: i64,
+    pub expiring_points: i64,
+    pub unswept_expired_points: i64,
+    pub month_credit_points: i64,
+    pub month_debit_points: i64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PointsLotAllocationItem {
+    pub id: String,
+    pub uuid: String,
+    pub ledger_id: String,
+    pub lot_id: String,
+    pub amount: i64,
+    pub created_at: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExpirePointsLotsOutcome {
+    pub accepted: bool,
+    pub replayed: bool,
+    pub expired_lot_count: i64,
+    pub expired_points_total: i64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExpireExpiredHoldsOutcome {
+    pub accepted: bool,
+    pub replayed: bool,
+    pub expired_hold_count: i64,
+    pub released_amount_total: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PointsLotMismatchItem {
+    pub account_id: String,
+    pub available_points: String,
+    pub lot_remaining_total: i64,
+    pub delta: i64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PointsReconciliationSnapshot {
+    pub checked_account_count: i64,
+    pub mismatch_count: i64,
+    pub mismatches: Vec<PointsLotMismatchItem>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OutboxDispatchItem {
+    pub id: String,
+    pub uuid: String,
+    pub tenant_id: String,
+    pub aggregate_type: String,
+    pub aggregate_id: String,
+    pub event_type: String,
+    pub event_version: i32,
+    pub event_key: String,
+    pub payload: String,
+    pub created_at: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OutboxDispatchOutcome {
+    pub dispatched_count: i64,
+    pub pending_lag: i64,
+    pub items: Vec<OutboxDispatchItem>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -645,7 +728,7 @@ mod tests {
             "10",
             "0",
             "10",
-            "recharge",
+            "points_recharge",
             "txn-1",
             "",
             "",

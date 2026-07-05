@@ -3,10 +3,11 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use sdkwork_contract_service::CommerceServiceError;
 use sdkwork_utils_rust::{
-    PageInfo, PageMode, SdkWorkApiResponse, SdkWorkPageData, SdkWorkProblemDetail,
-    SdkWorkProblemRouting, SdkWorkResourceData, SdkWorkResultCode,
+    cursor_list_page_data, offset_list_page_data, OffsetListPageParams, SdkWorkApiResponse,
+    SdkWorkProblemDetail, SdkWorkProblemRouting, SdkWorkResourceData, SdkWorkResultCode,
 };
 use sdkwork_web_core::WebRequestContext;
+use sdkwork_account_service::StoreListPage;
 
 pub fn resolve_trace_id(context: Option<&WebRequestContext>) -> String {
     context
@@ -52,22 +53,45 @@ pub fn success_items<T: serde::Serialize>(
     page: i64,
     page_size: i64,
 ) -> Response {
-    let trace_id = resolve_trace_id(context);
-    let envelope = SdkWorkApiResponse::success(
-        SdkWorkPageData {
+    let count = items.len() as i64;
+    let params = OffsetListPageParams::parse(Some(page), Some(page_size.max(count).max(1)));
+    success_offset_list_page(
+        context,
+        StoreListPage {
             items,
-            page_info: PageInfo {
-                mode: PageMode::Offset,
-                page: Some(page as i32),
-                page_size: Some(page_size as i32),
-                total_items: None,
-                total_pages: None,
-                next_cursor: None,
-                has_more: None,
-            },
+            total_items: count,
+            has_more: false,
         },
-        trace_id.clone(),
+        params,
+    )
+}
+
+pub fn success_offset_list_page<T: serde::Serialize>(
+    context: Option<&WebRequestContext>,
+    page: StoreListPage<T>,
+    params: OffsetListPageParams,
+) -> Response {
+    let trace_id = resolve_trace_id(context);
+    let page_data = offset_list_page_data(page.items, page.total_items, params);
+    let envelope = SdkWorkApiResponse::success(page_data, trace_id.clone());
+    attach_trace_header((StatusCode::OK, Json(envelope)).into_response(), &trace_id)
+}
+
+pub fn success_cursor_list_page<T: serde::Serialize>(
+    context: Option<&WebRequestContext>,
+    items: Vec<T>,
+    page_size: i64,
+    next_cursor: Option<String>,
+    has_more: bool,
+) -> Response {
+    let trace_id = resolve_trace_id(context);
+    let page_data = cursor_list_page_data(
+        items,
+        page_size.clamp(1, 200) as usize,
+        next_cursor,
+        has_more,
     );
+    let envelope = SdkWorkApiResponse::success(page_data, trace_id.clone());
     attach_trace_header((StatusCode::OK, Json(envelope)).into_response(), &trace_id)
 }
 
@@ -89,6 +113,11 @@ pub fn map_service_error(
         "conflict" => (
             StatusCode::CONFLICT,
             SdkWorkResultCode::Conflict,
+            error.message().to_string(),
+        ),
+        "locked" => (
+            StatusCode::LOCKED,
+            SdkWorkResultCode::Locked,
             error.message().to_string(),
         ),
         "unauthorized" => (

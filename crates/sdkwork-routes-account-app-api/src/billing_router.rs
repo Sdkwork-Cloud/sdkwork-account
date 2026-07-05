@@ -9,14 +9,15 @@ use axum::Router;
 use sdkwork_account_repository_sqlx::{
     PostgresCommerceBillingHistoryStore, SqliteCommerceBillingHistoryStore,
 };
-use sdkwork_account_service::{BillingHistoryItem, BillingHistoryListQuery};
+use sdkwork_account_service::{BillingHistoryItem, BillingHistoryListQuery, StoreListPage};
 use sdkwork_contract_service::CommerceServiceError;
 use sdkwork_iam_context_service::IamAppContext;
+use sdkwork_utils_rust::OffsetListPageParams;
 use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, SqlitePool};
 
-use crate::api_response::{success_items, unauthorized, validation};
+use crate::api_response::{success_cursor_list_page, success_offset_list_page, unauthorized, validation};
 use crate::subject::app_runtime_subject_from_extension;
 
 pub type CommerceBillingHistoryFuture<'a, T> =
@@ -26,7 +27,7 @@ pub trait CommerceBillingHistoryStore: Send + Sync {
     fn list_billing_history<'a>(
         &'a self,
         query: BillingHistoryListQuery,
-    ) -> CommerceBillingHistoryFuture<'a, Vec<BillingHistoryItem>>;
+    ) -> CommerceBillingHistoryFuture<'a, StoreListPage<BillingHistoryItem>>;
 }
 
 #[derive(Clone)]
@@ -71,7 +72,7 @@ impl CommerceBillingHistoryStore for SqliteCommerceBillingHistoryStore {
     fn list_billing_history<'a>(
         &'a self,
         query: BillingHistoryListQuery,
-    ) -> CommerceBillingHistoryFuture<'a, Vec<BillingHistoryItem>> {
+    ) -> CommerceBillingHistoryFuture<'a, StoreListPage<BillingHistoryItem>> {
         Box::pin(async move { self.list_billing_history(query).await })
     }
 }
@@ -80,7 +81,7 @@ impl CommerceBillingHistoryStore for PostgresCommerceBillingHistoryStore {
     fn list_billing_history<'a>(
         &'a self,
         query: BillingHistoryListQuery,
-    ) -> CommerceBillingHistoryFuture<'a, Vec<BillingHistoryItem>> {
+    ) -> CommerceBillingHistoryFuture<'a, StoreListPage<BillingHistoryItem>> {
         Box::pin(async move { self.list_billing_history(query).await })
     }
 }
@@ -123,18 +124,81 @@ async fn fetch_billing_history(
         Ok(query) => query,
         Err(error) => return validation(Some(&ctx), error.message()),
     };
-    let page = list_query.page.unwrap_or(1);
-    let page_size = list_query.limit();
+    let list_query_for_response = list_query.clone();
+    let paging = OffsetListPageParams::parse(list_query.page, list_query.page_size);
+    let numeric_cursor = list_query
+        .cursor
+        .as_deref()
+        .and_then(|raw| raw.trim().parse::<i64>().ok());
 
     match state.store.list_billing_history(list_query).await {
-        Ok(items) => success_items(
-            Some(&ctx),
-            items.into_iter().map(map_billing_history_item).collect(),
+        Ok(page) => billing_history_list_response(
+            &ctx,
+            &list_query_for_response,
             page,
-            page_size,
+            paging,
+            numeric_cursor,
         ),
         Err(error) => crate::api_response::map_service_error(Some(&ctx), error),
     }
+}
+
+fn billing_history_list_response(
+    ctx: &WebRequestContext,
+    list_query: &BillingHistoryListQuery,
+    page: StoreListPage<BillingHistoryItem>,
+    paging: OffsetListPageParams,
+    numeric_cursor: Option<i64>,
+) -> Response {
+    let mapped: Vec<_> = page
+        .items
+        .into_iter()
+        .map(map_billing_history_item)
+        .collect();
+
+    if numeric_cursor.is_some() {
+        let offset = numeric_cursor.unwrap_or(paging.offset);
+        let next_cursor = page
+            .has_more
+            .then(|| (offset + mapped.len() as i64).to_string());
+        return success_cursor_list_page(
+            Some(ctx),
+            mapped,
+            paging.page_size,
+            next_cursor,
+            page.has_more,
+        );
+    }
+
+    if list_query
+        .cursor
+        .as_deref()
+        .is_some_and(|value| !value.trim().is_empty())
+    {
+        let next_cursor = page.has_more.then(|| {
+            mapped
+                .last()
+                .map(|item| item.occurred_at.clone())
+                .unwrap_or_default()
+        });
+        return success_cursor_list_page(
+            Some(ctx),
+            mapped,
+            paging.page_size,
+            next_cursor,
+            page.has_more,
+        );
+    }
+
+    success_offset_list_page(
+        Some(ctx),
+        StoreListPage {
+            items: mapped,
+            total_items: page.total_items,
+            has_more: page.has_more,
+        },
+        paging,
+    )
 }
 
 fn map_billing_history_item(value: BillingHistoryItem) -> BillingHistoryItemResponse {

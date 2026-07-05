@@ -8,7 +8,7 @@ Owner: SDKWork maintainers
 
 Application: account
 
-Updated: 2026-06-29
+Updated: 2026-07-03
 
 
 
@@ -74,11 +74,17 @@ Recharge and withdrawal are **not** implemented inside account. Every recharge c
 
 - **Separate asset read models**: cash account, points account (with lot stats), token account.
 
-- Points ledger list, points lot list, holds list, and wallet overview aggregates.
+- Points ledger list, points lot list, **points summary**, lot allocation audit (`commerce_points_lot_allocation`), holds list, and wallet overview aggregates.
 
-- Billing history list (app-api).
+- Backend **points lot expire sweep** (`POST .../wallet/points/lots/expire`) for scheduled expiry jobs.
 
-- Asset-scoped wallet adjustments / ledger append (backend-api).
+- Backend **hold expire sweep** (`POST .../wallet/holds/expire`) for scheduled release of expired holds.
+
+- Backend **points reconciliation** (`POST .../wallet/points/reconciliation`) for ops integrity checks before/onboarding.
+
+- Billing history list (app-api); ledger append writes billing projection synchronously.
+
+- Asset-scoped wallet adjustments / ledger append (backend-api) with optional `expiresAt` / `reversedLedgerId` for points.
 
 - Hold lifecycle (create / settle / release) and inter-account transfers (backend-api write; app-api read).
 
@@ -150,9 +156,7 @@ Cash and points are **never merged in one HTTP resource**. Each asset has dedica
 
 
 
-- **Phase 1 (complete):** L3 schema + repository + app/backend routes + generated TypeScript SDKs + PC bootstrap + holds list UI + commerce delegation for recharge/withdraw.
-
-- **Phase 2 (composition apps):** Mall/shell apps wire `@sdkwork/payment-pc-payment` checkout and post-pay account refresh; payment saga calls account backend adjustments.
+- **Phase 1 (complete):** L3 schema + repository + app/backend routes + generated TypeScript SDKs + PC wallet bootstrap (load-more, checkout `returnUrl`, post-pay refresh) + commerce delegation + idempotent writes + SQL pagination + batched expire sweeps + outbox dispatch + health observability + IAM-backed account summary (`display_name`, `email`, `email_verified`, `standard_role_codes` → tier).
 
 
 
@@ -176,8 +180,6 @@ Governance: `sdkwork-specs/REQUIREMENTS_SPEC.md` (REQ traceability for this PRD)
 
 ## 9. Open Questions
 
-
-
-- Whether dedicated admin-only list/search routes belong in backend-api before first production tenant onboarding.
+- Admin list/search routes beyond reconciliation remain optional for first tenant onboarding.
 
 

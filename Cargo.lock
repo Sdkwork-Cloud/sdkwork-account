@@ -1623,7 +1623,6 @@ name = "sdkwork-account-service"
 version = "0.1.0"
 dependencies = [
  "sdkwork-contract-service",
- "sdkwork-order-service",
 ]
 
 [[package]]
@@ -1802,13 +1801,6 @@ name = "sdkwork-id-core"
 version = "0.1.0"
 dependencies = [
  "uuid",
-]
-
-[[package]]
-name = "sdkwork-order-service"
-version = "0.1.0"
-dependencies = [
- "sdkwork-contract-service",
 ]
 
 [[package]]

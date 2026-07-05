@@ -7,6 +7,7 @@ import {
   formatSdkworkAccountPointsDelta,
 } from "@sdkwork/account-service";
 import type { SdkworkWalletAccount } from "./wallet-service";
+import { createWalletCommerceReturnUrl } from "./wallet-commerce-return";
 
 export interface SdkworkWalletWorkspaceManifest extends SdkworkAppCapabilityManifest {
   capability: "wallet";
@@ -103,6 +104,8 @@ export interface CreateWalletCheckoutRouteIntentOptions {
   package?: Pick<SdkworkWalletRechargePackageInput, "id" | "points" | "priceCny">;
   points?: number;
   priceCny?: number;
+  /** Wallet route payment checkout should redirect to after success (adds `returnUrl` query). */
+  walletReturnPath?: string;
 }
 
 export interface SdkworkWalletRechargePackageInput {
@@ -168,6 +171,11 @@ export function createWalletCheckoutRouteIntent(
 
   if (rechargePackage) {
     queryParams.set("packageId", String(rechargePackage.id));
+  }
+
+  const walletReturnPath = options.walletReturnPath?.trim();
+  if (walletReturnPath) {
+    queryParams.set("returnUrl", createWalletCommerceReturnUrl(walletReturnPath));
   }
 
   return {

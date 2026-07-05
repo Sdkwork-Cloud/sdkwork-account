@@ -62,6 +62,13 @@ tables:
     write_owner: sdkwork-account
     description: FIFO points lot batches with optional expiry.
 
+  - name: commerce_points_lot_allocation
+    profile: ledger_entry
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Immutable debit allocation rows linking ledger entries to consumed points lots.
+
   - name: commerce_idempotency_record
     profile: event_log
     compliance_level: L3

@@ -1,7 +1,7 @@
 import { backendApiPath } from './paths';
 import type { HttpClient } from '../http/client';
 
-import type { AccountHoldItem, AccountTransferItem, CreateAccountHoldRequest, CreateAccountTransferRequest, CreateWalletAdjustmentRequest, ReleaseAccountHoldRequest, SettleAccountHoldRequest, WalletAccountItem, WalletLedgerEntryItem } from '../types';
+import type { AccountHoldItem, AccountTransferItem, CreateAccountHoldRequest, CreateAccountTransferRequest, CreateWalletAdjustmentRequest, DispatchOutboxRequest, ExpireExpiredHoldsRequest, ExpirePointsLotsRequest, OutboxDispatchItem, PointsReconciliationRequest, ReleaseAccountHoldRequest, SettleAccountHoldRequest, WalletAccountItem, WalletLedgerEntryItem } from '../types';
 
 
 export class WalletTransfersApi {
@@ -35,6 +35,38 @@ async settle(holdId: string, body: SettleAccountHoldRequest): Promise<Record<str
 
 async release(holdId: string, body: ReleaseAccountHoldRequest): Promise<Record<string, unknown>> {
     return this.client.post<Record<string, unknown>>(backendApiPath(`/wallet/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/release`), body, undefined, undefined, 'application/json');
+  }
+
+async expire(body: ExpireExpiredHoldsRequest): Promise<Record<string, unknown>> {
+    return this.client.post<Record<string, unknown>>(backendApiPath(`/wallet/holds/expire`), body, undefined, undefined, 'application/json');
+  }
+}
+
+export class WalletPointsLotsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+async expire(body: ExpirePointsLotsRequest): Promise<Record<string, unknown>> {
+    return this.client.post<Record<string, unknown>>(backendApiPath(`/wallet/points/lots/expire`), body, undefined, undefined, 'application/json');
+  }
+}
+
+export class WalletPointsApi {
+  private client: HttpClient;
+  public readonly lots: WalletPointsLotsApi;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+    this.lots = new WalletPointsLotsApi(client);
+  }
+
+
+async reconciliation(body: PointsReconciliationRequest): Promise<Record<string, unknown>> {
+    return this.client.post<Record<string, unknown>>(backendApiPath(`/wallet/points/reconciliation`), body, undefined, undefined, 'application/json');
   }
 }
 
@@ -96,6 +128,19 @@ async create(body: CreateWalletAdjustmentRequest): Promise<Record<string, unknow
   }
 }
 
+export class WalletOutboxApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+async dispatch(body?: DispatchOutboxRequest): Promise<Record<string, unknown>> {
+    return this.client.post<Record<string, unknown>>(backendApiPath(`/wallet/outbox/dispatch`), body, undefined, undefined, 'application/json');
+  }
+}
+
 export class WalletHealthApi {
   private client: HttpClient;
 
@@ -112,14 +157,18 @@ async retrieve(): Promise<Record<string, unknown>> {
 export class WalletApi {
   private client: HttpClient;
   public readonly health: WalletHealthApi;
+  public readonly outbox: WalletOutboxApi;
   public readonly adjustments: WalletAdjustmentsApi;
+  public readonly points: WalletPointsApi;
   public readonly holds: WalletHoldsApi;
   public readonly transfers: WalletTransfersApi;
 
   constructor(client: HttpClient) {
     this.client = client;
     this.health = new WalletHealthApi(client);
+    this.outbox = new WalletOutboxApi(client);
     this.adjustments = new WalletAdjustmentsApi(client);
+    this.points = new WalletPointsApi(client);
     this.holds = new WalletHoldsApi(client);
     this.transfers = new WalletTransfersApi(client);
   }

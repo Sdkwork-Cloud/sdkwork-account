@@ -2,10 +2,16 @@ use sdkwork_account_service::AppendLedgerEntryCommand;
 use sdkwork_contract_service::{
     CommerceAccountAssetType, CommerceLedgerDirection, CommerceMoney,
 };
-use sdkwork_order_service::{
-    points_recharge_fulfillment_idempotency_key, points_recharge_fulfillment_transaction_no,
-    POINTS_RECHARGE_LEDGER_BUSINESS_TYPE,
-};
+
+const POINTS_RECHARGE_LEDGER_BUSINESS_TYPE: &str = "points_recharge";
+
+fn points_recharge_fulfillment_idempotency_key(order_id: &str) -> String {
+    format!("points-recharge:fulfill:{order_id}")
+}
+
+fn points_recharge_fulfillment_transaction_no(order_id: &str) -> String {
+    format!("points-recharge:{order_id}")
+}
 
 #[test]
 fn points_recharge_saga_uses_account_backend_adjustment_contract() {

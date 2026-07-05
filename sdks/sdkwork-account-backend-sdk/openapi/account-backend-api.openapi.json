@@ -47,14 +47,28 @@
                             "item": {
                               "type": "object",
                               "required": [
-                                "status"
+                                "status",
+                                "database",
+                                "outboxPendingLag"
                               ],
                               "properties": {
                                 "status": {
                                   "type": "string",
                                   "enum": [
-                                    "ok"
+                                    "ready",
+                                    "degraded"
                                   ]
+                                },
+                                "database": {
+                                  "type": "string",
+                                  "enum": [
+                                    "up",
+                                    "down"
+                                  ]
+                                },
+                                "outboxPendingLag": {
+                                  "type": "integer",
+                                  "format": "int64"
                                 }
                               }
                             }
@@ -79,6 +93,53 @@
           }
         },
         "security": []
+      }
+    },
+    "/backend/v3/api/wallet/outbox/dispatch": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.outbox.dispatch",
+        "description": "Claims a batch of pending commerce_outbox_event rows, marks them PUBLISHED, and returns payloads for downstream relay workers.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispatchOutboxRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchOutboxResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
       }
     },
     "/backend/v3/api/wallet/adjustments": {
@@ -198,6 +259,100 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WalletAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/wallet/points/lots/expire": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.points.lots.expire",
+        "description": "Sweeps expired points lots, debits account balances, and writes ledger plus allocation rows.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpirePointsLotsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpirePointsLotsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/wallet/points/reconciliation": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.points.reconciliation",
+        "description": "Checks points accounts for lot remaining vs available mismatches.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PointsReconciliationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointsReconciliationResponse"
                 }
               }
             }
@@ -427,6 +582,53 @@
         ]
       }
     },
+    "/backend/v3/api/wallet/holds/expire": {
+      "post": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.holds.expire",
+        "description": "Sweeps expired holds and restores frozen balance to available.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpireExpiredHoldsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpireExpiredHoldsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
     "/backend/v3/api/wallet/transfers": {
       "post": {
         "tags": [
@@ -572,7 +774,8 @@
             "type": "string"
           },
           "businessType": {
-            "type": "string"
+            "type": "string",
+            "description": "Lowercase snake_case ledger business type (validated by CommerceLedgerBusinessType)."
           },
           "transactionNo": {
             "type": "string"
@@ -582,8 +785,355 @@
           },
           "idempotencyKey": {
             "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional points lot expiry for credit adjustments."
+          },
+          "reversedLedgerId": {
+            "type": "string",
+            "description": "Optional original ledger entry id when posting a compensating adjustment."
           }
         }
+      },
+      "ExpirePointsLotsRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string",
+            "description": "Optional scope filter; when set only lots owned by this user are swept."
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Optional scope filter; when set only lots for this account are swept."
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "ExpirePointsLotsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "accepted",
+                      "replayed",
+                      "expiredLotCount",
+                      "expiredPointsTotal"
+                    ],
+                    "properties": {
+                      "accepted": {
+                        "type": "boolean"
+                      },
+                      "replayed": {
+                        "type": "boolean"
+                      },
+                      "expiredLotCount": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "expiredPointsTotal": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "DispatchOutboxRequest": {
+        "type": "object",
+        "properties": {
+          "batchSize": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 200
+          }
+        }
+      },
+      "DispatchOutboxResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "accepted",
+                      "dispatchedCount",
+                      "pendingLag",
+                      "items"
+                    ],
+                    "properties": {
+                      "accepted": {
+                        "type": "boolean"
+                      },
+                      "dispatchedCount": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "pendingLag": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/OutboxDispatchItem"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "OutboxDispatchItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "tenantId",
+          "aggregateType",
+          "aggregateId",
+          "eventType",
+          "eventVersion",
+          "eventKey",
+          "payload",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "aggregateType": {
+            "type": "string"
+          },
+          "aggregateId": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "eventVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "eventKey": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ExpireExpiredHoldsRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "ExpireExpiredHoldsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "accepted",
+                      "replayed",
+                      "expiredHoldCount",
+                      "releasedAmountTotal"
+                    ],
+                    "properties": {
+                      "accepted": {
+                        "type": "boolean"
+                      },
+                      "replayed": {
+                        "type": "boolean"
+                      },
+                      "expiredHoldCount": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "releasedAmountTotal": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PointsReconciliationRequest": {
+        "type": "object",
+        "required": [
+          "tenantId"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          }
+        }
+      },
+      "PointsReconciliationResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "checkedAccountCount",
+                      "mismatchCount",
+                      "mismatches"
+                    ],
+                    "properties": {
+                      "checkedAccountCount": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "mismatchCount": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "mismatches": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "accountId",
+                            "availablePoints",
+                            "lotRemainingTotal",
+                            "delta"
+                          ],
+                          "properties": {
+                            "accountId": {
+                              "type": "string"
+                            },
+                            "availablePoints": {
+                              "type": "string"
+                            },
+                            "lotRemainingTotal": {
+                              "type": "integer",
+                              "format": "int64"
+                            },
+                            "delta": {
+                              "type": "integer",
+                              "format": "int64"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       "WalletAdjustmentResponse": {
         "allOf": [

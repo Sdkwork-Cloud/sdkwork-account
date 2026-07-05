@@ -1,12 +1,20 @@
-import { StatusNotice } from "@sdkwork/ui-pc-react";
+import { Button, StatusNotice } from "@sdkwork/ui-pc-react";
 import { useSdkworkWalletIntl } from "../wallet-intl";
 import type { SdkworkWalletHold } from "../wallet-service";
 
 export interface SdkworkWalletHoldsListProps {
+  hasMore?: boolean;
   holds: SdkworkWalletHold[];
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
-export function SdkworkWalletHoldsList({ holds }: SdkworkWalletHoldsListProps) {
+export function SdkworkWalletHoldsList({
+  hasMore = false,
+  holds,
+  isLoadingMore = false,
+  onLoadMore,
+}: SdkworkWalletHoldsListProps) {
   const {
     copy,
     formatCurrencyCny,
@@ -66,6 +74,20 @@ export function SdkworkWalletHoldsList({ holds }: SdkworkWalletHoldsListProps) {
           </table>
         </div>
       )}
+
+      {hasMore && onLoadMore ? (
+        <div className="border-t border-[var(--sdk-color-border-subtle)] px-5 py-4 sm:px-6">
+          <Button
+            loading={isLoadingMore}
+            onClick={onLoadMore}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {copy.holdList.loadMore}
+          </Button>
+        </div>
+      ) : null}
     </section>
   );
 }

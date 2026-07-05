@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { HttpClient } from '../http/client';
 
-import type { AccountHoldItem, CashAccountItem, PageInfo, PointsAccountItem, PointsLotItem, WalletAccountItem, WalletLedgerEntryItem } from '../types';
+import type { AccountHoldItem, CashAccountItem, PageInfo, PointsAccountItem, PointsLotAllocationItem, PointsLotItem, PointsSummaryItem, WalletAccountItem, WalletLedgerEntryItem } from '../types';
 
 
 export interface WalletHoldsListParams {
@@ -77,15 +77,43 @@ async list(params?: WalletPointsLotsListParams): Promise<Record<string, unknown>
   }
 }
 
+export class WalletPointsSummaryApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+async retrieve(): Promise<PointsSummaryItem> {
+    return this.client.get<PointsSummaryItem>(appApiPath(`/wallet/points/summary`));
+  }
+}
+
 export class WalletPointsApi {
   private client: HttpClient;
+  public readonly summary: WalletPointsSummaryApi;
   public readonly lots: WalletPointsLotsApi;
 
   constructor(client: HttpClient) {
     this.client = client;
+    this.summary = new WalletPointsSummaryApi(client);
     this.lots = new WalletPointsLotsApi(client);
   }
 
+}
+
+export class WalletLedgerEntriesAllocationsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+async list(ledgerEntryId: string): Promise<Record<string, unknown>> {
+    return this.client.get<Record<string, unknown>>(appApiPath(`/wallet/ledger_entries/${serializePathParameter(ledgerEntryId, { name: 'ledgerEntryId', style: 'simple', explode: false })}/allocations`));
+  }
 }
 
 export interface WalletLedgerEntriesPointsListParams {
@@ -152,11 +180,13 @@ export class WalletLedgerEntriesApi {
   private client: HttpClient;
   public readonly cash: WalletLedgerEntriesCashApi;
   public readonly points: WalletLedgerEntriesPointsApi;
+  public readonly allocations: WalletLedgerEntriesAllocationsApi;
 
   constructor(client: HttpClient) {
     this.client = client;
     this.cash = new WalletLedgerEntriesCashApi(client);
     this.points = new WalletLedgerEntriesPointsApi(client);
+    this.allocations = new WalletLedgerEntriesAllocationsApi(client);
   }
 
 

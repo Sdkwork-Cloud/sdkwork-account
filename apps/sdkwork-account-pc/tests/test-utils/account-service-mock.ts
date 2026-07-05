@@ -36,9 +36,11 @@ function createMissingWalletTree(): SdkworkAccountAppService["wallet"] {
   for (const method of [
     "overview.retrieve",
     "ledgerEntries.points.list",
+    "ledgerEntries.cash.list",
     "accounts.cash.retrieve",
     "accounts.points.retrieve",
     "accounts.tokens.retrieve",
+    "points.summary.retrieve",
     "points.lots.list",
     "holds.list",
     "holds.retrieve",

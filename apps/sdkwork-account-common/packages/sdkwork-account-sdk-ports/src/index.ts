@@ -22,6 +22,7 @@ export const APP_ACCOUNT_METHOD_TREE = {
       points: { list: true },
     },
     points: {
+      summary: { retrieve: true },
       lots: { list: true },
     },
     holds: {
@@ -34,6 +35,12 @@ export const APP_ACCOUNT_METHOD_TREE = {
 
 export const BACKEND_ACCOUNT_METHOD_TREE = {
   wallet: {
+    health: {
+      retrieve: true,
+    },
+    outbox: {
+      dispatch: true,
+    },
     adjustments: {
       create: true,
       cash: { create: true },
@@ -44,6 +51,13 @@ export const BACKEND_ACCOUNT_METHOD_TREE = {
       create: true,
       settle: true,
       release: true,
+      expire: true,
+    },
+    points: {
+      reconciliation: true,
+      lots: {
+        expire: true,
+      },
     },
     transfers: {
       create: true,

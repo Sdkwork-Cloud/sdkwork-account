@@ -7,6 +7,22 @@ import {
   unwrapSdkworkOrderResponse,
   type SdkworkOrderAppService,
 } from "@sdkwork/order-service";
+
+const WALLET_PAYMENT_METHOD_ALIASES: Record<string, string> = {
+  ALIPAY: "alipay",
+  BANKCARD: "balance",
+  WECHAT: "wechat_pay",
+  WECHAT_PAY: "wechat_pay",
+};
+
+function normalizeWalletPaymentMethod(value: string | undefined): string {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return "wechat_pay";
+  }
+  const upper = trimmed.toUpperCase();
+  return WALLET_PAYMENT_METHOD_ALIASES[upper] ?? trimmed.toLowerCase();
+}
 import type {
   SdkworkWalletRechargeInput,
   SdkworkWalletRechargePackage,
@@ -144,6 +160,7 @@ export function createSdkworkWalletRechargeService(
         amount: input.points,
         clientRequestNo: input.requestNo,
         currencyCode: "CNY",
+        paymentMethod: normalizeWalletPaymentMethod(input.paymentMethod),
         source: "account-pc-wallet",
       });
       const outcome = unwrapSdkworkOrderResource<RemoteRechargeOrderOutcome>(payload);

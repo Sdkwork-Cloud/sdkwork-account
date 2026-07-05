@@ -85,6 +85,14 @@ pub struct AccountHoldListQuery {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PointsLotAllocationListQuery {
+    pub ledger_entry_id: String,
+    pub organization_id: Option<String>,
+    pub owner_user_id: String,
+    pub tenant_id: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AccountHoldDetailQuery {
     pub hold_id: String,
     pub organization_id: Option<String>,
@@ -177,7 +185,7 @@ impl WalletTransactionListQuery {
     }
 
     pub fn limit(&self) -> i64 {
-        self.page_size.unwrap_or(50).clamp(1, 200)
+        self.page_size.unwrap_or(20).clamp(1, 200)
     }
 
     pub fn offset(&self) -> i64 {
@@ -257,7 +265,7 @@ impl BillingHistoryListQuery {
     }
 
     pub fn limit(&self) -> i64 {
-        self.page_size.unwrap_or(50).clamp(1, 200)
+        self.page_size.unwrap_or(20).clamp(1, 200)
     }
 
     pub fn offset(&self) -> i64 {
@@ -298,7 +306,7 @@ impl PointsLotListQuery {
     }
 
     pub fn limit(&self) -> i64 {
-        self.page_size.unwrap_or(50).clamp(1, 200)
+        self.page_size.unwrap_or(20).clamp(1, 200)
     }
 
     pub fn offset(&self) -> i64 {
@@ -345,12 +353,33 @@ impl AccountHoldListQuery {
     }
 
     pub fn limit(&self) -> i64 {
-        self.page_size.unwrap_or(50).clamp(1, 200)
+        self.page_size.unwrap_or(20).clamp(1, 200)
     }
 
     pub fn offset(&self) -> i64 {
         let page = self.page.unwrap_or(1).max(1);
         (page - 1) * self.limit()
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PointsReconciliationQuery {
+    pub tenant_id: String,
+    pub organization_id: Option<String>,
+    pub owner_user_id: Option<String>,
+}
+
+impl PointsReconciliationQuery {
+    pub fn new(
+        tenant_id: &str,
+        organization_id: Option<&str>,
+        owner_user_id: Option<&str>,
+    ) -> Result<Self, CommerceServiceError> {
+        Ok(Self {
+            tenant_id: required_text("tenant_id", tenant_id)?,
+            organization_id: optional_text(organization_id),
+            owner_user_id: optional_text(owner_user_id),
+        })
     }
 }
 
@@ -363,6 +392,22 @@ impl AccountHoldDetailQuery {
     ) -> Result<Self, CommerceServiceError> {
         Ok(Self {
             hold_id: required_text("hold_id", hold_id)?,
+            organization_id: optional_text(organization_id),
+            owner_user_id: required_text("owner_user_id", owner_user_id)?,
+            tenant_id: required_text("tenant_id", tenant_id)?,
+        })
+    }
+}
+
+impl PointsLotAllocationListQuery {
+    pub fn new(
+        tenant_id: &str,
+        organization_id: Option<&str>,
+        owner_user_id: &str,
+        ledger_entry_id: &str,
+    ) -> Result<Self, CommerceServiceError> {
+        Ok(Self {
+            ledger_entry_id: required_text("ledger_entry_id", ledger_entry_id)?,
             organization_id: optional_text(organization_id),
             owner_user_id: required_text("owner_user_id", owner_user_id)?,
             tenant_id: required_text("tenant_id", tenant_id)?,

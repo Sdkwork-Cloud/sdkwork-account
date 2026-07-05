@@ -10,6 +10,7 @@
     "commerce_account_journal",
     "commerce_account_journal_line",
     "commerce_points_lot",
+    "commerce_points_lot_allocation",
     "commerce_account_hold",
     "commerce_account_transfer",
     "commerce_idempotency_record",
@@ -115,6 +116,31 @@
       "blockedBy": [
         "A2",
         "O3"
+      ]
+    },
+    {
+      "id": "A4",
+      "title": "Ledger hardening: idempotency LOCKED, SQL pagination, batched expire sweeps, outbox dispatch",
+      "status": "complete",
+      "repos": [
+        "sdkwork-account"
+      ]
+    },
+    {
+      "id": "A5",
+      "title": "PC wallet load-more, checkout returnUrl, post-pay commerceRefresh refresh",
+      "status": "complete",
+      "repos": [
+        "sdkwork-account"
+      ]
+    },
+    {
+      "id": "A6",
+      "title": "IAM profile on account summary via IamAppContext user fields",
+      "status": "complete",
+      "repos": [
+        "sdkwork-account",
+        "sdkwork-iam"
       ]
     }
   ]

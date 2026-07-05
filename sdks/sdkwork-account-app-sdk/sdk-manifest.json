@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "sdkFamily": "sdkwork-account-app-sdk",
+  "sdkName": "sdkwork-account-app-sdk",
+  "packageName": "@sdkwork/account-app-sdk",
+  "transportPackageName": "sdkwork-account-app-sdk-generated-typescript",
+  "typescript": {
+    "composedRoot": "sdkwork-account-app-sdk-typescript",
+    "composedEntry": "sdkwork-account-app-sdk-typescript/src/index.ts",
+    "transportRoot": "sdkwork-account-app-sdk-typescript/generated/server-openapi",
+    "transportEntry": "sdkwork-account-app-sdk-typescript/generated/server-openapi/src/index.ts"
+  },
+  "workspace": "sdkwork-account-app-sdk",
+  "title": "SDKWork Account App API SDK",
+  "apiVersion": "2.0.0",
+  "openapiVersion": "3.1.2",
+  "authoritySpec": "openapi/account-app-api.openapi.json",
+  "generationInputSpec": "openapi/account-app-api.sdkgen.yaml",
+  "derivedSpecs": {
+    "default": "openapi/account-app-api.sdkgen.yaml"
+  },
+  "sdkOwner": "sdkwork-account",
+  "apiAuthority": "sdkwork-account.app",
+  "discoverySurface": {
+    "sdkTarget": "app",
+    "apiPrefix": "/app/v3/api",
+    "schemaUrl": "/app/v3/api/openapi.json",
+    "generatedProtocols": [
+      "http-openapi"
+    ],
+    "manualTransports": []
+  },
+  "sdkDependencies": [
+    {
+      "workspace": "sdkwork-iam-app-sdk",
+      "role": "appbase-identity-and-session-capability",
+      "required": true,
+      "dependencyMode": "consumer-sdk",
+      "apiPrefix": "/app/v3/api",
+      "apiAuthority": "sdkwork-iam-app-api",
+      "generatedTransportImportPolicy": "forbidden",
+      "packageByLanguage": {
+        "typescript": "@sdkwork/iam-app-sdk"
+      }
+    }
+  ],
+  "metadata": {
+    "standardVersion": "2026-06-29",
+    "materializationState": "authority-ready",
+    "managedBy": "sdkwork-account"
+  },
+  "languages": [
+    {
+      "language": "typescript",
+      "workspace": "sdkwork-account-app-sdk-typescript",
+      "generationState": "generated",
+      "releaseState": "not_published",
+      "generatedPath": "sdkwork-account-app-sdk-typescript/generated/server-openapi",
+      "manifestPath": "sdkwork-account-app-sdk-typescript/generated/server-openapi/package.json",
+      "version": "0.1.0",
+      "description": "Generator-owned TypeScript transport SDK for sdkwork-account.app.",
+      "consumerSurface": {
+        "primaryClient": "SdkworkAccountAppClient",
+        "apiPrefix": "/app/v3/api"
+      },
+      "consumerPackageName": "@sdkwork/account-app-sdk",
+      "transportPackageName": "sdkwork-account-app-sdk-generated-typescript"
+    }
+  ]
+}

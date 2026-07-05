@@ -3,7 +3,7 @@
 Status: active  
 Owner: SDKWork maintainers  
 Capability: `commerce.account`  
-Updated: 2026-06-29
+Updated: 2026-07-06
 
 Authority: `sdkwork-specs/MODULE_SPEC.md`, `sdkwork-specs/DOMAIN_SPEC.md`, `sdkwork-specs/API_SPEC.md`
 

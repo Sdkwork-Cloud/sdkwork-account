@@ -24,6 +24,15 @@ import {
   resolveWalletRechargeFlow,
   type SdkworkWalletRechargeFlow,
 } from "../wallet-checkout-navigation";
+import {
+  navigateWalletWithdrawPayout,
+  resolveWalletPayoutFlow,
+  type SdkworkWalletPayoutFlow,
+} from "../wallet-payout-navigation";
+import {
+  Button,
+  StatusNotice,
+} from "@sdkwork/ui-pc-react";
 
 export interface SdkworkWalletHeaderEntryProps {
   accountLabel?: string;
@@ -31,6 +40,8 @@ export interface SdkworkWalletHeaderEntryProps {
   controller?: SdkworkWalletController;
   onNavigate?: (route: string) => void;
   onOpenPage?: () => void;
+  payoutBasePath?: string;
+  payoutFlow?: SdkworkWalletPayoutFlow;
   quickPanelClassName?: string;
   QuickPanel?: ComponentType<SdkworkWalletQuickPanelProps>;
   rechargeFlow?: SdkworkWalletRechargeFlow;
@@ -42,6 +53,8 @@ export function SdkworkWalletHeaderEntry({
   controller: controllerProp,
   onNavigate,
   onOpenPage,
+  payoutBasePath,
+  payoutFlow,
   quickPanelClassName,
   QuickPanel: QuickPanelComponent,
   rechargeFlow,
@@ -57,6 +70,7 @@ export function SdkworkWalletHeaderEntry({
     formatPoints,
   } = useSdkworkWalletIntl();
   const resolvedRechargeFlow = resolveWalletRechargeFlow(rechargeFlow, onNavigate);
+  const resolvedPayoutFlow = resolveWalletPayoutFlow(payoutFlow, onNavigate);
   const featuredRechargePackage =
     state.overview.rechargePackages.find((rechargePackage) => rechargePackage.recommended)
     ?? state.overview.rechargePackages[0]
@@ -77,6 +91,21 @@ export function SdkworkWalletHeaderEntry({
     }
 
     controller.openRecharge();
+  }
+
+  function openWalletWithdraw() {
+    if (
+      resolvedPayoutFlow === "checkout"
+      && onNavigate
+      && navigateWalletWithdrawPayout({
+        onNavigate,
+        payoutBasePath,
+      })
+    ) {
+      return;
+    }
+
+    controller.openWithdraw();
   }
 
   useEffect(() => {
@@ -112,6 +141,29 @@ export function SdkworkWalletHeaderEntry({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isPanelOpen]);
+
+  if (state.lastError && !state.isBootstrapped) {
+    return (
+      <div ref={entryRef}>
+        <StatusNotice title={copy.page.errorTitle} tone="danger">
+          <div className="space-y-3">
+            <p>{state.lastError}</p>
+            <Button
+              loading={state.isLoading}
+              onClick={() => {
+                void controller.bootstrap();
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {copy.actions.retry}
+            </Button>
+          </div>
+        </StatusNotice>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex items-center gap-2" ref={entryRef}>
@@ -160,7 +212,7 @@ export function SdkworkWalletHeaderEntry({
               }}
               onWithdraw={() => {
                 setIsPanelOpen(false);
-                controller.openWithdraw();
+                openWalletWithdraw();
               }}
               overview={state.overview}
             />
@@ -182,12 +234,15 @@ export function SdkworkWalletHeaderEntry({
       />
       <SdkworkWalletWithdrawDialog
         controller={controller}
+        onNavigate={onNavigate}
         onOpenChange={(open) => {
           if (!open) {
             controller.closeWithdraw();
           }
         }}
         open={state.isWithdrawOpen}
+        payoutBasePath={payoutBasePath}
+        payoutFlow={resolvedPayoutFlow}
       />
     </div>
   );

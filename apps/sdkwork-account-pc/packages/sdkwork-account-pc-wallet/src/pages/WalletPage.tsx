@@ -2,6 +2,7 @@
 import {
   LoadingBlock,
   StatusNotice,
+  Button,
 } from "@sdkwork/ui-pc-react";
 import type { SdkworkWalletMessagesOverrides } from "../wallet-copy";
 import type { SdkworkWalletController } from "../wallet-controller";
@@ -25,6 +26,10 @@ import {
   type SdkworkWalletRechargeFlow,
 } from "../wallet-checkout-navigation";
 import {
+  shouldRefreshWalletAfterCommerceReturn,
+  stripWalletCommerceReturnParams,
+} from "../wallet-commerce-return";
+import {
   navigateWalletWithdrawPayout,
   type SdkworkWalletPayoutFlow,
   resolveWalletPayoutFlow,
@@ -39,6 +44,8 @@ export interface SdkworkWalletPageProps {
   payoutBasePath?: string;
   payoutFlow?: SdkworkWalletPayoutFlow;
   rechargeFlow?: SdkworkWalletRechargeFlow;
+  /** Post-checkout redirect target; defaults to current pathname or `/wallet`. */
+  walletReturnPath?: string;
 }
 
 interface SdkworkWalletPageContentProps {
@@ -48,6 +55,18 @@ interface SdkworkWalletPageContentProps {
   payoutBasePath?: string;
   payoutFlow?: SdkworkWalletPayoutFlow;
   rechargeFlow?: SdkworkWalletRechargeFlow;
+  walletReturnPath?: string;
+}
+
+function resolveWalletReturnPath(walletReturnPath: string | undefined): string | undefined {
+  const explicit = walletReturnPath?.trim();
+  if (explicit) {
+    return explicit;
+  }
+  if (typeof window === "undefined") {
+    return "/wallet";
+  }
+  return window.location.pathname || "/wallet";
 }
 
 function SdkworkWalletPageContent({
@@ -57,12 +76,14 @@ function SdkworkWalletPageContent({
   payoutBasePath,
   payoutFlow,
   rechargeFlow,
+  walletReturnPath,
 }: SdkworkWalletPageContentProps) {
   const controller = useSdkworkWalletController(controllerProp);
   const state = useSdkworkWalletControllerState(controller);
   const { copy } = useSdkworkWalletIntl();
   const resolvedRechargeFlow = resolveWalletRechargeFlow(rechargeFlow, onNavigate);
   const resolvedPayoutFlow = resolveWalletPayoutFlow(payoutFlow, onNavigate);
+  const resolvedWalletReturnPath = onNavigate ? resolveWalletReturnPath(walletReturnPath) : undefined;
   const featuredRechargePackage =
     state.overview.rechargePackages.find((rechargePackage) => rechargePackage.recommended)
     ?? state.overview.rechargePackages[0]
@@ -74,6 +95,42 @@ function SdkworkWalletPageContent({
     }
   }, [controller, state.isBootstrapped, state.isLoading, state.lastError]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    function refreshAfterCommerceReturn(): void {
+      const params = new URLSearchParams(window.location.search);
+      if (!shouldRefreshWalletAfterCommerceReturn(params)) {
+        return;
+      }
+
+      const cleaned = stripWalletCommerceReturnParams(params);
+      const nextUrl = cleaned.toString()
+        ? `${window.location.pathname}?${cleaned.toString()}`
+        : window.location.pathname;
+      window.history.replaceState(null, "", nextUrl);
+
+      if (state.isBootstrapped) {
+        void controller.refresh().catch(() => undefined);
+      }
+    }
+
+    refreshAfterCommerceReturn();
+
+    function handlePageShow(event: PageTransitionEvent): void {
+      if (event.persisted) {
+        refreshAfterCommerceReturn();
+      }
+    }
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, [controller, state.isBootstrapped]);
+
   function openWalletRecharge() {
     if (
       resolvedRechargeFlow === "checkout"
@@ -83,6 +140,7 @@ function SdkworkWalletPageContent({
         checkoutBasePath,
         onNavigate,
         package: featuredRechargePackage,
+        walletReturnPath: resolvedWalletReturnPath,
       })
     ) {
       return;
@@ -122,19 +180,47 @@ function SdkworkWalletPageContent({
 
           {state.lastError ? (
             <StatusNotice title={copy.page.errorTitle} tone="danger">
-              {state.lastError}
+              <div className="space-y-3">
+                <p>{state.lastError}</p>
+                <Button
+                  loading={state.isLoading}
+                  onClick={() => {
+                    void controller.bootstrap();
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {copy.actions.retry}
+                </Button>
+              </div>
             </StatusNotice>
           ) : null}
 
-          <SdkworkWalletHoldsList holds={state.overview.holds} />
+          <SdkworkWalletHoldsList
+            hasMore={Boolean(state.overview.holdPageInfo?.hasMore)}
+            holds={state.overview.holds}
+            isLoadingMore={state.isLoadingMore}
+            onLoadMore={() => {
+              void controller.loadMoreHolds();
+            }}
+          />
 
-          <SdkworkWalletTransactionList transactions={state.overview.transactions} />
+          <SdkworkWalletTransactionList
+            hasMore={Boolean(state.overview.transactionPageInfo?.hasMore)}
+            isLoadingMore={state.isLoadingMore}
+            onLoadMore={() => {
+              void controller.loadMoreTransactions();
+            }}
+            transactions={state.overview.transactions}
+          />
         </div>
 
         <SdkworkWalletRechargeDialog
           checkoutBasePath={checkoutBasePath}
           controller={controller}
           onNavigate={onNavigate}
+          walletReturnPath={resolvedWalletReturnPath}
           onOpenChange={(open) => {
             if (!open) {
               controller.closeRecharge();

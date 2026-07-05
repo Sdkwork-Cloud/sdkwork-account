@@ -101,7 +101,8 @@ describe("sdkwork-account-pc-wallet page", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: /wallet/i,
+        name: "Wallet",
+        level: 1,
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("Points usage").length).toBeGreaterThan(0);

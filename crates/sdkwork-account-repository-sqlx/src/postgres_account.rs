@@ -2,26 +2,29 @@ use chrono::Utc;
 use sdkwork_account_service::{
     AccountBalance, AccountSummary, AccountSummaryQuery, AccountSummarySnapshot,
     AppendLedgerEntryCommand, AppendLedgerEntryOutcome, PointsAccountSnapshot, PointsLotItem,
-    PointsLotListQuery, WalletAccountItem, WalletAccountListQuery, WalletOperation,
+    PointsLotListQuery, StoreListPage, WalletAccountItem, WalletAccountListQuery, WalletOperation,
     WalletOperationQuery, WalletOverview, WalletTransactionDetailQuery, WalletTransactionItem,
-    WalletTransactionListQuery,
+    WalletTransactionListQuery, OutboxDispatchOutcome,
 };
 use sdkwork_contract_service::{
     CommerceAccountAssetType, CommerceLedgerDirection, CommerceMoney, CommercePoints,
     CommerceRequestHash, CommerceServiceError,
 };
+use sdkwork_utils_rust::LIST_TOTAL_SQL_COLUMN;
 use sqlx::{PgPool, Postgres, Row, Transaction};
 
 use crate::store::{
-    account_status_label, asset_code_from_type, asset_type_from_code, currency_code_for_command,
+    account_guard::{ensure_points_lot_debit_complete, require_positive_amount},
+    account_summary, account_status_label, asset_code_from_type, asset_type_from_code, balance,
+    billing_projection,
+    currency_code_for_command,
     default_currency_code, format_i64, next_entity_id, next_entity_uuid, optional_org_string,
-    outbox::{
-        build_ledger_appended_outbox, OUTBOX_AGGREGATE_TYPE_ACCOUNT, OUTBOX_EVENT_TYPE_LEDGER_APPENDED,
-        OUTBOX_EVENT_VERSION, OUTBOX_STATUS_PENDING,
-    },
-    org_id_from_option, parse_subject_i64, parse_wallet_transaction_cursor, points_lot_status_label,
-    store_error,
+    outbox::{build_ledger_appended_outbox, insert_outbox_event_postgres},
+    org_id_from_option, parse_subject_i64, points_lot_status_label,
+    store_error, IdempotencyRecordAction, resolve_idempotency_record_action,
+    finalize_list_page, resolve_list_sql_paging,
     ACCOUNT_PURPOSE_GENERAL, ACCOUNT_STATUS_ACTIVE, LEDGER_APPEND_SCOPE, OWNER_TYPE_USER,
+    POINTS_LOT_STATUS_DEPLETED,
 };
 
 #[derive(Debug, Clone)]
@@ -115,6 +118,9 @@ impl PostgresCommerceAccountStore {
         &self,
         query: AccountSummaryQuery,
     ) -> Result<AccountSummarySnapshot, CommerceServiceError> {
+        let tenant_id = parse_subject_i64("tenant_id", &query.tenant_id)?;
+        let organization_id = org_id_from_option(query.organization_id.as_deref())?;
+        let owner_id = parse_subject_i64("owner_user_id", &query.owner_user_id)?;
         let summary = self.retrieve_summary(query.clone()).await?;
         let available_points = summary
             .points
@@ -122,22 +128,21 @@ impl PostgresCommerceAccountStore {
             .as_str()
             .parse::<f64>()
             .unwrap_or(0.0);
-
-        Ok(AccountSummarySnapshot {
-            id: query.owner_user_id.clone(),
-            name: "User".to_owned(),
-            email: String::new(),
-            is_verified: false,
-            tier: "Standard".to_owned(),
-            organization: String::new(),
-            available_credits: available_points,
-            est_days_remaining: 0,
-            monthly_consumption: 0.0,
-            consumption_by_service: Vec::new(),
-            invoice_settings: Default::default(),
-            security: Default::default(),
-            login_logs: Vec::new(),
-        })
+        let mut stats = account_summary::load_wallet_summary_stats_postgres(
+            &self.pool,
+            tenant_id,
+            organization_id,
+            owner_id,
+        )
+        .await?;
+        stats.est_days_remaining =
+            account_summary::estimate_days_remaining(available_points, stats.monthly_consumption);
+        Ok(account_summary::build_account_summary_snapshot(
+            &query.owner_user_id,
+            organization_id,
+            available_points,
+            stats,
+        ))
     }
 
     pub async fn list_wallet_accounts(
@@ -190,7 +195,7 @@ impl PostgresCommerceAccountStore {
     pub async fn list_wallet_transactions(
         &self,
         query: WalletTransactionListQuery,
-    ) -> Result<Vec<WalletTransactionItem>, CommerceServiceError> {
+    ) -> Result<StoreListPage<WalletTransactionItem>, CommerceServiceError> {
         let tenant_id = parse_subject_i64("tenant_id", &query.tenant_id)?;
         let organization_id = org_id_from_option(query.organization_id.as_deref())?;
         let owner_id = parse_subject_i64("owner_user_id", &query.owner_user_id)?;
@@ -202,15 +207,18 @@ impl PostgresCommerceAccountStore {
             .asset_type
             .as_ref()
             .map(asset_code_from_type);
-        let cursor_created_at =
-            parse_wallet_transaction_cursor(query.cursor.as_deref())?;
+        let paging = resolve_list_sql_paging(query.page, query.page_size, query.cursor.as_deref())?;
+        let fetch_limit = paging.fetch_limit;
+        let sql_offset = paging.sql_offset;
+        let keyset_created_at = paging.keyset_before;
 
-        let rows = if let Some(cursor) = cursor_created_at {
-            sqlx::query(
+        let rows = if let Some(cursor) = keyset_created_at {
+            sqlx::query(&format!(
                 r#"
                 SELECT id, uuid, account_id, tenant_id, organization_id, owner_id, asset_code,
                        direction, amount, balance_before, balance_after, business_type, business_no,
-                       request_no, idempotency_key, created_at
+                       request_no, idempotency_key, created_at,
+                       COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
                 FROM commerce_account_ledger
                 WHERE tenant_id = $1
                   AND organization_id = $2
@@ -219,9 +227,9 @@ impl PostgresCommerceAccountStore {
                   AND ($6 IS NULL OR asset_code = $7)
                   AND created_at < $8
                 ORDER BY created_at DESC, id DESC
-                LIMIT $9 OFFSET $10
-                "#,
-            )
+                LIMIT $9
+                "#
+            ))
             .bind(tenant_id)
             .bind(organization_id)
             .bind(owner_id)
@@ -230,16 +238,16 @@ impl PostgresCommerceAccountStore {
             .bind(asset_code)
             .bind(asset_code)
             .bind(cursor)
-            .bind(query.limit())
-            .bind(query.offset())
+            .bind(fetch_limit)
             .fetch_all(&self.pool)
             .await
         } else {
-            sqlx::query(
+            sqlx::query(&format!(
                 r#"
                 SELECT id, uuid, account_id, tenant_id, organization_id, owner_id, asset_code,
                        direction, amount, balance_before, balance_after, business_type, business_no,
-                       request_no, idempotency_key, created_at
+                       request_no, idempotency_key, created_at,
+                       COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
                 FROM commerce_account_ledger
                 WHERE tenant_id = $1
                   AND organization_id = $2
@@ -248,8 +256,8 @@ impl PostgresCommerceAccountStore {
                   AND ($6 IS NULL OR asset_code = $7)
                 ORDER BY created_at DESC, id DESC
                 LIMIT $8 OFFSET $9
-                "#,
-            )
+                "#
+            ))
             .bind(tenant_id)
             .bind(organization_id)
             .bind(owner_id)
@@ -257,14 +265,19 @@ impl PostgresCommerceAccountStore {
             .bind(account_id)
             .bind(asset_code)
             .bind(asset_code)
-            .bind(query.limit())
-            .bind(query.offset())
+            .bind(fetch_limit)
+            .bind(sql_offset)
             .fetch_all(&self.pool)
             .await
         }
         .map_err(|error| store_error("failed to list wallet transactions", error))?;
 
-        rows.iter().map(map_wallet_transaction).collect()
+        let total_items = rows
+            .first()
+            .map(|row| integer_cell(row, LIST_TOTAL_SQL_COLUMN))
+            .unwrap_or(0);
+        let items: Result<Vec<_>, _> = rows.iter().map(map_wallet_transaction).collect();
+        Ok(finalize_list_page(items?, paging.params.page_size, total_items))
     }
 
     pub async fn retrieve_wallet_transaction(
@@ -416,18 +429,18 @@ impl PostgresCommerceAccountStore {
     pub async fn list_points_lots(
         &self,
         query: PointsLotListQuery,
-    ) -> Result<Vec<PointsLotItem>, CommerceServiceError> {
+    ) -> Result<StoreListPage<PointsLotItem>, CommerceServiceError> {
         let tenant_id = parse_subject_i64("tenant_id", &query.tenant_id)?;
         let organization_id = org_id_from_option(query.organization_id.as_deref())?;
         let owner_id = parse_subject_i64("owner_user_id", &query.owner_user_id)?;
-        let limit = query.limit();
-        let offset = query.offset();
+        let paging = resolve_list_sql_paging(query.page, query.page_size, None)?;
 
-        let rows = sqlx::query(
+        let rows = sqlx::query(&format!(
             r#"
             SELECT lot.id, lot.uuid, lot.account_id, lot.granted_amount, lot.remaining_amount,
                    lot.source_type, lot.source_id, lot.expires_at, lot.status,
-                   lot.created_at, lot.updated_at
+                   lot.created_at, lot.updated_at,
+                   COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
             FROM commerce_points_lot lot
             INNER JOIN commerce_account account
                 ON account.id = lot.account_id
@@ -439,20 +452,29 @@ impl PostgresCommerceAccountStore {
               AND account.asset_code = $5
             ORDER BY lot.expires_at NULLS LAST, lot.created_at ASC
             LIMIT $6 OFFSET $7
-            "#,
-        )
+            "#
+        ))
         .bind(tenant_id)
         .bind(organization_id)
         .bind(OWNER_TYPE_USER)
         .bind(owner_id)
         .bind(asset_code_from_type(&CommerceAccountAssetType::Points))
-        .bind(limit)
-        .bind(offset)
+        .bind(paging.fetch_limit)
+        .bind(paging.sql_offset)
         .fetch_all(&self.pool)
         .await
         .map_err(|error| store_error("failed to list points lots", error))?;
 
-        rows.iter().map(map_points_lot).collect()
+        let total_items = rows
+            .first()
+            .map(|row| integer_cell(row, LIST_TOTAL_SQL_COLUMN))
+            .unwrap_or(0);
+        let items: Result<Vec<_>, _> = rows.iter().map(map_points_lot).collect();
+        Ok(finalize_list_page(
+            items?,
+            paging.params.page_size,
+            total_items,
+        ))
     }
 
     pub async fn append_ledger_entry(
@@ -472,18 +494,30 @@ impl PostgresCommerceAccountStore {
 
         if let Some(row) = load_idempotency_row(&mut tx, tenant_id, &command.idempotency_key).await?
         {
-            let stored_hash = string_cell(&row, "request_hash");
-            if stored_hash != request_hash.as_str() {
-                return Err(CommerceServiceError::conflict(
-                    "idempotency key was used with a different request hash",
-                ));
-            }
-            if string_cell(&row, "status") == "COMPLETED" {
-                let outcome = load_replayed_outcome(&mut tx, tenant_id, owner_id, &command).await?;
-                tx.commit()
-                    .await
-                    .map_err(|error| store_error("failed to commit ledger replay", error))?;
-                return Ok(outcome);
+            match resolve_idempotency_record_action(
+                &string_cell(&row, "request_hash"),
+                &string_cell(&row, "status"),
+                request_hash.as_str(),
+            )? {
+                IdempotencyRecordAction::Replay => {
+                    let outcome =
+                        load_replayed_outcome(&mut tx, tenant_id, owner_id, &command).await?;
+                    tx.commit()
+                        .await
+                        .map_err(|error| store_error("failed to commit ledger replay", error))?;
+                    return Ok(outcome);
+                }
+                IdempotencyRecordAction::ReclaimLock => {
+                    crate::postgres_hold::reclaim_idempotency_scoped_public(
+                        &mut tx,
+                        tenant_id,
+                        LEDGER_APPEND_SCOPE,
+                        &command.idempotency_key,
+                        request_hash.as_str(),
+                        &now,
+                    )
+                    .await?;
+                }
             }
         } else {
             insert_idempotency_lock(
@@ -499,6 +533,7 @@ impl PostgresCommerceAccountStore {
         let mut account = load_or_create_account_for_append(&mut tx, &command, tenant_id, organization_id, owner_id, &now).await?;
         let current_balance = parse_amount_minor(&account.available_amount)?;
         let amount = parse_amount_minor(command.amount.as_str())?;
+        require_positive_amount(amount, "amount")?;
         let next_balance = match command.direction {
             CommerceLedgerDirection::Credit => checked_add(current_balance, amount)?,
             CommerceLedgerDirection::Debit => {
@@ -575,14 +610,20 @@ impl PostgresCommerceAccountStore {
             CommerceLedgerDirection::Debit => "DEBIT",
         };
 
+        let reversed_ledger_id = command
+            .reversed_ledger_id
+            .as_deref()
+            .map(|value| parse_subject_i64("reversed_ledger_id", value))
+            .transpose()?;
+
         sqlx::query(
             r#"
             INSERT INTO commerce_account_ledger
                 (id, uuid, tenant_id, organization_id, account_id, journal_id, owner_type, owner_id,
                  asset_code, currency_code, ledger_type, entry_type, direction, amount,
                  balance_before, balance_after, business_type, business_no, request_no,
-                 idempotency_key, trace_id, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+                 idempotency_key, reversed_ledger_id, trace_id, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
             "#,
         )
         .bind(ledger_id)
@@ -604,6 +645,7 @@ impl PostgresCommerceAccountStore {
         .bind(&command.transaction_no)
         .bind(&command.request_no)
         .bind(&command.idempotency_key)
+        .bind(reversed_ledger_id)
         .bind(&trace_id)
         .bind(&now)
         .execute(&mut *tx)
@@ -640,10 +682,22 @@ impl PostgresCommerceAccountStore {
                 lot_amount,
                 &command.business_type,
                 ledger_id,
+                command.expires_at.as_deref(),
                 &now,
             )
             .await?;
         }
+
+        billing_projection::insert_billing_history_for_ledger_append_postgres(
+            &mut *tx,
+            tenant_id,
+            organization_id,
+            owner_id,
+            ledger_id,
+            &command,
+            &now,
+        )
+        .await?;
 
         insert_ledger_appended_outbox(
             &mut tx,
@@ -693,6 +747,17 @@ impl PostgresCommerceAccountStore {
 
         Ok(AppendLedgerEntryOutcome::executed(account_item, ledger_entry))
     }
+
+    pub async fn dispatch_outbox_batch(
+        &self,
+        batch_size: Option<i64>,
+    ) -> Result<OutboxDispatchOutcome, CommerceServiceError> {
+        crate::store::outbox_relay::dispatch_pending_outbox_postgres(&self.pool, batch_size).await
+    }
+
+    pub async fn pending_outbox_lag(&self) -> Result<i64, CommerceServiceError> {
+        crate::store::outbox_relay::count_pending_outbox_postgres(&self.pool).await
+    }
 }
 
 impl StoredAccount {
@@ -726,31 +791,17 @@ async fn insert_ledger_appended_outbox(
 ) -> Result<(), CommerceServiceError> {
     let (event_key, payload, payload_hash) =
         build_ledger_appended_outbox(journal_uuid, ledger_uuid, account_uuid, command)?;
-    sqlx::query(
-        r#"
-        INSERT INTO commerce_outbox_event
-            (id, uuid, tenant_id, aggregate_type, aggregate_id, event_type, event_version,
-             event_key, payload, payload_hash, status, retry_count, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12, $13)
-        "#,
+    insert_outbox_event_postgres(
+        &mut **tx,
+        tenant_id,
+        account_id,
+        crate::store::outbox::OUTBOX_EVENT_TYPE_LEDGER_APPENDED,
+        &event_key,
+        &payload,
+        &payload_hash,
+        now,
     )
-    .bind(next_entity_id()?)
-    .bind(next_entity_uuid())
-    .bind(tenant_id)
-    .bind(OUTBOX_AGGREGATE_TYPE_ACCOUNT)
-    .bind(account_id)
-    .bind(OUTBOX_EVENT_TYPE_LEDGER_APPENDED)
-    .bind(OUTBOX_EVENT_VERSION)
-    .bind(event_key)
-    .bind(payload)
-    .bind(payload_hash)
-    .bind(OUTBOX_STATUS_PENDING)
-    .bind(now)
-    .bind(now)
-    .execute(&mut **tx)
     .await
-    .map_err(|error| store_error("failed to insert ledger outbox event", error))?;
-    Ok(())
 }
 
 async fn load_idempotency_row(
@@ -1102,11 +1153,11 @@ fn parse_direction(value: &str) -> Result<CommerceLedgerDirection, CommerceServi
     }
 }
 
-fn string_cell(row: &sqlx::postgres::PgRow, name: &str) -> String {
+pub(crate) fn string_cell(row: &sqlx::postgres::PgRow, name: &str) -> String {
     row.try_get::<String, _>(name).unwrap_or_default()
 }
 
-fn integer_cell(row: &sqlx::postgres::PgRow, name: &str) -> i64 {
+pub(crate) fn integer_cell(row: &sqlx::postgres::PgRow, name: &str) -> i64 {
     row.try_get::<i64, _>(name).unwrap_or_default()
 }
 
@@ -1160,19 +1211,21 @@ pub(crate) async fn apply_points_lot_movement_for_hold_postgres(
         amount,
         source_type,
         source_ledger_id,
+        None,
         now,
     )
     .await
 }
 
-async fn apply_points_lot_movement(
+pub(crate) async fn apply_points_lot_movement(
     tx: &mut Transaction<'_, Postgres>,
     tenant_id: i64,
     account_id: i64,
     direction: &CommerceLedgerDirection,
     amount: i64,
     source_type: &str,
-    source_ledger_id: i64,
+    ledger_id: i64,
+    expires_at: Option<&str>,
     now: &str,
 ) -> Result<(), CommerceServiceError> {
     match direction {
@@ -1184,7 +1237,7 @@ async fn apply_points_lot_movement(
                 INSERT INTO commerce_points_lot
                     (id, uuid, tenant_id, account_id, granted_amount, remaining_amount,
                      source_type, source_id, expires_at, status, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULL, $9, $10, $11)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                 "#,
             )
             .bind(lot_id)
@@ -1194,7 +1247,8 @@ async fn apply_points_lot_movement(
             .bind(amount)
             .bind(amount)
             .bind(source_type)
-            .bind(source_ledger_id)
+            .bind(ledger_id)
+            .bind(expires_at)
             .bind(ACCOUNT_STATUS_ACTIVE)
             .bind(now)
             .bind(now)
@@ -1211,12 +1265,14 @@ async fn apply_points_lot_movement(
                   AND account_id = $2
                   AND status = $3
                   AND remaining_amount > 0
+                  AND (expires_at IS NULL OR expires_at > $4::timestamptz)
                 ORDER BY expires_at NULLS LAST, created_at ASC
                 "#,
             )
             .bind(tenant_id)
             .bind(account_id)
             .bind(ACCOUNT_STATUS_ACTIVE)
+            .bind(now)
             .fetch_all(&mut **tx)
             .await
             .map_err(|error| store_error("failed to load points lots for debit", error))?;
@@ -1230,7 +1286,11 @@ async fn apply_points_lot_movement(
                 let lot_remaining = integer_cell(&row, "remaining_amount");
                 let consume = remaining.min(lot_remaining);
                 let next_remaining = lot_remaining - consume;
-                let next_status = if next_remaining == 0 { 2 } else { ACCOUNT_STATUS_ACTIVE };
+                let next_status = if next_remaining == 0 {
+                    POINTS_LOT_STATUS_DEPLETED
+                } else {
+                    ACCOUNT_STATUS_ACTIVE
+                };
                 sqlx::query(
                     r#"
                     UPDATE commerce_points_lot
@@ -1246,8 +1306,50 @@ async fn apply_points_lot_movement(
                 .execute(&mut **tx)
                 .await
                 .map_err(|error| store_error("failed to consume points lot", error))?;
+
+                sqlx::query(
+                    r#"
+                    INSERT INTO commerce_points_lot_allocation
+                        (id, uuid, tenant_id, account_id, ledger_id, lot_id, amount, created_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    "#,
+                )
+                .bind(next_entity_id()?)
+                .bind(next_entity_uuid())
+                .bind(tenant_id)
+                .bind(account_id)
+                .bind(ledger_id)
+                .bind(lot_id)
+                .bind(consume)
+                .bind(now)
+                .execute(&mut **tx)
+                .await
+                .map_err(|error| store_error("failed to insert points lot allocation", error))?;
+
                 remaining -= consume;
             }
+            ensure_points_lot_debit_complete(remaining)?;
+            let lot_sum: i64 = sqlx::query_scalar(
+                r#"
+                SELECT COALESCE(SUM(remaining_amount), 0)
+                FROM commerce_points_lot
+                WHERE tenant_id = $1 AND account_id = $2
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(account_id)
+            .fetch_one(&mut **tx)
+            .await
+            .map_err(|error| store_error("failed to sum points lot remaining", error))?;
+            let available: String = sqlx::query_scalar(
+                "SELECT available_amount FROM commerce_account WHERE tenant_id = $1 AND id = $2",
+            )
+            .bind(tenant_id)
+            .bind(account_id)
+            .fetch_one(&mut **tx)
+            .await
+            .map_err(|error| store_error("failed to load account available for lot invariant", error))?;
+            balance::validate_points_lot_balance_invariant(&available, lot_sum)?;
         }
     }
     Ok(())

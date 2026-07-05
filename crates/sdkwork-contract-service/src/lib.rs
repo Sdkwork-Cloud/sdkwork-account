@@ -188,6 +188,7 @@ pub enum CommerceServiceErrorKind {
     Unauthorized,
     NotFound,
     Conflict,
+    Locked,
     InvalidState,
     Validation,
     Transport,
@@ -692,6 +693,10 @@ impl CommerceServiceError {
         Self::new(CommerceServiceErrorKind::Conflict, message)
     }
 
+    pub fn locked(message: impl Into<String>) -> Self {
+        Self::new(CommerceServiceErrorKind::Locked, message)
+    }
+
     pub fn invalid_state(message: impl Into<String>) -> Self {
         Self::new(CommerceServiceErrorKind::InvalidState, message)
     }
@@ -726,6 +731,7 @@ impl CommerceServiceError {
             CommerceServiceErrorKind::Unauthorized => "unauthorized",
             CommerceServiceErrorKind::NotFound => "not-found",
             CommerceServiceErrorKind::Conflict => "conflict",
+            CommerceServiceErrorKind::Locked => "locked",
             CommerceServiceErrorKind::InvalidState => "invalid-state",
             CommerceServiceErrorKind::Validation => "validation",
             CommerceServiceErrorKind::Transport => "transport",
@@ -814,6 +820,44 @@ pub fn validate_commerce_context(context: &CommerceRuntimeContext) -> Result<(),
     }
 
     Ok(())
+}
+
+/// Canonical commerce ledger `business_type` values for account wallet mutations.
+pub struct CommerceLedgerBusinessType;
+
+impl CommerceLedgerBusinessType {
+    pub const POINTS_RECHARGE: &str = "points_recharge";
+    pub const POINTS_EARN: &str = "points_earn";
+    pub const POINTS_BURN: &str = "points_burn";
+    pub const POINTS_EXPIRE: &str = "points_expire";
+    pub const POINTS_REFUND: &str = "points_refund";
+    pub const POINTS_CLAWBACK: &str = "points_clawback";
+    pub const POINTS_TRANSFER: &str = "points_transfer";
+    pub const HOLD_SETTLE: &str = "hold_settle";
+    pub const CASH_ADJUSTMENT: &str = "cash_adjustment";
+    pub const TOKEN_ADJUSTMENT: &str = "token_adjustment";
+    pub const MANUAL_ADJUSTMENT: &str = "manual_adjustment";
+
+    pub fn validate(value: &str) -> Result<(), CommerceServiceError> {
+        let value = value.trim();
+        if value.is_empty() {
+            return Err(CommerceServiceError::validation("business_type is required"));
+        }
+        if value.len() > 64 {
+            return Err(CommerceServiceError::validation(
+                "business_type must be at most 64 characters",
+            ));
+        }
+        if !value
+            .chars()
+            .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_')
+        {
+            return Err(CommerceServiceError::validation(
+                "business_type must use lowercase letters, digits, or underscores",
+            ));
+        }
+        Ok(())
+    }
 }
 
 fn is_non_negative_decimal(value: &str, max_scale: usize) -> bool {

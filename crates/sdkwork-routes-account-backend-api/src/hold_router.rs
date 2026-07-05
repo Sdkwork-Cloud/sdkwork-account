@@ -8,9 +8,9 @@ use axum::routing::post;
 use axum::Router;
 use sdkwork_account_repository_sqlx::{hold_request_hash, PostgresCommerceAccountStore, SqliteCommerceAccountStore};
 use sdkwork_account_service::{
-    AccountHoldItem, CreateAccountHoldCommand, CreateAccountTransferCommand, HoldMutationOutcome,
-    ReleaseAccountHoldCommand, SettleAccountHoldCommand, TransferMutationOutcome, WalletAccountItem,
-    WalletTransactionItem,
+    AccountHoldItem, CreateAccountHoldCommand, CreateAccountTransferCommand, ExpireExpiredHoldsCommand,
+    ExpireExpiredHoldsOutcome, HoldMutationOutcome, ReleaseAccountHoldCommand,
+    SettleAccountHoldCommand, TransferMutationOutcome, WalletAccountItem, WalletTransactionItem,
 };
 use sdkwork_contract_service::{
     CommerceAccountAssetType, CommerceMoney, CommerceRequestHash, CommerceServiceError,
@@ -50,6 +50,12 @@ pub trait CommerceAccountHoldWriteStore: Send + Sync {
         command: CreateAccountTransferCommand,
         request_hash: CommerceRequestHash,
     ) -> CommerceHoldWriteFuture<'a, TransferMutationOutcome>;
+
+    fn expire_expired_holds<'a>(
+        &'a self,
+        command: ExpireExpiredHoldsCommand,
+        request_hash: CommerceRequestHash,
+    ) -> CommerceHoldWriteFuture<'a, ExpireExpiredHoldsOutcome>;
 }
 
 #[derive(Clone)]
@@ -111,6 +117,29 @@ struct CreateAccountTransferRequest {
     business_no: String,
     request_no: String,
     idempotency_key: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExpireExpiredHoldsRequest {
+    tenant_id: String,
+    #[serde(default)]
+    organization_id: Option<String>,
+    #[serde(default)]
+    owner_user_id: Option<String>,
+    #[serde(default)]
+    account_id: Option<String>,
+    request_no: String,
+    idempotency_key: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExpireExpiredHoldsResponse {
+    accepted: bool,
+    replayed: bool,
+    expired_hold_count: i64,
+    released_amount_total: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -256,6 +285,14 @@ impl CommerceAccountHoldWriteStore for SqliteCommerceAccountStore {
     ) -> CommerceHoldWriteFuture<'a, TransferMutationOutcome> {
         Box::pin(async move { self.create_account_transfer(command, request_hash).await })
     }
+
+    fn expire_expired_holds<'a>(
+        &'a self,
+        command: ExpireExpiredHoldsCommand,
+        request_hash: CommerceRequestHash,
+    ) -> CommerceHoldWriteFuture<'a, ExpireExpiredHoldsOutcome> {
+        Box::pin(async move { self.expire_expired_holds(command, request_hash).await })
+    }
 }
 
 impl CommerceAccountHoldWriteStore for PostgresCommerceAccountStore {
@@ -290,6 +327,14 @@ impl CommerceAccountHoldWriteStore for PostgresCommerceAccountStore {
     ) -> CommerceHoldWriteFuture<'a, TransferMutationOutcome> {
         Box::pin(async move { self.create_account_transfer(command, request_hash).await })
     }
+
+    fn expire_expired_holds<'a>(
+        &'a self,
+        command: ExpireExpiredHoldsCommand,
+        request_hash: CommerceRequestHash,
+    ) -> CommerceHoldWriteFuture<'a, ExpireExpiredHoldsOutcome> {
+        Box::pin(async move { self.expire_expired_holds(command, request_hash).await })
+    }
 }
 
 pub fn backend_hold_router_with_sqlite_pool(pool: SqlitePool) -> Router {
@@ -310,6 +355,10 @@ pub fn build_backend_hold_router(store: Arc<dyn CommerceAccountHoldWriteStore>) 
         .route(
             "/backend/v3/api/wallet/holds/{holdId}/release",
             post(release_account_hold),
+        )
+        .route(
+            "/backend/v3/api/wallet/holds/expire",
+            post(expire_expired_holds),
         )
         .route("/backend/v3/api/wallet/transfers", post(create_account_transfer))
         .with_state(BackendHoldState { store })
@@ -431,6 +480,49 @@ async fn release_account_hold(
     };
     match state.store.release_account_hold(command, request_hash).await {
         Ok(outcome) => success_item(Some(&ctx), map_hold_outcome(outcome)),
+        Err(error) => map_service_error(Some(&ctx), error),
+    }
+}
+
+async fn expire_expired_holds(
+    State(state): State<BackendHoldState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    axum::Json(body): axum::Json<ExpireExpiredHoldsRequest>,
+) -> Response {
+    let ctx = request_context.0;
+    let subject = match backend_runtime_subject_from_extension(runtime_context) {
+        Ok(subject) => subject,
+        Err(message) => return unauthorized(Some(&ctx), message),
+    };
+    if body.tenant_id.trim() != subject.tenant_id {
+        return validation(Some(&ctx), "tenant_id must match authenticated runtime tenant");
+    }
+    let command = match ExpireExpiredHoldsCommand::new(
+        body.tenant_id.trim(),
+        body.organization_id.as_deref(),
+        body.owner_user_id.as_deref(),
+        body.account_id.as_deref(),
+        body.request_no.trim(),
+        body.idempotency_key.trim(),
+    ) {
+        Ok(command) => command,
+        Err(error) => return map_service_error(Some(&ctx), error),
+    };
+    let request_hash = match hold_request_hash(&serde_json::to_string(&body).unwrap_or_default()) {
+        Ok(hash) => hash,
+        Err(error) => return map_service_error(Some(&ctx), error),
+    };
+    match state.store.expire_expired_holds(command, request_hash).await {
+        Ok(outcome) => success_item(
+            Some(&ctx),
+            ExpireExpiredHoldsResponse {
+                accepted: outcome.accepted,
+                replayed: outcome.replayed,
+                expired_hold_count: outcome.expired_hold_count,
+                released_amount_total: outcome.released_amount_total,
+            },
+        ),
         Err(error) => map_service_error(Some(&ctx), error),
     }
 }

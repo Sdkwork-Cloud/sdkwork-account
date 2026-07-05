@@ -2,10 +2,20 @@ use sdkwork_account_service::AppendLedgerEntryCommand;
 use sdkwork_contract_service::CommerceServiceError;
 use sdkwork_utils_rust::sha256_hash;
 use serde::Serialize;
+use sqlx::{Executor, Sqlite};
+
+use super::{next_entity_id, next_entity_uuid, store_error};
 
 pub const OUTBOX_STATUS_PENDING: &str = "PENDING";
+pub const OUTBOX_STATUS_PUBLISHED: &str = "PUBLISHED";
 pub const OUTBOX_AGGREGATE_TYPE_ACCOUNT: &str = "commerce_account";
 pub const OUTBOX_EVENT_TYPE_LEDGER_APPENDED: &str = "account.ledger_appended";
+pub const OUTBOX_EVENT_TYPE_HOLD_CREATED: &str = "account.hold_created";
+pub const OUTBOX_EVENT_TYPE_HOLD_SETTLED: &str = "account.hold_settled";
+pub const OUTBOX_EVENT_TYPE_HOLD_RELEASED: &str = "account.hold_released";
+pub const OUTBOX_EVENT_TYPE_HOLD_EXPIRED: &str = "account.hold_expired";
+pub const OUTBOX_EVENT_TYPE_TRANSFER_COMPLETED: &str = "account.transfer_completed";
+pub const OUTBOX_EVENT_TYPE_POINTS_LOTS_EXPIRED: &str = "account.points_lots_expired";
 pub const OUTBOX_EVENT_VERSION: i32 = 1;
 
 #[derive(Serialize)]
@@ -53,9 +63,154 @@ pub fn build_ledger_appended_outbox(
         request_no: command.request_no.clone(),
         idempotency_key: command.idempotency_key.clone(),
     };
-    let payload_json = serde_json::to_string(&payload).map_err(|error| {
+    serialize_outbox_payload(&event_key, &payload)
+}
+
+pub fn build_domain_outbox(
+    tenant_id: i64,
+    event_type: &str,
+    idempotency_key: &str,
+    payload: &impl Serialize,
+) -> Result<(String, String, String), CommerceServiceError> {
+    let event_key = format!("{tenant_id}:{idempotency_key}:{event_type}");
+    serialize_outbox_payload(&event_key, payload)
+}
+
+fn serialize_outbox_payload(
+    event_key: &str,
+    payload: &impl Serialize,
+) -> Result<(String, String, String), CommerceServiceError> {
+    let payload_json = serde_json::to_string(payload).map_err(|error| {
         CommerceServiceError::storage(format!("failed to serialize outbox payload: {error}"))
     })?;
     let payload_hash = sha256_hash(payload_json.as_bytes());
-    Ok((event_key, payload_json, payload_hash))
+    Ok((event_key.to_owned(), payload_json, payload_hash))
+}
+
+pub async fn insert_outbox_event_sqlite<'e, E>(
+    executor: E,
+    tenant_id: i64,
+    aggregate_id: i64,
+    event_type: &str,
+    event_key: &str,
+    payload: &str,
+    payload_hash: &str,
+    now: &str,
+) -> Result<(), CommerceServiceError>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
+    sqlx::query(
+        r#"
+        INSERT INTO commerce_outbox_event
+            (id, uuid, tenant_id, aggregate_type, aggregate_id, event_type, event_version,
+             event_key, payload, payload_hash, status, retry_count, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+        "#,
+    )
+    .bind(next_entity_id()?)
+    .bind(next_entity_uuid())
+    .bind(tenant_id)
+    .bind(OUTBOX_AGGREGATE_TYPE_ACCOUNT)
+    .bind(aggregate_id)
+    .bind(event_type)
+    .bind(OUTBOX_EVENT_VERSION)
+    .bind(event_key)
+    .bind(payload)
+    .bind(payload_hash)
+    .bind(OUTBOX_STATUS_PENDING)
+    .bind(now)
+    .bind(now)
+    .execute(executor)
+    .await
+    .map_err(|error| store_error("failed to insert outbox event", error))?;
+    Ok(())
+}
+
+pub async fn emit_domain_outbox_sqlite(
+    tx: &mut sqlx::Transaction<'_, Sqlite>,
+    tenant_id: i64,
+    aggregate_id: i64,
+    event_type: &str,
+    idempotency_key: &str,
+    payload: &impl Serialize,
+    now: &str,
+) -> Result<(), CommerceServiceError> {
+    let (event_key, payload_json, payload_hash) =
+        build_domain_outbox(tenant_id, event_type, idempotency_key, payload)?;
+    insert_outbox_event_sqlite(
+        &mut **tx,
+        tenant_id,
+        aggregate_id,
+        event_type,
+        &event_key,
+        &payload_json,
+        &payload_hash,
+        now,
+    )
+    .await
+}
+
+pub async fn emit_domain_outbox_postgres(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tenant_id: i64,
+    aggregate_id: i64,
+    event_type: &str,
+    idempotency_key: &str,
+    payload: &impl Serialize,
+    now: &str,
+) -> Result<(), CommerceServiceError> {
+    let (event_key, payload_json, payload_hash) =
+        build_domain_outbox(tenant_id, event_type, idempotency_key, payload)?;
+    insert_outbox_event_postgres(
+        &mut **tx,
+        tenant_id,
+        aggregate_id,
+        event_type,
+        &event_key,
+        &payload_json,
+        &payload_hash,
+        now,
+    )
+    .await
+}
+
+pub async fn insert_outbox_event_postgres<'e, E>(
+    executor: E,
+    tenant_id: i64,
+    aggregate_id: i64,
+    event_type: &str,
+    event_key: &str,
+    payload: &str,
+    payload_hash: &str,
+    now: &str,
+) -> Result<(), CommerceServiceError>
+where
+    E: Executor<'e, Database = sqlx::Postgres>,
+{
+    sqlx::query(
+        r#"
+        INSERT INTO commerce_outbox_event
+            (id, uuid, tenant_id, aggregate_type, aggregate_id, event_type, event_version,
+             event_key, payload, payload_hash, status, retry_count, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12, $13)
+        "#,
+    )
+    .bind(next_entity_id()?)
+    .bind(next_entity_uuid())
+    .bind(tenant_id)
+    .bind(OUTBOX_AGGREGATE_TYPE_ACCOUNT)
+    .bind(aggregate_id)
+    .bind(event_type)
+    .bind(OUTBOX_EVENT_VERSION)
+    .bind(event_key)
+    .bind(payload)
+    .bind(payload_hash)
+    .bind(OUTBOX_STATUS_PENDING)
+    .bind(now)
+    .bind(now)
+    .execute(executor)
+    .await
+    .map_err(|error| store_error("failed to insert outbox event", error))?;
+    Ok(())
 }

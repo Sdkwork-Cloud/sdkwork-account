@@ -483,6 +483,90 @@
         ]
       }
     },
+    "/app/v3/api/wallet/ledger_entries/{ledgerEntryId}/allocations": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.ledgerEntries.allocations.list",
+        "description": "Lists FIFO points lot allocations for a ledger entry owned by the current user.",
+        "parameters": [
+          {
+            "name": "ledgerEntryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointsLotAllocationListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/app/v3/api/wallet/points/summary": {
+      "get": {
+        "tags": [
+          "wallet"
+        ],
+        "operationId": "wallet.points.summary.retrieve",
+        "description": "Returns the current user's points summary including unswept expired lots and month-to-date ledger stats.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointsSummaryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
     "/app/v3/api/wallet/points/lots": {
       "get": {
         "tags": [
@@ -1244,6 +1328,167 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "PointsSummaryResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "$ref": "#/components/schemas/PointsSummaryItem"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PointsSummaryItem": {
+        "type": "object",
+        "required": [
+          "accountId",
+          "accountUuid",
+          "tenantId",
+          "ownerUserId",
+          "availablePoints",
+          "frozenPoints",
+          "pendingPoints",
+          "totalPoints",
+          "activeLotCount",
+          "expiringPoints",
+          "unsweptExpiredPoints",
+          "monthCreditPoints",
+          "monthDebitPoints",
+          "status",
+          "version"
+        ],
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "accountUuid": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "availablePoints": {
+            "type": "string"
+          },
+          "frozenPoints": {
+            "type": "string"
+          },
+          "pendingPoints": {
+            "type": "string"
+          },
+          "totalPoints": {
+            "type": "string"
+          },
+          "activeLotCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expiringPoints": {
+            "type": "string"
+          },
+          "unsweptExpiredPoints": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthCreditPoints": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthDebitPoints": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PointsLotAllocationListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "items",
+                  "pageInfo"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PointsLotAllocationItem"
+                    }
+                  },
+                  "pageInfo": {
+                    "$ref": "#/components/schemas/PageInfo"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "PointsLotAllocationItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "ledgerId",
+          "lotId",
+          "amount",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "ledgerId": {
+            "type": "string"
+          },
+          "lotId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

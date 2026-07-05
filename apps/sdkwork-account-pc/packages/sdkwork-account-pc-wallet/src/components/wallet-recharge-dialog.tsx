@@ -26,6 +26,7 @@ export interface SdkworkWalletRechargeDialogProps {
   onOpenChange?: (open: boolean) => void;
   open: boolean;
   rechargeFlow?: SdkworkWalletRechargeFlow;
+  walletReturnPath?: string;
 }
 
 const PAYMENT_METHODS = ["WECHAT", "ALIPAY", "BANKCARD"] as const;
@@ -41,6 +42,7 @@ export function SdkworkWalletRechargeDialog({
   onOpenChange,
   open,
   rechargeFlow = "direct",
+  walletReturnPath,
 }: SdkworkWalletRechargeDialogProps) {
   const state = useSdkworkWalletControllerState(controller);
   const [selectedPoints, setSelectedPoints] = useState<number>(0);
@@ -92,6 +94,12 @@ export function SdkworkWalletRechargeDialog({
           {!state.overview.isAuthenticated ? (
             <StatusNotice title={copy.rechargeDialog.signInRequiredTitle} tone="warning">
               {copy.rechargeDialog.signInRequiredDescription}
+            </StatusNotice>
+          ) : null}
+
+          {state.lastError ? (
+            <StatusNotice title={copy.page.errorTitle} tone="danger">
+              {state.lastError}
             </StatusNotice>
           ) : null}
 
@@ -238,6 +246,7 @@ export function SdkworkWalletRechargeDialog({
                   navigateWalletRechargeCheckout({
                     checkoutBasePath,
                     onNavigate,
+                    walletReturnPath,
                     ...(selectedPackage ? { package: selectedPackage } : {
                       points: effectivePoints,
                       pointsToCashRate: state.overview.pointsToCashRate,

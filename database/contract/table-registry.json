@@ -7,6 +7,7 @@
     "commerce_account_hold",
     "commerce_account_transfer",
     "commerce_points_lot",
+    "commerce_points_lot_allocation",
     "commerce_idempotency_record",
     "commerce_outbox_event",
     "commerce_billing_history"

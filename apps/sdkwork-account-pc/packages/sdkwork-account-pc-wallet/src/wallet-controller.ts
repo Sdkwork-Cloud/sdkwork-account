@@ -4,6 +4,7 @@
 } from "react";
 import {
   createSdkworkWalletService,
+  resolveSdkworkOrderAppService,
   type SdkworkWalletOverview,
   type SdkworkWalletRechargeInput,
   type SdkworkWalletRechargeResult,
@@ -15,6 +16,7 @@ import {
 export interface SdkworkWalletControllerState {
   isBootstrapped: boolean;
   isLoading: boolean;
+  isLoadingMore: boolean;
   isMutating: boolean;
   isRechargeOpen: boolean;
   isWithdrawOpen: boolean;
@@ -27,6 +29,8 @@ export interface SdkworkWalletController {
   closeRecharge(): void;
   closeWithdraw(): void;
   getState(): SdkworkWalletControllerState;
+  loadMoreHolds(): Promise<SdkworkWalletControllerState>;
+  loadMoreTransactions(): Promise<SdkworkWalletControllerState>;
   openRecharge(): void;
   openWithdraw(): void;
   rechargePoints(input: SdkworkWalletRechargeInput): Promise<SdkworkWalletRechargeResult>;
@@ -44,16 +48,18 @@ export interface CreateSdkworkWalletControllerOptions {
 export function createSdkworkWalletController(
   options: CreateSdkworkWalletControllerOptions = {},
 ): SdkworkWalletController {
+  const orderAppService = resolveSdkworkOrderAppService();
   const service: SdkworkWalletService = options.service
     ? {
-        ...createSdkworkWalletService(),
+        ...createSdkworkWalletService(orderAppService ? { orderAppService } : {}),
         ...options.service,
       }
-    : createSdkworkWalletService();
+    : createSdkworkWalletService(orderAppService ? { orderAppService } : {});
   const listeners = new Set<() => void>();
   let state: SdkworkWalletControllerState = {
     isBootstrapped: false,
     isLoading: false,
+    isLoadingMore: false,
     isMutating: false,
     isRechargeOpen: false,
     isWithdrawOpen: false,
@@ -181,6 +187,78 @@ export function createSdkworkWalletController(
         overview,
       });
       return state;
+    },
+
+    async loadMoreTransactions() {
+      const cursor = state.overview.transactionPageInfo?.nextCursor;
+      if (!cursor || !state.overview.transactionPageInfo?.hasMore) {
+        return state;
+      }
+
+      setState({
+        isLoadingMore: true,
+        lastError: undefined,
+      });
+
+      try {
+        const page = await service.loadMoreTransactions(cursor);
+        setState({
+          isLoadingMore: false,
+          overview: {
+            ...state.overview,
+            transactionPageInfo: page.transactionPageInfo,
+            transactions: [
+              ...state.overview.transactions,
+              ...page.transactions.filter(
+                (transaction) => !state.overview.transactions.some((existing) => existing.id === transaction.id),
+              ),
+            ].sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
+          },
+        });
+        return state;
+      } catch (error) {
+        setState({
+          isLoadingMore: false,
+          lastError: error instanceof Error ? error.message : "Failed to load more wallet activity.",
+        });
+        throw error;
+      }
+    },
+
+    async loadMoreHolds() {
+      const nextPage = (state.overview.holdPageInfo?.page ?? 1) + 1;
+      if (!state.overview.holdPageInfo?.hasMore) {
+        return state;
+      }
+
+      setState({
+        isLoadingMore: true,
+        lastError: undefined,
+      });
+
+      try {
+        const page = await service.loadMoreHolds(nextPage);
+        setState({
+          isLoadingMore: false,
+          overview: {
+            ...state.overview,
+            holdPageInfo: page.holdPageInfo,
+            holds: [
+              ...state.overview.holds,
+              ...page.holds.filter(
+                (hold) => !state.overview.holds.some((existing) => existing.id === hold.id),
+              ),
+            ],
+          },
+        });
+        return state;
+      } catch (error) {
+        setState({
+          isLoadingMore: false,
+          lastError: error instanceof Error ? error.message : "Failed to load more wallet holds.",
+        });
+        throw error;
+      }
     },
 
     service,

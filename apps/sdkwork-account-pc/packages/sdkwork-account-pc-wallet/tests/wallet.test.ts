@@ -69,6 +69,24 @@ describe("sdkwork-account-pc-wallet headless contract", () => {
           points: 12000,
           priceCny: 99,
         },
+        walletReturnPath: "/wallet",
+      }),
+    ).toEqual({
+      focusWindow: true,
+      kind: "wallet-recharge",
+      route: "/checkout?kind=wallet-recharge&points=12000&priceCny=99&sourceId=wallet-recharge-package-42&packageId=42&returnUrl=%2Fwallet%3FcommerceRefresh%3D1",
+      source: "wallet-workspace",
+      sourceId: "wallet-recharge-package-42",
+      type: "wallet-checkout-route-intent",
+    });
+
+    expect(
+      createWalletCheckoutRouteIntent({
+        package: {
+          id: 42,
+          points: 12000,
+          priceCny: 99,
+        },
       }),
     ).toEqual({
       focusWindow: true,

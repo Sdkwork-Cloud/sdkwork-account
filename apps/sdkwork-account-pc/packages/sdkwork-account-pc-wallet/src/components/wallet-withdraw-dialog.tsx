@@ -152,6 +152,12 @@ export function SdkworkWalletWithdrawDialog({
             </StatusNotice>
           ) : null}
 
+          {state.lastError ? (
+            <StatusNotice title={copy.page.errorTitle} tone="danger">
+              {state.lastError}
+            </StatusNotice>
+          ) : null}
+
           {Number.isFinite(amountCny) && amountCny > state.overview.account.cashAvailable ? (
             <StatusNotice title={copy.withdrawDialog.insufficientTitle} tone="warning">
               {copy.withdrawDialog.insufficientDescription}

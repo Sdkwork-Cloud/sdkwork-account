@@ -28,6 +28,7 @@ export interface NavigateWalletRechargeCheckoutInput {
   points?: number;
   pointsToCashRate?: number | null;
   priceCny?: number;
+  walletReturnPath?: string;
 }
 
 export function navigateWalletRechargeCheckout(
@@ -50,6 +51,7 @@ export function navigateWalletRechargeCheckout(
   input.onNavigate(
     createWalletCheckoutRouteIntent({
       basePath: input.checkoutBasePath,
+      walletReturnPath: input.walletReturnPath,
       ...(rechargePackage ? { package: rechargePackage } : { points, priceCny }),
     }).route,
   );

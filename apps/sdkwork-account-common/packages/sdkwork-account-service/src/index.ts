@@ -191,15 +191,45 @@ export function unwrapSdkworkAccountResource<T>(
   return data as T;
 }
 
+export interface SdkworkAccountPageInfo {
+  hasMore?: boolean;
+  mode?: "cursor" | "offset";
+  nextCursor?: string | null;
+  page?: number;
+  pageSize?: number;
+  totalItems?: number;
+}
+
+export interface SdkworkAccountListPage<T> {
+  items: T[];
+  pageInfo: SdkworkAccountPageInfo | null;
+}
+
+export function unwrapSdkworkAccountListPage<T>(
+  value: unknown,
+  fallbackMessage = "Request failed.",
+): SdkworkAccountListPage<T> {
+  const data = unwrapSdkworkAccountResponse<{
+    items?: T[];
+    pageInfo?: SdkworkAccountPageInfo | null;
+  } | T[]>(value, fallbackMessage);
+  if (Array.isArray(data)) {
+    return {
+      items: data,
+      pageInfo: null,
+    };
+  }
+  return {
+    items: data.items ?? [],
+    pageInfo: data.pageInfo ?? null,
+  };
+}
+
 export function unwrapSdkworkAccountPage<T>(
   value: unknown,
   fallbackMessage = "Request failed.",
 ): T[] {
-  const data = unwrapSdkworkAccountResponse<{ items?: T[] } | T[]>(value, fallbackMessage);
-  if (Array.isArray(data)) {
-    return data;
-  }
-  return data.items ?? [];
+  return unwrapSdkworkAccountListPage<T>(value, fallbackMessage).items;
 }
 
 export function toSdkworkAccountOptionalString(value: unknown): string | undefined {

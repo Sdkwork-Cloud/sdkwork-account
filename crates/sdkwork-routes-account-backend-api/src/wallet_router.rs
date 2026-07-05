@@ -8,7 +8,9 @@ use axum::routing::post;
 use axum::Router;
 use sdkwork_account_repository_sqlx::{PostgresCommerceAccountStore, SqliteCommerceAccountStore};
 use sdkwork_account_service::{
-    AppendLedgerEntryCommand, AppendLedgerEntryOutcome, WalletAccountItem, WalletTransactionItem,
+    AppendLedgerEntryCommand, AppendLedgerEntryOutcome, ExpirePointsLotsCommand,
+    ExpirePointsLotsOutcome, PointsLotMismatchItem, PointsReconciliationQuery,
+    PointsReconciliationSnapshot, WalletAccountItem, WalletTransactionItem,
 };
 use sdkwork_contract_service::{
     CommerceAccountAssetType, CommerceLedgerDirection, CommerceMoney, CommerceRequestHash,
@@ -32,6 +34,17 @@ pub trait CommerceAccountLedgerWriteStore: Send + Sync {
         command: AppendLedgerEntryCommand,
         request_hash: CommerceRequestHash,
     ) -> CommerceLedgerWriteFuture<'a, AppendLedgerEntryOutcome>;
+
+    fn expire_points_lots<'a>(
+        &'a self,
+        command: ExpirePointsLotsCommand,
+        request_hash: CommerceRequestHash,
+    ) -> CommerceLedgerWriteFuture<'a, ExpirePointsLotsOutcome>;
+
+    fn reconcile_points_lots<'a>(
+        &'a self,
+        query: PointsReconciliationQuery,
+    ) -> CommerceLedgerWriteFuture<'a, PointsReconciliationSnapshot>;
 }
 
 #[derive(Clone)]
@@ -58,6 +71,60 @@ struct CreateWalletAdjustmentRequest {
     transaction_no: String,
     request_no: String,
     idempotency_key: String,
+    #[serde(default)]
+    expires_at: Option<String>,
+    #[serde(default)]
+    reversed_ledger_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExpirePointsLotsRequest {
+    tenant_id: String,
+    #[serde(default)]
+    organization_id: Option<String>,
+    #[serde(default)]
+    owner_user_id: Option<String>,
+    #[serde(default)]
+    account_id: Option<String>,
+    request_no: String,
+    idempotency_key: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExpirePointsLotsResponse {
+    accepted: bool,
+    replayed: bool,
+    expired_lot_count: i64,
+    expired_points_total: i64,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PointsReconciliationRequest {
+    tenant_id: String,
+    #[serde(default)]
+    organization_id: Option<String>,
+    #[serde(default)]
+    owner_user_id: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PointsLotMismatchResponse {
+    account_id: String,
+    available_points: String,
+    lot_remaining_total: i64,
+    delta: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PointsReconciliationResponse {
+    checked_account_count: i64,
+    mismatch_count: i64,
+    mismatches: Vec<PointsLotMismatchResponse>,
 }
 
 #[derive(Debug, Serialize)]
@@ -115,6 +182,21 @@ impl CommerceAccountLedgerWriteStore for SqliteCommerceAccountStore {
     ) -> CommerceLedgerWriteFuture<'a, AppendLedgerEntryOutcome> {
         Box::pin(async move { self.append_ledger_entry(command, request_hash).await })
     }
+
+    fn expire_points_lots<'a>(
+        &'a self,
+        command: ExpirePointsLotsCommand,
+        request_hash: CommerceRequestHash,
+    ) -> CommerceLedgerWriteFuture<'a, ExpirePointsLotsOutcome> {
+        Box::pin(async move { self.expire_points_lots(command, request_hash).await })
+    }
+
+    fn reconcile_points_lots<'a>(
+        &'a self,
+        query: PointsReconciliationQuery,
+    ) -> CommerceLedgerWriteFuture<'a, PointsReconciliationSnapshot> {
+        Box::pin(async move { self.reconcile_points_lots(query).await })
+    }
 }
 
 impl CommerceAccountLedgerWriteStore for PostgresCommerceAccountStore {
@@ -124,6 +206,21 @@ impl CommerceAccountLedgerWriteStore for PostgresCommerceAccountStore {
         request_hash: CommerceRequestHash,
     ) -> CommerceLedgerWriteFuture<'a, AppendLedgerEntryOutcome> {
         Box::pin(async move { self.append_ledger_entry(command, request_hash).await })
+    }
+
+    fn expire_points_lots<'a>(
+        &'a self,
+        command: ExpirePointsLotsCommand,
+        request_hash: CommerceRequestHash,
+    ) -> CommerceLedgerWriteFuture<'a, ExpirePointsLotsOutcome> {
+        Box::pin(async move { self.expire_points_lots(command, request_hash).await })
+    }
+
+    fn reconcile_points_lots<'a>(
+        &'a self,
+        query: PointsReconciliationQuery,
+    ) -> CommerceLedgerWriteFuture<'a, PointsReconciliationSnapshot> {
+        Box::pin(async move { self.reconcile_points_lots(query).await })
     }
 }
 
@@ -152,6 +249,14 @@ pub fn build_backend_wallet_router(store: Arc<dyn CommerceAccountLedgerWriteStor
         .route(
             "/backend/v3/api/wallet/adjustments/tokens",
             post(create_token_adjustment),
+        )
+        .route(
+            "/backend/v3/api/wallet/points/lots/expire",
+            post(expire_points_lots),
+        )
+        .route(
+            "/backend/v3/api/wallet/points/reconciliation",
+            post(reconcile_points_lots),
         )
         .with_state(BackendWalletState { store })
 }
@@ -248,7 +353,7 @@ async fn create_wallet_adjustment_with_asset(
         Err(error) => return map_service_error(Some(&ctx), error),
     };
 
-    let command = match AppendLedgerEntryCommand::new(
+    let command = match AppendLedgerEntryCommand::with_options(
         body.tenant_id.trim(),
         body.organization_id.as_deref(),
         body.account_id.as_deref().unwrap_or(""),
@@ -261,6 +366,8 @@ async fn create_wallet_adjustment_with_asset(
         body.transaction_no.trim(),
         body.request_no.trim(),
         body.idempotency_key.trim(),
+        body.expires_at.as_deref(),
+        body.reversed_ledger_id.as_deref(),
     ) {
         Ok(command) => command,
         Err(error) => return map_service_error(Some(&ctx), error),
@@ -289,8 +396,120 @@ async fn create_wallet_adjustment_with_asset(
     }
 }
 
+async fn expire_points_lots(
+    State(state): State<BackendWalletState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    body: axum::Json<ExpirePointsLotsRequest>,
+) -> Response {
+    let ctx = request_context.0;
+    let subject = match backend_runtime_subject_from_extension(runtime_context) {
+        Ok(subject) => subject,
+        Err(message) => return unauthorized(Some(&ctx), message),
+    };
+
+    if body.tenant_id.trim() != subject.tenant_id {
+        return validation(
+            Some(&ctx),
+            "tenant_id must match authenticated runtime tenant",
+        );
+    }
+
+    let command = match ExpirePointsLotsCommand::new(
+        body.tenant_id.trim(),
+        body.organization_id.as_deref(),
+        body.owner_user_id.as_deref(),
+        body.account_id.as_deref(),
+        body.request_no.trim(),
+        body.idempotency_key.trim(),
+    ) {
+        Ok(command) => command,
+        Err(error) => return map_service_error(Some(&ctx), error),
+    };
+
+    let request_hash = match expire_request_hash_from_body(&body) {
+        Ok(request_hash) => request_hash,
+        Err(error) => return map_service_error(Some(&ctx), error),
+    };
+
+    match state.store.expire_points_lots(command, request_hash).await {
+        Ok(outcome) => success_item(
+            Some(&ctx),
+            ExpirePointsLotsResponse {
+                accepted: outcome.accepted,
+                replayed: outcome.replayed,
+                expired_lot_count: outcome.expired_lot_count,
+                expired_points_total: outcome.expired_points_total,
+            },
+        ),
+        Err(error) => map_service_error(Some(&ctx), error),
+    }
+}
+
+async fn reconcile_points_lots(
+    State(state): State<BackendWalletState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    body: axum::Json<PointsReconciliationRequest>,
+) -> Response {
+    let ctx = request_context.0;
+    let subject = match backend_runtime_subject_from_extension(runtime_context) {
+        Ok(subject) => subject,
+        Err(message) => return unauthorized(Some(&ctx), message),
+    };
+
+    if body.tenant_id.trim() != subject.tenant_id {
+        return validation(
+            Some(&ctx),
+            "tenant_id must match authenticated runtime tenant",
+        );
+    }
+
+    let query = match PointsReconciliationQuery::new(
+        body.tenant_id.trim(),
+        body.organization_id.as_deref(),
+        body.owner_user_id.as_deref(),
+    ) {
+        Ok(query) => query,
+        Err(error) => return map_service_error(Some(&ctx), error),
+    };
+
+    match state.store.reconcile_points_lots(query).await {
+        Ok(snapshot) => success_item(
+            Some(&ctx),
+            PointsReconciliationResponse {
+                checked_account_count: snapshot.checked_account_count,
+                mismatch_count: snapshot.mismatch_count,
+                mismatches: snapshot
+                    .mismatches
+                    .into_iter()
+                    .map(map_points_mismatch)
+                    .collect(),
+            },
+        ),
+        Err(error) => map_service_error(Some(&ctx), error),
+    }
+}
+
+fn map_points_mismatch(value: PointsLotMismatchItem) -> PointsLotMismatchResponse {
+    PointsLotMismatchResponse {
+        account_id: value.account_id,
+        available_points: value.available_points,
+        lot_remaining_total: value.lot_remaining_total,
+        delta: value.delta,
+    }
+}
+
 fn request_hash_from_body(
     body: &CreateWalletAdjustmentRequest,
+) -> Result<CommerceRequestHash, CommerceServiceError> {
+    let canonical = serde_json::to_string(body)
+        .map_err(|error| CommerceServiceError::validation(format!("request body is invalid: {error}")))?;
+    CommerceRequestHash::new(&sha256_hash(canonical.as_bytes()))
+}
+
+fn expire_request_hash_from_body(
+    body: &ExpirePointsLotsRequest,
 ) -> Result<CommerceRequestHash, CommerceServiceError> {
     let canonical = serde_json::to_string(body)
         .map_err(|error| CommerceServiceError::validation(format!("request body is invalid: {error}")))?;

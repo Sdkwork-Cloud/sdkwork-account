@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 pub mod api_response;
 pub mod hold_router;
+pub mod outbox_router;
 pub mod routes;
 pub mod subject;
 pub mod wallet_router;
@@ -13,6 +14,10 @@ pub use routes::build_account_backend_router_with_framework;
 pub use hold_router::{
     backend_hold_router_with_postgres_pool, backend_hold_router_with_sqlite_pool,
     build_backend_hold_router, CommerceAccountHoldWriteStore, CommerceHoldWriteFuture,
+};
+pub use outbox_router::{
+    backend_outbox_router_with_postgres_pool, backend_outbox_router_with_sqlite_pool,
+    build_backend_outbox_router, CommerceOutboxRelayStore, CommerceOutboxRelayFuture,
 };
 pub use wallet_router::{
     backend_wallet_router_with_postgres_pool, backend_wallet_router_with_sqlite_pool,

@@ -74,6 +74,49 @@ describe("sdkwork-account-pc-wallet service", () => {
                     uuid: "history-2",
                   },
                 ],
+                pageInfo: {
+                  mode: "offset",
+                  page: 1,
+                  pageSize: 20,
+                  hasMore: false,
+                },
+              },
+            }),
+          },
+          cash: {
+            list: vi.fn().mockResolvedValue({
+              code: 0,
+              data: {
+                items: [
+                  {
+                    amount: "6.00",
+                    assetType: "cash",
+                    businessType: "CASH_WITHDRAW",
+                    createdAt: "2026-04-01T11:00:00.000Z",
+                    direction: "debit",
+                    uuid: "cash-history-1",
+                  },
+                ],
+                pageInfo: {
+                  mode: "offset",
+                  page: 1,
+                  pageSize: 20,
+                  hasMore: false,
+                },
+              },
+            }),
+          },
+        },
+        points: {
+          summary: {
+            retrieve: vi.fn().mockResolvedValue({
+              code: 0,
+              data: {
+                item: {
+                  monthCreditPoints: "9600",
+                  monthDebitPoints: "7200",
+                  totalPoints: "1230",
+                },
               },
             }),
           },
@@ -110,11 +153,18 @@ describe("sdkwork-account-pc-wallet service", () => {
     expect(overview.account.availablePoints).toBe(1200);
     expect(overview.account.cashAvailable).toBe(88.5);
     expect(overview.account.tokenBalance).toBe(42);
-    expect(overview.transactions).toHaveLength(1);
+    expect(overview.account.totalEarned).toBe(9600);
+    expect(overview.account.totalSpent).toBe(7200);
+    expect(overview.transactions).toHaveLength(2);
     expect(overview.transactions[0]).toMatchObject({
       id: "history-2",
       pointsDelta: -240,
       title: "POINTS_USAGE",
+    });
+    expect(overview.transactions[1]).toMatchObject({
+      id: "cash-history-1",
+      cashAmountCny: 6,
+      title: "CASH_WITHDRAW",
     });
     expect(overview.holds).toHaveLength(1);
     expect(overview.holds[0]).toMatchObject({
@@ -170,6 +220,12 @@ describe("sdkwork-account-pc-wallet service", () => {
         },
         ledgerEntries: {
           points: { list: vi.fn().mockResolvedValue({ code: 0, data: { items: [] } }) },
+          cash: { list: vi.fn().mockResolvedValue({ code: 0, data: { items: [] } }) },
+        },
+        points: {
+          summary: {
+            retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }),
+          },
         },
         holds: { list: vi.fn().mockResolvedValue({ code: 0, data: { items: [] } }) },
       },

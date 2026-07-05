@@ -97,7 +97,8 @@ describe("sdkwork-account-pc-wallet intl", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "\u94b1\u5305\u4e2d\u5fc3",
+        name: "\u94b1\u5305",
+        level: 1,
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "\u5145\u503c\u94b1\u5305" })).toBeInTheDocument();

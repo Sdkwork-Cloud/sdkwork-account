@@ -1,4 +1,5 @@
 use axum::Extension;
+use sdkwork_account_service::AccountSummarySnapshot;
 use sdkwork_iam_context_service::IamAppContext;
 
 #[derive(Debug, Clone)]
@@ -44,4 +45,124 @@ fn required_context_text(value: &str, field_name: &'static str) -> Result<String
         ));
     }
     Ok(value.to_owned())
+}
+
+pub(crate) fn enrich_account_summary_from_iam(
+    snapshot: &mut AccountSummarySnapshot,
+    context: &IamAppContext,
+) {
+    if snapshot.name.is_empty() {
+        let name = context.display_name.trim();
+        if !name.is_empty() {
+            snapshot.name = name.to_owned();
+        }
+    }
+
+    if snapshot.email.is_empty() {
+        let email = context.email.trim();
+        if !email.is_empty() {
+            snapshot.email = email.to_owned();
+        }
+    }
+
+    if !snapshot.is_verified && context.email_verified {
+        snapshot.is_verified = true;
+    }
+
+    if snapshot.tier.is_empty() {
+        let tier = context
+            .standard_role_codes
+            .iter()
+            .map(|code| code.trim())
+            .filter(|code| !code.is_empty())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        if !tier.is_empty() {
+            snapshot.tier = tier;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use sdkwork_account_service::{
+        AccountInvoiceSettings, AccountSecuritySummary, AccountSummarySnapshot,
+    };
+    use sdkwork_iam_context_service::{
+        AuthLevel, DeploymentMode, Environment, IamAppContext,
+    };
+
+    use super::enrich_account_summary_from_iam;
+
+    fn empty_summary() -> AccountSummarySnapshot {
+        AccountSummarySnapshot {
+            id: "user-1".to_owned(),
+            name: String::new(),
+            email: String::new(),
+            is_verified: false,
+            tier: String::new(),
+            organization: String::new(),
+            available_credits: 0.0,
+            est_days_remaining: 0,
+            monthly_consumption: 0.0,
+            consumption_by_service: Vec::new(),
+            invoice_settings: AccountInvoiceSettings::default(),
+            security: AccountSecuritySummary::default(),
+            login_logs: Vec::new(),
+        }
+    }
+
+    fn base_context() -> IamAppContext {
+        IamAppContext::new(
+            "tenant-1",
+            None,
+            "user-1",
+            "session-1",
+            "app-1",
+            Environment::Dev,
+            DeploymentMode::Private,
+            AuthLevel::Password,
+            Vec::new(),
+            Vec::new(),
+        )
+    }
+
+    #[test]
+    fn enrich_summary_sets_profile_and_tier_from_iam_context() {
+        let mut snapshot = empty_summary();
+        let mut context = base_context();
+        context.display_name = "Ada Lovelace".to_owned();
+        context.email = "ada@example.com".to_owned();
+        context.email_verified = true;
+        context.standard_role_codes = vec!["pro".to_owned(), "billing_admin".to_owned()];
+
+        enrich_account_summary_from_iam(&mut snapshot, &context);
+
+        assert_eq!(snapshot.name, "Ada Lovelace");
+        assert_eq!(snapshot.email, "ada@example.com");
+        assert!(snapshot.is_verified);
+        assert_eq!(snapshot.tier, "pro, billing_admin");
+    }
+
+    #[test]
+    fn enrich_summary_does_not_overwrite_existing_snapshot_fields() {
+        let mut snapshot = empty_summary();
+        snapshot.name = "Existing".to_owned();
+        snapshot.email = "existing@example.com".to_owned();
+        snapshot.tier = "enterprise".to_owned();
+
+        let mut context = base_context();
+        context.display_name = "Ignored".to_owned();
+        context.email = "ignored@example.com".to_owned();
+        context.email_verified = true;
+        context.standard_role_codes = vec!["pro".to_owned()];
+
+        enrich_account_summary_from_iam(&mut snapshot, &context);
+
+        assert_eq!(snapshot.name, "Existing");
+        assert_eq!(snapshot.email, "existing@example.com");
+        assert_eq!(snapshot.tier, "enterprise");
+        assert!(snapshot.is_verified);
+    }
 }

@@ -189,6 +189,23 @@ CREATE TABLE IF NOT EXISTS commerce_points_lot (
 CREATE INDEX IF NOT EXISTS idx_commerce_points_lot_account_expires
     ON commerce_points_lot (tenant_id, account_id, expires_at);
 
+CREATE TABLE IF NOT EXISTS commerce_points_lot_allocation (
+    id BIGINT NOT NULL,
+    uuid VARCHAR(64) NOT NULL,
+    tenant_id BIGINT NOT NULL,
+    account_id BIGINT NOT NULL,
+    ledger_id BIGINT NOT NULL,
+    lot_id BIGINT NOT NULL,
+    amount BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    CONSTRAINT pk_commerce_points_lot_allocation PRIMARY KEY (id),
+    CONSTRAINT uk_commerce_points_lot_allocation_uuid UNIQUE (uuid),
+    CONSTRAINT uk_commerce_points_lot_allocation_ledger_lot UNIQUE (tenant_id, ledger_id, lot_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_commerce_points_lot_allocation_ledger
+    ON commerce_points_lot_allocation (tenant_id, ledger_id);
+
 CREATE TABLE IF NOT EXISTS commerce_idempotency_record (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,

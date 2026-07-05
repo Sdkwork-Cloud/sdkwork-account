@@ -9,3 +9,7 @@ pub fn require_non_empty(field: &str, value: &str) -> Result<(), CommerceService
 
     Ok(())
 }
+
+pub fn validate_ledger_business_type(value: &str) -> Result<(), CommerceServiceError> {
+    sdkwork_contract_service::CommerceLedgerBusinessType::validate(value)
+}

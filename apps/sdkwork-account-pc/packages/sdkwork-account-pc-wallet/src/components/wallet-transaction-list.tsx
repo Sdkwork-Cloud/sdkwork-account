@@ -1,12 +1,18 @@
-﻿import { StatusNotice } from "@sdkwork/ui-pc-react";
+﻿import { Button, StatusNotice } from "@sdkwork/ui-pc-react";
 import { useSdkworkWalletIntl } from "../wallet-intl";
 import type { SdkworkWalletTransaction } from "../wallet-service";
 
 export interface SdkworkWalletTransactionListProps {
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
   transactions: SdkworkWalletTransaction[];
 }
 
 export function SdkworkWalletTransactionList({
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
   transactions,
 }: SdkworkWalletTransactionListProps) {
   const {
@@ -79,6 +85,20 @@ export function SdkworkWalletTransactionList({
           </table>
         </div>
       )}
+
+      {hasMore && onLoadMore ? (
+        <div className="border-t border-[var(--sdk-color-border-subtle)] px-5 py-4 sm:px-6">
+          <Button
+            loading={isLoadingMore}
+            onClick={onLoadMore}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {copy.transactionList.loadMore}
+          </Button>
+        </div>
+      ) : null}
     </section>
   );
 }

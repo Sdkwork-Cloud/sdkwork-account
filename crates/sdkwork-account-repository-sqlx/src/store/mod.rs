@@ -1,4 +1,22 @@
+pub mod account_guard;
+pub mod account_summary;
+pub mod balance;
+pub mod billing_projection;
+pub mod idempotency;
 pub mod outbox;
+pub mod outbox_relay;
+pub mod pagination;
+
+pub use idempotency::{IdempotencyRecordAction, resolve_idempotency_record_action};
+pub use pagination::{
+    fetch_limit_for_page, finalize_list_page, resolve_list_sql_paging, ListSqlPaging,
+};
+
+/// Maximum rows processed per expire-sweep batch to avoid unbounded memory use.
+pub const EXPIRE_SWEEP_BATCH_SIZE: i64 = 500;
+
+/// Default rows returned per outbox dispatch batch for backend relay jobs.
+pub const OUTBOX_DISPATCH_BATCH_DEFAULT: i64 = 100;
 
 use chrono::{DateTime, Utc};
 use sdkwork_account_service::AppendLedgerEntryCommand;
@@ -11,7 +29,11 @@ pub const LEDGER_APPEND_SCOPE: &str = "wallet.adjustments.create";
 pub const HOLD_CREATE_SCOPE: &str = "wallet.holds.create";
 pub const HOLD_SETTLE_SCOPE: &str = "wallet.holds.settle";
 pub const HOLD_RELEASE_SCOPE: &str = "wallet.holds.release";
+pub const HOLD_EXPIRE_SCOPE: &str = "wallet.holds.expire";
 pub const TRANSFER_CREATE_SCOPE: &str = "wallet.transfers.create";
+pub const POINTS_LOT_EXPIRE_SCOPE: &str = "wallet.points.lots.expire";
+pub const POINTS_LOT_STATUS_DEPLETED: i32 = 2;
+pub const POINTS_LOT_STATUS_EXPIRED: i32 = 3;
 pub const OWNER_TYPE_USER: &str = "USER";
 pub const ACCOUNT_STATUS_ACTIVE: i32 = 1;
 pub const ACCOUNT_PURPOSE_GENERAL: &str = "GENERAL";

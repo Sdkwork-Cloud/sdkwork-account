@@ -15,6 +15,7 @@ export interface SdkworkWalletMessages {
     openCenter: string;
     recharge: string;
     rechargeWallet: string;
+    retry: string;
     withdraw: string;
   };
   balancePanel: {
@@ -114,6 +115,7 @@ export interface SdkworkWalletMessages {
     emptyDescription: string;
     emptyTitle: string;
     fallbackType: string;
+    loadMore: string;
     title: string;
   };
   holdList: {
@@ -122,6 +124,7 @@ export interface SdkworkWalletMessages {
     emptyDescription: string;
     emptyTitle: string;
     fallbackType: string;
+    loadMore: string;
     title: string;
     unknownAsset: string;
   };
@@ -219,6 +222,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     openCenter: "Open center",
     recharge: "Recharge",
     rechargeWallet: "Recharge wallet",
+    retry: "Retry",
     withdraw: "Withdraw cash",
   },
   balancePanel: {
@@ -318,6 +322,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     emptyDescription: "Once balance events start flowing, they will appear here.",
     emptyTitle: "No wallet activity yet",
     fallbackType: "Wallet transaction",
+    loadMore: "Load more activity",
     title: "Wallet activity",
   },
   holdList: {
@@ -326,6 +331,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     emptyDescription: "When checkout or order flows create holds, they will appear here.",
     emptyTitle: "No holds yet",
     fallbackType: "Wallet hold",
+    loadMore: "Load more holds",
     title: "Balance holds",
     unknownAsset: "unknown",
   },
@@ -388,6 +394,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     openCenter: "\u6253\u5f00\u4e2d\u5fc3",
     recharge: "\u5145\u503c",
     rechargeWallet: "\u5145\u503c\u94b1\u5305",
+    retry: "\u91cd\u8bd5",
     withdraw: "\u63d0\u73b0",
   },
   balancePanel: {
@@ -487,6 +494,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     emptyDescription: "\u5f53\u4f59\u989d\u4e8b\u4ef6\u5f00\u59cb\u6d41\u8f6c\u540e\uff0c\u5b83\u4eec\u4f1a\u51fa\u73b0\u5728\u8fd9\u91cc\u3002",
     emptyTitle: "\u6682\u65e0\u94b1\u5305\u6d3b\u52a8",
     fallbackType: "\u94b1\u5305\u4ea4\u6613",
+    loadMore: "\u52a0\u8f7d\u66f4\u591a\u6d3b\u52a8",
     title: "\u94b1\u5305\u6d3b\u52a8",
   },
   holdList: {
@@ -495,6 +503,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     emptyDescription: "\u5f53\u652f\u4ed8\u6216\u8ba2\u5355\u6d41\u7a0b\u521b\u5efa\u9884\u6263\u540e\uff0c\u8bb0\u5f55\u4f1a\u51fa\u73b0\u5728\u8fd9\u91cc\u3002",
     emptyTitle: "\u6682\u65e0\u9884\u6263\u8bb0\u5f55",
     fallbackType: "\u94b1\u5305\u9884\u6263",
+    loadMore: "\u52a0\u8f7d\u66f4\u591a\u9884\u6263",
     title: "\u4f59\u989d\u9884\u6263",
     unknownAsset: "\u672a\u77e5",
   },

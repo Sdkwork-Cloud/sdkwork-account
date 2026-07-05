@@ -1,4 +1,6 @@
 mod sqlite_hold;
+mod postgres_points_ops;
+mod sqlite_points_ops;
 mod postgres_hold;
 
 pub mod postgres_account;
@@ -7,8 +9,11 @@ pub mod sqlite_account;
 pub mod sqlite_billing;
 pub mod store;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 mod test_sqlite_pool;
+
+#[cfg(any(test, feature = "test-support"))]
+pub use test_sqlite_pool::account_migrated_sqlite_memory_pool;
 
 pub use postgres_account::PostgresCommerceAccountStore;
 pub use postgres_billing::PostgresCommerceBillingHistoryStore;

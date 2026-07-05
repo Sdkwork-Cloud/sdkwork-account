@@ -29,6 +29,30 @@ Errors: HTTP 4xx/5xx `application/problem+json` with numeric `code` and `traceId
 
 Single resources use `data.item`. Lists use `data.items` + `data.pageInfo`.
 
+List pagination (`PAGINATION_SPEC.md`):
+
+- Default `pageSize` is **20** (max **200**).
+- Offset mode: `page` + `pageSize`; response includes `totalItems`, `totalPages`, `hasMore`.
+- Cursor mode: numeric `cursor` (row offset) or RFC3339 keyset cursor on ledger lists; response includes `nextCursor` + `hasMore`. Never combine cursor with SQL `OFFSET` on the same request.
+
+Idempotency:
+
+- Write paths use `commerce_idempotency_record` scopes per operation.
+- `COMPLETED` → replay stored outcome; `LOCKED` → HTTP **423** (`42301`); `FAILED` → reclaim lock on retry; hash mismatch → HTTP **409**.
+
+Account summary (`GET .../accounts/current/summary`):
+
+- Wallet fields (`availableCredits`, monthly consumption, service breakdown) are computed from billing projection.
+- Profile fields (`name`, `email`, `isVerified`, `tier`) are enriched from `IamAppContext` (`display_name`, `email`, `email_verified`, `standard_role_codes`) when the IAM session injector is active.
+
+Health:
+
+- `GET /backend/v3/api/wallet/health` returns `SdkWorkApiResponse` with database probe (`ready` / `degraded`), `database` (`up` / `down`), and `outboxPendingLag`.
+
+Outbox relay:
+
+- `POST /backend/v3/api/wallet/outbox/dispatch` — optional `batchSize` (default **100**, max **200**). Atomically marks pending `commerce_outbox_event` rows as `PUBLISHED` and returns payloads for cron/worker forwarding. Integrators should publish returned events to their bus and rely on consumer idempotency (`eventKey`).
+
 ## Asset model
 
 Cash, points, and token are **separate account rows** (`asset_code`: `cash` | `points` | `token`). App routes expose asset-scoped read models:
@@ -37,7 +61,9 @@ Cash, points, and token are **separate account rows** (`asset_code`: `cash` | `p
 - `GET .../wallet/accounts/points` — points balance + lot stats (`activeLotCount`, `expiringPoints`)
 - `GET .../wallet/accounts/tokens` — token account row
 - `GET .../wallet/ledger_entries/cash|points` — asset-filtered ledger
-- `GET .../wallet/points/lots` — points lot list (FIFO consumption source)
+- `GET .../wallet/points/lots` — points lot list (FEFO consumption source)
+- `GET .../wallet/points/summary` — one-screen points summary (`unsweptExpiredPoints`, month credit/debit, lot stats)
+- `GET .../wallet/ledger_entries/{ledgerEntryId}/allocations` — lot allocation audit for a debit ledger entry (capped at max page size **200** per ledger entry)
 - `GET .../wallet/holds` — hold list (optional `accountId`, `assetType`, `status`)
 - `GET .../wallet/holds/{holdId}` — hold detail
 
@@ -48,9 +74,33 @@ Backend ledger writes (typically called by payment/order sagas):
 - `POST .../wallet/holds` — reserve balance (`available` → `frozen`)
 - `POST .../wallet/holds/{holdId}/settle` — capture hold
 - `POST .../wallet/holds/{holdId}/release` — cancel hold
+- `POST .../wallet/holds/expire` — sweep expired holds (idempotent; restores frozen → available)
 - `POST .../wallet/transfers` — atomic inter-account transfer
+- `POST .../wallet/points/lots/expire` — sweep expired points lots (idempotent; debits balance + writes allocation rows)
+- `POST .../wallet/points/reconciliation` — ops integrity check: lot remaining vs account available
+
+Points expire sweep fields: `tenantId`, `requestNo`, `idempotencyKey`; optional `organizationId`, `ownerUserId`, `accountId`.
+
+Hold expire sweep uses the same scope fields as points expire.
+
+Domain outbox (`commerce_outbox_event`): all write paths emit typed events (`account.ledger_appended`, `account.hold_*`, `account.transfer_completed`, `account.points_lots_expired`) in the same transaction for downstream consumers.
 
 Required adjustment fields: `tenantId`, `ownerUserId`, `direction`, `amount`, `businessType`, `transactionNo`, `requestNo`, `idempotencyKey`.
+
+Points-specific optional fields: `expiresAt` (credit lot TTL), `reversedLedgerId` (compensating entry link).
+
+`businessType` must be lowercase snake_case (see `CommerceLedgerBusinessType` in `sdkwork-contract-service`).
+
+Write-path guards (repository layer):
+
+- Positive amount required for adjustments, holds, and transfers.
+- `accountId` must belong to `ownerUserId` and `organizationId` when explicitly supplied.
+- Points debit fails when lot remaining is insufficient (FEFO + allocation audit).
+- Points transfer moves lots on both debit and credit legs.
+- Hold settle/release rejects expired holds.
+- Transfer requires `from_account` owner to match `ownerUserId`; cross-user P2P to `to_account` is allowed within the same organization.
+
+Billing projection: each ledger append writes `commerce_billing_history` in the same transaction.
 
 ## End-to-end recharge flow
 
@@ -120,6 +170,8 @@ PC wallet recharge/withdraw **must not** call account APIs for checkout. Pass `o
   payoutFlow="checkout"
 />
 ```
+
+After payment or payout checkout completes, redirect back to the wallet route with `commerceRefresh=1` (or `payment=success` / `orderStatus=paid`). `SdkworkWalletPage` strips those query params and refreshes balances when the user returns in-app or via bfcache. Checkout navigation from wallet also forwards `returnUrl` (built via `createWalletCommerceReturnUrl`) so payment surfaces can redirect without hardcoding wallet paths.
 
 ## Verification
 
