@@ -17,7 +17,7 @@ Token Bank product capability = token_bank account asset = token_bank API namesp
 
 There is no second AI account asset beside `token_bank`. Raw provider usage, including LLM input/output tokens, remains metering data outside the account ledger.
 
-Account does not create orders, execute payments, price models, collect raw usage, or run AI workloads. Those responsibilities remain in order, payment, pricing, metering, and AI runtime capabilities.
+Account does not create orders, orchestrate recharge, orchestrate refund, orchestrate withdrawal, execute payments, price models, collect raw usage, or run AI workloads. Those responsibilities remain in order, payment, pricing, metering, and AI runtime capabilities.
 
 ## 2. Technology Choices
 
@@ -37,11 +37,14 @@ Account does not create orders, execute payments, price models, collect raw usag
 
 ```text
 Order
-  owns purchase orders and fulfillment orchestration
-  calls account when payment has succeeded
+  owns purchase orders, recharge packages, Token Bank plans, coupon redemption orders,
+  refund requests, withdrawal requests, and fulfillment orchestration
+  calls payment for provider channel execution
+  calls account for ledger holds, credits, debits, settlement, and reversals
 
 Payment
-  owns payment intents, provider webhooks, refunds, payouts
+  owns payment intents, attempts, provider refund execution, provider payout execution,
+  provider channel config, and webhook ingest persistence
   never writes account ledger directly
 
 Pricing
@@ -64,12 +67,15 @@ Account / Token Bank
 Dependency direction:
 
 ```text
-order/payment/pricing/metering/ai-runtime --> account backend-api
+order/pricing/metering/ai-runtime --> account backend-api
+order --> payment executor ports or backend-api
+payment --> commerce_order read-only validation only
 account app-api --> users and frontend read models
 account repository --> account-owned tables only
 ```
 
 Account must not import order, payment, pricing, metering, or AI runtime repositories or read their tables.
+Payment must not call account backend-api or import account crates. Recharge, coupon redemption, refund, and withdrawal account side effects are always driven by order.
 
 ## 4. Directory And Package Layout
 
@@ -382,6 +388,10 @@ Backend services
 Order fulfillment
   -> account backend-api
   -> Token Bank credit after fiat payment success
+
+Order refund and withdrawal orchestration
+  -> payment executor for provider refund or payout
+  -> account backend-api for ledger hold, release, settlement, and reversal
 
 AI runtime
   -> pricing/metering

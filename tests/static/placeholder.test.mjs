@@ -144,6 +144,50 @@ test("commerce integration spec exposes account storage boundary", () => {
   assert.ok(integrationSpec.ownedTables.every((tableName) => tableName.startsWith("acct_")));
 });
 
+test("account boundary assigns value-order orchestration to order and channel execution to payment", () => {
+  const boundarySpec = readFileSync(
+    join(repoRoot, "specs/COMMERCE_BOUNDARY_SPEC.md"),
+    "utf8",
+  );
+  const integrationSpec = JSON.parse(
+    readFileSync(join(repoRoot, "specs/commerce-integration.spec.json"), "utf8"),
+  );
+
+  assert.match(
+    boundarySpec,
+    /Recharge, coupon redemption, refund, and withdrawal orchestration belong to `sdkwork-order`/,
+  );
+  assert.match(
+    boundarySpec,
+    /`sdkwork-order`\s+-> `sdkwork-payment`/,
+  );
+  assert.match(
+    boundarySpec,
+    /`sdkwork-payment` may only reference `commerce_order` for read-only validation/,
+  );
+  assert.doesNotMatch(
+    boundarySpec,
+    /sdkwork-payment\s+-> sdkwork-order\s+\(pay\/refund existing orderId\)/,
+  );
+
+  assert.deepEqual(integrationSpec.valueOrderOrchestration, {
+    owner: "sdkwork-order",
+    ledgerExecutor: "sdkwork-account",
+    paymentExecutor: "sdkwork-payment",
+    directPaymentToAccountDependencyAllowed: false,
+    orderSubjects: [
+      "points_recharge",
+      "token_bank_recharge",
+      "token_bank_plan_purchase",
+      "token_bank_plan_renewal",
+      "account_recharge_package",
+      "coupon_recharge",
+      "refund_request",
+      "cash_withdrawal",
+    ],
+  });
+});
+
 test("database DDL and repository SQL use acct account-owned table names", () => {
   const baselineFiles = [
     "database/ddl/baseline/postgres/0001_account_baseline.sql",

@@ -56,13 +56,13 @@ Rules:
 - Support AI job lifecycle accounting: budget quote, pre-hold, actual usage settlement, service income split, remainder release, failure release, and reversal.
 - Keep all account amounts integer based. Cash uses fiat minor units, points use point units, and Token Bank uses Token Bank units.
 - Use append-only journal and ledger semantics for every balance movement.
-- Preserve capability boundaries: account records ledger truth; order creates purchase orders; payment collects or refunds fiat; pricing converts raw usage to Token Bank amounts; metering records raw usage; AI runtimes execute workloads.
+- Preserve capability boundaries: account records ledger truth; order orchestrates recharge, coupon redemption, refund, withdrawal, and fulfillment lifecycles; payment executes collection, refund, and payout provider channels; pricing converts raw usage to Token Bank amounts; metering records raw usage; AI runtimes execute workloads.
 - Expose app-api read models and backend-api command surfaces through SDKWork v3 response envelopes and generated SDKs.
 
 ### Non-Goals
 
-- Order lifecycle, cart, checkout, cancellation, and fulfillment orchestration. Owner: `sdkwork-order`.
-- Payment intent, provider webhook, refund execution, payout execution, and acquiring channel configuration. Owner: `sdkwork-payment`.
+- Order lifecycle, cart, checkout, cancellation, recharge package or plan purchase, coupon redemption, refund request, withdrawal request, and fulfillment orchestration. Owner: `sdkwork-order`.
+- Payment intent, provider refund execution, provider payout execution, provider webhook ingest, and acquiring channel configuration. Owner: `sdkwork-payment`.
 - LLM, image, video, Agent, plugin, model-service, or workflow execution. Owner: the relevant AI runtime capability.
 - Raw usage collection and model-specific pricing formulas. Owners: metering and pricing capabilities.
 - Provider cost calculation, margin policy, subscription catalog, recharge package publishing, and sales campaign policy. Owners: pricing, billing, order, promotion, or subscription capabilities.
@@ -114,7 +114,7 @@ Exchange rates are first-class account contracts:
 1. **Buy Token Bank balance with CNY**
    - A user requests a CNY purchase quote.
    - Token Bank returns the active CNY-to-Token-Bank rate and quote snapshot.
-   - Order creates a `token_bank_purchase` order.
+   - Order creates a `token_bank_recharge` order or an account recharge package order.
    - Payment collects CNY.
    - Order fulfillment calls account backend.
    - Account credits `token_bank` and records the exchange snapshot in ledger and billing history.
@@ -154,6 +154,18 @@ Exchange rates are first-class account contracts:
    - A completed charge is found incorrect.
    - Account appends a reversal entry with `reversedLedgerId`.
    - Historical ledger entries remain immutable.
+
+9. **Refund a Token Bank recharge**
+   - Order creates a `refund_request` tied to the original paid recharge order.
+   - Order calls account to hold or reverse the refundable Token Bank amount before provider refund execution.
+   - Payment executes the provider refund against the existing order payment.
+   - Order commits account reversal on refund success or releases the account hold on provider failure.
+
+10. **Withdraw cash balance**
+    - Order creates a `cash_withdrawal` request and runs approval, risk, and state transitions.
+    - Account freezes the requested `cash` balance.
+    - Payment executes provider payout after order approval.
+    - Order settles the account hold on payout success or releases it on payout failure.
 
 ## 7. Success Metrics
 
@@ -222,3 +234,4 @@ Exchange rates are first-class account contracts:
 - Exchange-rate publishing: account owns Token Bank exchange-rate storage and audit. Global backend-admin operators may publish global rates, and tenant backend-admin operators may publish tenant-scoped rates when permissions allow it. Every publish action is idempotent, versioned, and audited.
 - Purchase reversal: the default account behavior is append-only Token Bank reversal or account compensation. Fiat refunds and provider settlement refunds are orchestrated by order/payment; account only records the ledger effect after the owning capability calls the backend API.
 - Marketplace settlement scope: the first Token Bank marketplace release includes service settlement accounts, service income ledger entries, settlement snapshots, and burn routing. Revenue share policy, tax, payout execution, and fiat withdrawal remain outside this repository.
+- Account value order ownership: `sdkwork-order` is the only business orchestrator for recharge packages, Token Bank plan purchase or renewal, coupon redemption, refund requests, and withdrawal requests. `sdkwork-payment` executes provider collection, refund, and payout only; it must not call account ledger APIs directly. `sdkwork-account` exposes idempotent ledger, hold, settlement, and reversal commands consumed by order.

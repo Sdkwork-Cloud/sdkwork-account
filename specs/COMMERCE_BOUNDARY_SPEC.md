@@ -47,8 +47,8 @@ Database naming boundary:
 | --- | --- |
 | `commerce_order` create/list/cancel lifecycle | `sdkwork-order` |
 | Recharge or purchase package CRUD / publish | `sdkwork-order` or catalog/subscription capability |
-| Payment intent, provider webhook, channel config | `sdkwork-payment` |
-| Refund and payout execution against providers | `sdkwork-payment` |
+| Recharge, coupon redemption, refund, and withdrawal orchestration | `sdkwork-order` |
+| Payment intent, provider refund, provider payout, provider webhook ingest, and channel config | `sdkwork-payment` |
 | Model execution for LLM/image/video/Agent/workflow/plugin | AI runtime capability |
 | Raw usage collection | metering capability |
 | Model-specific price tables and conversion formulas | pricing capability |
@@ -58,18 +58,21 @@ Database naming boundary:
 ## 5. Dependency Direction
 
 ```text
-sdkwork-order     -> sdkwork-account backend-api   (purchase fulfillment, holds)
-sdkwork-payment   -> sdkwork-order                 (pay/refund existing orderId)
-pricing/metering  -> sdkwork-account backend-api   (Token Bank settlement inputs)
-AI runtime        -> sdkwork-account backend-api   (hold/settle/release through governed service)
-sdkwork-account   -> no upstream repository tables
+`sdkwork-order`    -> `sdkwork-account` backend-api   (value-order fulfillment, holds, reversals)
+`sdkwork-order`    -> `sdkwork-payment` executor      (payment, refund, payout channel execution)
+`sdkwork-payment`  -> `commerce_order` read-only SQL  (existing order validation only)
+pricing/metering   -> `sdkwork-account` backend-api   (Token Bank settlement inputs)
+AI runtime         -> `sdkwork-account` backend-api   (hold/settle/release through governed service)
+`sdkwork-account`  -> no upstream repository tables
 ```
 
 Rules:
 
+- Recharge, coupon redemption, refund, and withdrawal orchestration belong to `sdkwork-order`.
 - Account must never import order, payment, pricing, metering, or AI runtime crates at repository layer.
 - Account must never read `commerce_order`, payment provider, pricing table, or raw AI usage tables.
-- Fulfillment after payment must be triggered by order fulfillment calling account backend-api.
+- Fulfillment after payment, coupon redemption, refund reversal, and withdrawal settlement must be triggered by order fulfillment calling account backend-api.
+- `sdkwork-payment` may only reference `commerce_order` for read-only validation; it must not call account backend-api, import account crates, or write account ledger side effects.
 - AI consumption must pass pricing and metering snapshot references into account; account must not calculate model prices.
 
 ## 6. API Surface

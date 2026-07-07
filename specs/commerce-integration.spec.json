@@ -10,6 +10,22 @@
     "externalOwnedTables": ["commerce_order"],
     "directSqlToExternalTablesAllowed": false
   },
+  "valueOrderOrchestration": {
+    "owner": "sdkwork-order",
+    "ledgerExecutor": "sdkwork-account",
+    "paymentExecutor": "sdkwork-payment",
+    "directPaymentToAccountDependencyAllowed": false,
+    "orderSubjects": [
+      "points_recharge",
+      "token_bank_recharge",
+      "token_bank_plan_purchase",
+      "token_bank_plan_renewal",
+      "account_recharge_package",
+      "coupon_recharge",
+      "refund_request",
+      "cash_withdrawal"
+    ]
+  },
   "accountTaxonomy": {
     "cash": {
       "assetCode": "cash",
