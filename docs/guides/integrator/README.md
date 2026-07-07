@@ -114,12 +114,12 @@ Every write command requires an idempotency key, trace context, tenant context, 
 3. User pays through sdkwork-payment checkout.
 4. Order fulfillment calls account backend-api after payment success.
 5. Account credits token_bank balance and writes:
-   - commerce_account_journal
-   - commerce_account_journal_line
-   - commerce_account_ledger
-   - commerce_token_bank_exchange_snapshot
-   - commerce_billing_history
-   - commerce_outbox_event when required
+   - acct_journal
+   - acct_journal_line
+   - acct_ledger_entry
+   - acct_token_bank_exchange_snapshot
+   - acct_billing_history
+   - acct_outbox_event when required
 6. App refreshes wallet and Token Bank read models.
 ```
 
@@ -139,7 +139,7 @@ Account stores references such as `jobId`, `usageSnapshotId`, and `pricingSnapsh
 
 ## Idempotency
 
-- Write paths use `commerce_idempotency_record` scopes per operation.
+- Write paths use `acct_idempotency_record` scopes per operation.
 - `COMPLETED` replays the stored outcome.
 - Active `LOCKED` maps to HTTP `423`.
 - Expired locks are reclaimed automatically.

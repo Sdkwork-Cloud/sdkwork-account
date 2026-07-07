@@ -5,6 +5,7 @@ use sdkwork_account_repository_sqlx::{PostgresCommerceAccountStore, SqliteCommer
 use sdkwork_account_service_host::AccountServiceHost;
 use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_utils_rust::{SdkWorkApiResponse, SdkWorkResourceData};
+use serde::Serialize;
 use std::sync::Arc;
 
 use crate::web_bootstrap::wrap_router_with_web_framework_from_env;
@@ -14,11 +15,20 @@ use crate::{
     backend_wallet_router_with_postgres_pool, backend_wallet_router_with_sqlite_pool,
 };
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WalletHealthItemResponse {
+    status: String,
+    database: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
+    outbox_pending_lag: i64,
+}
+
 async fn wallet_health(
     axum::extract::State(host): axum::extract::State<Arc<AccountServiceHost>>,
 ) -> (
     StatusCode,
-    Json<SdkWorkApiResponse<SdkWorkResourceData<serde_json::Value>>>,
+    Json<SdkWorkApiResponse<SdkWorkResourceData<WalletHealthItemResponse>>>,
 ) {
     let db_ok = match host.database_pool() {
         DatabasePool::Postgres(pool, _) => sqlx::query("SELECT 1").execute(pool).await.is_ok(),
@@ -42,11 +52,11 @@ async fn wallet_health(
         StatusCode::SERVICE_UNAVAILABLE
     };
     let payload = SdkWorkResourceData {
-        item: serde_json::json!({
-            "status": if db_ok { "ready" } else { "degraded" },
-            "database": if db_ok { "up" } else { "down" },
-            "outboxPendingLag": outbox_pending_lag,
-        }),
+        item: WalletHealthItemResponse {
+            status: if db_ok { "ready" } else { "degraded" }.to_owned(),
+            database: if db_ok { "up" } else { "down" }.to_owned(),
+            outbox_pending_lag,
+        },
     };
     (
         status,

@@ -2,7 +2,7 @@
 
 Status: active
 Owner: SDKWork maintainers
-Updated: 2026-07-07
+Updated: 2026-07-08
 Specs: `API_SPEC.md`, `ARCHITECTURE_DECISION_SPEC.md`, `DATABASE_SPEC.md`, `DOCUMENTATION_SPEC.md`, `SDK_SPEC.md`, `SECURITY_SPEC.md`, `PAGINATION_SPEC.md`
 
 ## 1. Architecture Overview
@@ -145,25 +145,27 @@ The database is in greenfield initialization state, so the baseline DDL is the s
 - `database/ddl/baseline/postgres/0001_account_baseline.sql`
 - `database/ddl/baseline/sqlite/0001_account_baseline.sql`
 
+Physical table names use the registered `acct_` prefix for account/accounting-owned tables. The repository still belongs to the `commerce.account` capability; `acct_` is only the database bounded-context prefix. Cross-capability tables such as order-owned `commerce_order` keep their owning capability prefix and must not be read or written by this repository.
+
 ### Core Tables
 
 | Table | Role |
 | --- | --- |
-| `commerce_account` | Account identity, owner, asset, purpose, and available/frozen/pending balances. |
-| `commerce_account_journal` | Atomic accounting transaction header. |
-| `commerce_account_journal_line` | Double-entry journal lines. |
-| `commerce_account_ledger` | Append-only user-visible and operator-visible ledger. |
-| `commerce_account_hold` | Available-to-frozen reservation and settlement lifecycle. |
-| `commerce_account_transfer` | Same-asset account transfer record. |
-| `commerce_points_lot` | Points lot inventory and expiry. |
-| `commerce_points_lot_allocation` | Points lot debit allocation audit. |
-| `commerce_token_bank_exchange_rate` | Published fiat-to-Token-Bank rate configuration. |
-| `commerce_token_bank_exchange_quote` | Purchase quote generated from a rate. |
-| `commerce_token_bank_exchange_snapshot` | Immutable exchange snapshot attached to purchase fulfillment and ledger entries. |
-| `commerce_token_bank_settlement_snapshot` | Immutable AI spending/income evidence for hold settlement, direct debit, service income, and burn routing. |
-| `commerce_idempotency_record` | Command replay, conflict, and in-flight lock state. |
-| `commerce_outbox_event` | Transactional domain events. |
-| `commerce_billing_history` | User-visible account and Token Bank billing projection. |
+| `acct_account` | Account identity, owner, asset, purpose, and available/frozen/pending balances. |
+| `acct_journal` | Atomic accounting transaction header. |
+| `acct_journal_line` | Double-entry journal lines. |
+| `acct_ledger_entry` | Append-only user-visible and operator-visible ledger. |
+| `acct_hold` | Available-to-frozen reservation and settlement lifecycle. |
+| `acct_transfer` | Same-asset account transfer record. |
+| `acct_points_lot` | Points lot inventory and expiry. |
+| `acct_points_lot_allocation` | Points lot debit allocation audit. |
+| `acct_token_bank_exchange_rate` | Published fiat-to-Token-Bank rate configuration. |
+| `acct_token_bank_exchange_quote` | Purchase quote generated from a rate. |
+| `acct_token_bank_exchange_snapshot` | Immutable exchange snapshot attached to purchase fulfillment and ledger entries. |
+| `acct_token_bank_settlement_snapshot` | Immutable AI spending/income evidence for hold settlement, direct debit, service income, and burn routing. |
+| `acct_idempotency_record` | Command replay, conflict, and in-flight lock state. |
+| `acct_outbox_event` | Transactional domain events. |
+| `acct_billing_history` | User-visible account and Token Bank billing projection. |
 
 ### Standard Field Rules
 
@@ -178,7 +180,7 @@ The database is in greenfield initialization state, so the baseline DDL is the s
 
 ### Account Constraints
 
-`commerce_account` must enforce:
+`acct_account` must enforce:
 
 - Unique account boundary: `(tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code, account_purpose)`.
 - Valid account assets: `cash`, `points`, `token_bank`.
@@ -191,7 +193,7 @@ The database is in greenfield initialization state, so the baseline DDL is the s
 
 ### Exchange Tables
 
-`commerce_token_bank_exchange_rate` stores governed rate configuration:
+`acct_token_bank_exchange_rate` stores governed rate configuration:
 
 | Field group | Required columns |
 | --- | --- |
@@ -201,13 +203,13 @@ The database is in greenfield initialization state, so the baseline DDL is the s
 | Scope | `tenant_scope`, `channel`, `effective_from`, `effective_to`, `status` |
 | Governance | `published_by`, `published_at`, `retired_at`, `version`, `created_at`, `updated_at` |
 
-`commerce_token_bank_exchange_quote` stores a short-lived purchase quote. It records the exact fiat amount, Token Bank amount, rate id, owner, account, expiry, status, idempotency key, and trace id.
+`acct_token_bank_exchange_quote` stores a short-lived purchase quote. It records the exact fiat amount, Token Bank amount, rate id, owner, account, expiry, status, idempotency key, and trace id.
 
-`commerce_token_bank_exchange_snapshot` stores immutable purchase fulfillment evidence. It copies rate fields into the snapshot so later rate changes cannot alter historical ledger, billing, or reconciliation facts.
+`acct_token_bank_exchange_snapshot` stores immutable purchase fulfillment evidence. It copies rate fields into the snapshot so later rate changes cannot alter historical ledger, billing, or reconciliation facts.
 
 ### AI Settlement Table
 
-`commerce_token_bank_settlement_snapshot` stores one immutable settlement evidence row for AI spending and service income:
+`acct_token_bank_settlement_snapshot` stores one immutable settlement evidence row for AI spending and service income:
 
 | Field group | Required columns |
 | --- | --- |
@@ -224,17 +226,17 @@ Account stores references and final amounts. It does not store raw provider payl
 
 Required indexes:
 
-- `commerce_account`: tenant/owner/asset lookup and unique account boundary.
-- `commerce_account_ledger`: tenant/account/created, tenant/business_no, tenant/request_no, tenant/source.
-- `commerce_account_hold`: tenant/account/status, tenant/source, tenant/expires/status.
-- `commerce_account_transfer`: tenant/from/created and tenant/to/created.
-- `commerce_points_lot`: tenant/account/expires for FEFO allocation.
-- `commerce_token_bank_exchange_rate`: tenant/from_currency/channel/status/effective time.
-- `commerce_token_bank_exchange_quote`: tenant/owner/status/created and tenant/quote_no.
-- `commerce_token_bank_exchange_snapshot`: tenant/order/payment and tenant/account/created.
-- `commerce_token_bank_settlement_snapshot`: tenant/account/created, tenant/job, tenant/service_account/created.
-- `commerce_billing_history`: tenant/owner/occurred and tenant/source.
-- `commerce_outbox_event`: status/next_retry_at.
+- `acct_account`: tenant/owner/asset lookup and unique account boundary.
+- `acct_ledger_entry`: tenant/account/created, tenant/business_no, tenant/request_no, tenant/source.
+- `acct_hold`: tenant/account/status, tenant/source, tenant/expires/status.
+- `acct_transfer`: tenant/from/created and tenant/to/created.
+- `acct_points_lot`: tenant/account/expires for FEFO allocation.
+- `acct_token_bank_exchange_rate`: tenant/from_currency/channel/status/effective time.
+- `acct_token_bank_exchange_quote`: tenant/owner/status/created and tenant/quote_no.
+- `acct_token_bank_exchange_snapshot`: tenant/order/payment and tenant/account/created.
+- `acct_token_bank_settlement_snapshot`: tenant/account/created, tenant/job, tenant/service_account/created.
+- `acct_billing_history`: tenant/owner/occurred and tenant/source.
+- `acct_outbox_event`: status/next_retry_at.
 
 List APIs must page at SQL level using these indexes and must not load unbounded rows into process memory.
 

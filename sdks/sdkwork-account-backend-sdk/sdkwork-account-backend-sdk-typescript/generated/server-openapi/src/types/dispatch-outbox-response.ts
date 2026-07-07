@@ -1,7 +1,7 @@
-import type { OutboxDispatchItem } from './outbox-dispatch-item';
+import type { DispatchOutboxData } from './dispatch-outbox-data';
 
 export interface DispatchOutboxResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: DispatchOutboxData;
   traceId: string;
 }

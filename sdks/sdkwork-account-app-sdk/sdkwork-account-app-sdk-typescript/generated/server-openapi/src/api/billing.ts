@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { HttpClient } from '../http/client';
 
-import type { BillingHistoryItem, PageInfo } from '../types';
+import type { BillingHistoryListData } from '../types';
 
 
 export class BillingHistoryApi {
@@ -12,8 +12,8 @@ export class BillingHistoryApi {
   }
 
 
-async list(): Promise<Record<string, unknown>> {
-    return this.client.get<Record<string, unknown>>(appApiPath(`/billing/history`));
+async list(): Promise<BillingHistoryListData> {
+    return this.client.get<BillingHistoryListData>(appApiPath(`/billing/history`));
   }
 }
 

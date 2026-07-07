@@ -10,7 +10,7 @@
 -- reversible: true
 -- transactional: true
 
-CREATE TABLE IF NOT EXISTS commerce_account (
+CREATE TABLE IF NOT EXISTS acct_account (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -28,27 +28,27 @@ CREATE TABLE IF NOT EXISTS commerce_account (
     closed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_account PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_account_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_account_owner_asset UNIQUE (
+    CONSTRAINT pk_acct_account PRIMARY KEY (id),
+    CONSTRAINT uk_acct_account_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_account_owner_asset UNIQUE (
         tenant_id, organization_id, owner_type, owner_id,
         asset_code, currency_code, account_purpose
     ),
-    CONSTRAINT chk_commerce_account_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
-    CONSTRAINT chk_commerce_account_currency CHECK (
+    CONSTRAINT chk_acct_account_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
+    CONSTRAINT chk_acct_account_currency CHECK (
         (asset_code = 'cash' AND currency_code <> '')
         OR (asset_code = 'points' AND currency_code = 'POINT')
         OR (asset_code = 'token_bank' AND currency_code = 'TOKEN_BANK')
     ),
-    CONSTRAINT chk_commerce_account_amounts_non_negative CHECK (
+    CONSTRAINT chk_acct_account_amounts_non_negative CHECK (
         available_amount >= 0 AND frozen_amount >= 0 AND pending_amount >= 0
     )
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_account_tenant_owner
-    ON commerce_account (tenant_id, organization_id, owner_type, owner_id, asset_code);
+CREATE INDEX IF NOT EXISTS idx_acct_account_tenant_owner
+    ON acct_account (tenant_id, organization_id, owner_type, owner_id, asset_code);
 
-CREATE TABLE IF NOT EXISTS commerce_account_journal (
+CREATE TABLE IF NOT EXISTS acct_journal (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -60,13 +60,13 @@ CREATE TABLE IF NOT EXISTS commerce_account_journal (
     trace_id VARCHAR(128) NOT NULL,
     metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_account_journal PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_account_journal_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_account_journal_idempotency UNIQUE (tenant_id, idempotency_key),
-    CONSTRAINT uk_commerce_account_journal_business_no UNIQUE (tenant_id, business_no)
+    CONSTRAINT pk_acct_journal PRIMARY KEY (id),
+    CONSTRAINT uk_acct_journal_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_journal_idempotency UNIQUE (tenant_id, idempotency_key),
+    CONSTRAINT uk_acct_journal_business_no UNIQUE (tenant_id, business_no)
 );
 
-CREATE TABLE IF NOT EXISTS commerce_account_journal_line (
+CREATE TABLE IF NOT EXISTS acct_journal_line (
     id BIGINT NOT NULL,
     journal_id BIGINT NOT NULL,
     account_id BIGINT NOT NULL,
@@ -74,15 +74,15 @@ CREATE TABLE IF NOT EXISTS commerce_account_journal_line (
     amount BIGINT NOT NULL,
     ledger_id BIGINT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_account_journal_line PRIMARY KEY (id),
-    CONSTRAINT chk_commerce_account_journal_line_direction CHECK (direction IN ('DEBIT', 'CREDIT')),
-    CONSTRAINT chk_commerce_account_journal_line_amount CHECK (amount > 0)
+    CONSTRAINT pk_acct_journal_line PRIMARY KEY (id),
+    CONSTRAINT chk_acct_journal_line_direction CHECK (direction IN ('DEBIT', 'CREDIT')),
+    CONSTRAINT chk_acct_journal_line_amount CHECK (amount > 0)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_account_journal_line_journal
-    ON commerce_account_journal_line (journal_id);
+CREATE INDEX IF NOT EXISTS idx_acct_journal_line_journal
+    ON acct_journal_line (journal_id);
 
-CREATE TABLE IF NOT EXISTS commerce_account_ledger (
+CREATE TABLE IF NOT EXISTS acct_ledger_entry (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -115,23 +115,23 @@ CREATE TABLE IF NOT EXISTS commerce_account_ledger (
     metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
     trace_id VARCHAR(128) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_account_ledger PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_account_ledger_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_account_ledger_business_no UNIQUE (tenant_id, business_no),
-    CONSTRAINT uk_commerce_account_ledger_idempotency UNIQUE (tenant_id, idempotency_key),
-    CONSTRAINT chk_commerce_account_ledger_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
-    CONSTRAINT chk_commerce_account_ledger_direction CHECK (direction IN ('DEBIT', 'CREDIT')),
-    CONSTRAINT chk_commerce_account_ledger_amount CHECK (amount > 0)
+    CONSTRAINT pk_acct_ledger_entry PRIMARY KEY (id),
+    CONSTRAINT uk_acct_ledger_entry_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_ledger_entry_business_no UNIQUE (tenant_id, business_no),
+    CONSTRAINT uk_acct_ledger_entry_idempotency UNIQUE (tenant_id, idempotency_key),
+    CONSTRAINT chk_acct_ledger_entry_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
+    CONSTRAINT chk_acct_ledger_entry_direction CHECK (direction IN ('DEBIT', 'CREDIT')),
+    CONSTRAINT chk_acct_ledger_entry_amount CHECK (amount > 0)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_account_ledger_account_created
-    ON commerce_account_ledger (tenant_id, account_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_commerce_account_ledger_request_no
-    ON commerce_account_ledger (tenant_id, request_no);
-CREATE INDEX IF NOT EXISTS idx_commerce_account_ledger_source
-    ON commerce_account_ledger (tenant_id, source_type, source_id);
+CREATE INDEX IF NOT EXISTS idx_acct_ledger_entry_account_created
+    ON acct_ledger_entry (tenant_id, account_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_acct_ledger_entry_request_no
+    ON acct_ledger_entry (tenant_id, request_no);
+CREATE INDEX IF NOT EXISTS idx_acct_ledger_entry_source
+    ON acct_ledger_entry (tenant_id, source_type, source_id);
 
-CREATE TABLE IF NOT EXISTS commerce_account_hold (
+CREATE TABLE IF NOT EXISTS acct_hold (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -163,24 +163,24 @@ CREATE TABLE IF NOT EXISTS commerce_account_hold (
     trace_id VARCHAR(128) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_account_hold PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_account_hold_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_account_hold_idempotency UNIQUE (tenant_id, idempotency_key),
-    CONSTRAINT uk_commerce_account_hold_business_no UNIQUE (tenant_id, business_no),
-    CONSTRAINT chk_commerce_account_hold_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
-    CONSTRAINT chk_commerce_account_hold_amounts CHECK (
+    CONSTRAINT pk_acct_hold PRIMARY KEY (id),
+    CONSTRAINT uk_acct_hold_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_hold_idempotency UNIQUE (tenant_id, idempotency_key),
+    CONSTRAINT uk_acct_hold_business_no UNIQUE (tenant_id, business_no),
+    CONSTRAINT chk_acct_hold_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
+    CONSTRAINT chk_acct_hold_amounts CHECK (
         amount > 0 AND settled_amount >= 0 AND released_amount >= 0 AND settled_amount + released_amount <= amount
     )
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_account_hold_account
-    ON commerce_account_hold (tenant_id, account_id, status);
-CREATE INDEX IF NOT EXISTS idx_commerce_account_hold_source
-    ON commerce_account_hold (tenant_id, source_type, source_id);
-CREATE INDEX IF NOT EXISTS idx_commerce_account_hold_expire
-    ON commerce_account_hold (tenant_id, status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_acct_hold_account
+    ON acct_hold (tenant_id, account_id, status);
+CREATE INDEX IF NOT EXISTS idx_acct_hold_source
+    ON acct_hold (tenant_id, source_type, source_id);
+CREATE INDEX IF NOT EXISTS idx_acct_hold_expire
+    ON acct_hold (tenant_id, status, expires_at);
 
-CREATE TABLE IF NOT EXISTS commerce_account_transfer (
+CREATE TABLE IF NOT EXISTS acct_transfer (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -198,20 +198,20 @@ CREATE TABLE IF NOT EXISTS commerce_account_transfer (
     journal_id BIGINT NOT NULL,
     trace_id VARCHAR(128) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_account_transfer PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_account_transfer_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_account_transfer_idempotency UNIQUE (tenant_id, idempotency_key),
-    CONSTRAINT uk_commerce_account_transfer_business_no UNIQUE (tenant_id, business_no),
-    CONSTRAINT chk_commerce_account_transfer_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
-    CONSTRAINT chk_commerce_account_transfer_amount CHECK (amount > 0)
+    CONSTRAINT pk_acct_transfer PRIMARY KEY (id),
+    CONSTRAINT uk_acct_transfer_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_transfer_idempotency UNIQUE (tenant_id, idempotency_key),
+    CONSTRAINT uk_acct_transfer_business_no UNIQUE (tenant_id, business_no),
+    CONSTRAINT chk_acct_transfer_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
+    CONSTRAINT chk_acct_transfer_amount CHECK (amount > 0)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_account_transfer_from_created
-    ON commerce_account_transfer (tenant_id, from_account_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_commerce_account_transfer_to_created
-    ON commerce_account_transfer (tenant_id, to_account_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_acct_transfer_from_created
+    ON acct_transfer (tenant_id, from_account_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_acct_transfer_to_created
+    ON acct_transfer (tenant_id, to_account_id, created_at DESC);
 
-CREATE TABLE IF NOT EXISTS commerce_points_lot (
+CREATE TABLE IF NOT EXISTS acct_points_lot (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -224,17 +224,17 @@ CREATE TABLE IF NOT EXISTS commerce_points_lot (
     status INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_points_lot PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_points_lot_uuid UNIQUE (uuid),
-    CONSTRAINT chk_commerce_points_lot_amounts CHECK (
+    CONSTRAINT pk_acct_points_lot PRIMARY KEY (id),
+    CONSTRAINT uk_acct_points_lot_uuid UNIQUE (uuid),
+    CONSTRAINT chk_acct_points_lot_amounts CHECK (
         granted_amount > 0 AND remaining_amount >= 0 AND remaining_amount <= granted_amount
     )
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_points_lot_account_expires
-    ON commerce_points_lot (tenant_id, account_id, expires_at);
+CREATE INDEX IF NOT EXISTS idx_acct_points_lot_account_expires
+    ON acct_points_lot (tenant_id, account_id, expires_at);
 
-CREATE TABLE IF NOT EXISTS commerce_points_lot_allocation (
+CREATE TABLE IF NOT EXISTS acct_points_lot_allocation (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -243,16 +243,16 @@ CREATE TABLE IF NOT EXISTS commerce_points_lot_allocation (
     lot_id BIGINT NOT NULL,
     amount BIGINT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_points_lot_allocation PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_points_lot_allocation_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_points_lot_allocation_ledger_lot UNIQUE (tenant_id, ledger_id, lot_id),
-    CONSTRAINT chk_commerce_points_lot_allocation_amount CHECK (amount > 0)
+    CONSTRAINT pk_acct_points_lot_allocation PRIMARY KEY (id),
+    CONSTRAINT uk_acct_points_lot_allocation_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_points_lot_allocation_ledger_lot UNIQUE (tenant_id, ledger_id, lot_id),
+    CONSTRAINT chk_acct_points_lot_allocation_amount CHECK (amount > 0)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_points_lot_allocation_ledger
-    ON commerce_points_lot_allocation (tenant_id, ledger_id);
+CREATE INDEX IF NOT EXISTS idx_acct_points_lot_allocation_ledger
+    ON acct_points_lot_allocation (tenant_id, ledger_id);
 
-CREATE TABLE IF NOT EXISTS commerce_token_bank_exchange_rate (
+CREATE TABLE IF NOT EXISTS acct_token_bank_exchange_rate (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL DEFAULT 0,
@@ -275,21 +275,21 @@ CREATE TABLE IF NOT EXISTS commerce_token_bank_exchange_rate (
     version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_token_bank_exchange_rate PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_token_bank_exchange_rate_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_token_bank_exchange_rate_no UNIQUE (tenant_id, rate_no),
-    CONSTRAINT chk_commerce_token_bank_exchange_rate_assets CHECK (
+    CONSTRAINT pk_acct_token_bank_exchange_rate PRIMARY KEY (id),
+    CONSTRAINT uk_acct_token_bank_exchange_rate_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_token_bank_exchange_rate_no UNIQUE (tenant_id, rate_no),
+    CONSTRAINT chk_acct_token_bank_exchange_rate_assets CHECK (
         from_asset_code = 'cash' AND to_asset_code = 'token_bank' AND to_currency_code = 'TOKEN_BANK'
     ),
-    CONSTRAINT chk_commerce_token_bank_exchange_rate_amounts CHECK (rate_numerator > 0 AND rate_denominator > 0),
-    CONSTRAINT chk_commerce_token_bank_exchange_rate_status CHECK (status IN ('draft', 'active', 'retired')),
-    CONSTRAINT chk_commerce_token_bank_exchange_rate_rounding CHECK (rounding_mode IN ('floor', 'ceil', 'half_up'))
+    CONSTRAINT chk_acct_token_bank_exchange_rate_amounts CHECK (rate_numerator > 0 AND rate_denominator > 0),
+    CONSTRAINT chk_acct_token_bank_exchange_rate_status CHECK (status IN ('draft', 'active', 'retired')),
+    CONSTRAINT chk_acct_token_bank_exchange_rate_rounding CHECK (rounding_mode IN ('floor', 'ceil', 'half_up'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_token_bank_exchange_rate_lookup
-    ON commerce_token_bank_exchange_rate (tenant_id, from_currency_code, channel, tenant_scope, status, effective_from DESC);
+CREATE INDEX IF NOT EXISTS idx_acct_token_bank_exchange_rate_lookup
+    ON acct_token_bank_exchange_rate (tenant_id, from_currency_code, channel, tenant_scope, status, effective_from DESC);
 
-CREATE TABLE IF NOT EXISTS commerce_token_bank_exchange_quote (
+CREATE TABLE IF NOT EXISTS acct_token_bank_exchange_quote (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -311,18 +311,18 @@ CREATE TABLE IF NOT EXISTS commerce_token_bank_exchange_quote (
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_token_bank_exchange_quote PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_token_bank_exchange_quote_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_token_bank_exchange_quote_no UNIQUE (tenant_id, quote_no),
-    CONSTRAINT uk_commerce_token_bank_exchange_quote_idempotency UNIQUE (tenant_id, idempotency_key),
-    CONSTRAINT chk_commerce_token_bank_exchange_quote_amounts CHECK (fiat_amount > 0 AND token_bank_amount > 0),
-    CONSTRAINT chk_commerce_token_bank_exchange_quote_status CHECK (status IN ('created', 'accepted', 'expired', 'cancelled'))
+    CONSTRAINT pk_acct_token_bank_exchange_quote PRIMARY KEY (id),
+    CONSTRAINT uk_acct_token_bank_exchange_quote_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_token_bank_exchange_quote_no UNIQUE (tenant_id, quote_no),
+    CONSTRAINT uk_acct_token_bank_exchange_quote_idempotency UNIQUE (tenant_id, idempotency_key),
+    CONSTRAINT chk_acct_token_bank_exchange_quote_amounts CHECK (fiat_amount > 0 AND token_bank_amount > 0),
+    CONSTRAINT chk_acct_token_bank_exchange_quote_status CHECK (status IN ('created', 'accepted', 'expired', 'cancelled'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_token_bank_exchange_quote_owner
-    ON commerce_token_bank_exchange_quote (tenant_id, owner_type, owner_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_acct_token_bank_exchange_quote_owner
+    ON acct_token_bank_exchange_quote (tenant_id, owner_type, owner_id, status, created_at DESC);
 
-CREATE TABLE IF NOT EXISTS commerce_token_bank_exchange_snapshot (
+CREATE TABLE IF NOT EXISTS acct_token_bank_exchange_snapshot (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -348,23 +348,23 @@ CREATE TABLE IF NOT EXISTS commerce_token_bank_exchange_snapshot (
     tenant_scope VARCHAR(32) NOT NULL,
     trace_id VARCHAR(128) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_token_bank_exchange_snapshot PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_token_bank_exchange_snapshot_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_token_bank_exchange_snapshot_no UNIQUE (tenant_id, snapshot_no),
-    CONSTRAINT chk_commerce_token_bank_exchange_snapshot_assets CHECK (
+    CONSTRAINT pk_acct_token_bank_exchange_snapshot PRIMARY KEY (id),
+    CONSTRAINT uk_acct_token_bank_exchange_snapshot_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_token_bank_exchange_snapshot_no UNIQUE (tenant_id, snapshot_no),
+    CONSTRAINT chk_acct_token_bank_exchange_snapshot_assets CHECK (
         from_asset_code = 'cash' AND to_asset_code = 'token_bank' AND to_currency_code = 'TOKEN_BANK'
     ),
-    CONSTRAINT chk_commerce_token_bank_exchange_snapshot_amounts CHECK (
+    CONSTRAINT chk_acct_token_bank_exchange_snapshot_amounts CHECK (
         fiat_amount > 0 AND token_bank_amount > 0 AND rate_numerator > 0 AND rate_denominator > 0
     )
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_token_bank_exchange_snapshot_account
-    ON commerce_token_bank_exchange_snapshot (tenant_id, account_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_commerce_token_bank_exchange_snapshot_order
-    ON commerce_token_bank_exchange_snapshot (tenant_id, order_id, payment_id);
+CREATE INDEX IF NOT EXISTS idx_acct_token_bank_exchange_snapshot_account
+    ON acct_token_bank_exchange_snapshot (tenant_id, account_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_acct_token_bank_exchange_snapshot_order
+    ON acct_token_bank_exchange_snapshot (tenant_id, order_id, payment_id);
 
-CREATE TABLE IF NOT EXISTS commerce_token_bank_settlement_snapshot (
+CREATE TABLE IF NOT EXISTS acct_token_bank_settlement_snapshot (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -394,28 +394,28 @@ CREATE TABLE IF NOT EXISTS commerce_token_bank_settlement_snapshot (
     status VARCHAR(32) NOT NULL,
     trace_id VARCHAR(128) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_token_bank_settlement_snapshot PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_token_bank_settlement_snapshot_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_token_bank_settlement_snapshot_no UNIQUE (tenant_id, settlement_no),
-    CONSTRAINT chk_commerce_token_bank_settlement_snapshot_amounts CHECK (
+    CONSTRAINT pk_acct_token_bank_settlement_snapshot PRIMARY KEY (id),
+    CONSTRAINT uk_acct_token_bank_settlement_snapshot_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_token_bank_settlement_snapshot_no UNIQUE (tenant_id, settlement_no),
+    CONSTRAINT chk_acct_token_bank_settlement_snapshot_amounts CHECK (
         estimated_amount >= 0
         AND settled_amount >= 0
         AND released_amount >= 0
         AND service_income_amount >= 0
         AND platform_burn_amount >= 0
     ),
-    CONSTRAINT chk_commerce_token_bank_settlement_snapshot_mode CHECK (settlement_mode IN ('hold_settlement', 'direct_debit', 'release_only', 'reversal')),
-    CONSTRAINT chk_commerce_token_bank_settlement_snapshot_status CHECK (status IN ('settled', 'released', 'reversed'))
+    CONSTRAINT chk_acct_token_bank_settlement_snapshot_mode CHECK (settlement_mode IN ('hold_settlement', 'direct_debit', 'release_only', 'reversal')),
+    CONSTRAINT chk_acct_token_bank_settlement_snapshot_status CHECK (status IN ('settled', 'released', 'reversed'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_token_bank_settlement_snapshot_account
-    ON commerce_token_bank_settlement_snapshot (tenant_id, account_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_commerce_token_bank_settlement_snapshot_job
-    ON commerce_token_bank_settlement_snapshot (tenant_id, job_id);
-CREATE INDEX IF NOT EXISTS idx_commerce_token_bank_settlement_snapshot_service
-    ON commerce_token_bank_settlement_snapshot (tenant_id, service_account_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_acct_token_bank_settlement_snapshot_account
+    ON acct_token_bank_settlement_snapshot (tenant_id, account_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_acct_token_bank_settlement_snapshot_job
+    ON acct_token_bank_settlement_snapshot (tenant_id, job_id);
+CREATE INDEX IF NOT EXISTS idx_acct_token_bank_settlement_snapshot_service
+    ON acct_token_bank_settlement_snapshot (tenant_id, service_account_id, created_at DESC);
 
-CREATE TABLE IF NOT EXISTS commerce_idempotency_record (
+CREATE TABLE IF NOT EXISTS acct_idempotency_record (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -430,12 +430,12 @@ CREATE TABLE IF NOT EXISTS commerce_idempotency_record (
     expire_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_idempotency_record PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_idempotency_record_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_idempotency_record_key UNIQUE (tenant_id, scope, idempotency_key)
+    CONSTRAINT pk_acct_idempotency_record PRIMARY KEY (id),
+    CONSTRAINT uk_acct_idempotency_record_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_idempotency_record_key UNIQUE (tenant_id, scope, idempotency_key)
 );
 
-CREATE TABLE IF NOT EXISTS commerce_outbox_event (
+CREATE TABLE IF NOT EXISTS acct_outbox_event (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -452,15 +452,15 @@ CREATE TABLE IF NOT EXISTS commerce_outbox_event (
     published_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_outbox_event PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_outbox_event_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_outbox_event_key UNIQUE (event_key)
+    CONSTRAINT pk_acct_outbox_event PRIMARY KEY (id),
+    CONSTRAINT uk_acct_outbox_event_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_outbox_event_key UNIQUE (event_key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_outbox_event_status_retry
-    ON commerce_outbox_event (status, next_retry_at);
+CREATE INDEX IF NOT EXISTS idx_acct_outbox_event_status_retry
+    ON acct_outbox_event (status, next_retry_at);
 
-CREATE TABLE IF NOT EXISTS commerce_billing_history (
+CREATE TABLE IF NOT EXISTS acct_billing_history (
     id BIGINT NOT NULL,
     uuid VARCHAR(64) NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -487,14 +487,14 @@ CREATE TABLE IF NOT EXISTS commerce_billing_history (
     settlement_snapshot_id BIGINT,
     occurred_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT pk_commerce_billing_history PRIMARY KEY (id),
-    CONSTRAINT uk_commerce_billing_history_uuid UNIQUE (uuid),
-    CONSTRAINT uk_commerce_billing_history_no UNIQUE (tenant_id, history_no),
-    CONSTRAINT chk_commerce_billing_history_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
-    CONSTRAINT chk_commerce_billing_history_amount CHECK (amount >= 0)
+    CONSTRAINT pk_acct_billing_history PRIMARY KEY (id),
+    CONSTRAINT uk_acct_billing_history_uuid UNIQUE (uuid),
+    CONSTRAINT uk_acct_billing_history_no UNIQUE (tenant_id, history_no),
+    CONSTRAINT chk_acct_billing_history_asset_code CHECK (asset_code IN ('cash', 'points', 'token_bank')),
+    CONSTRAINT chk_acct_billing_history_amount CHECK (amount >= 0)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_billing_history_owner_occurred
-    ON commerce_billing_history (tenant_id, owner_type, owner_id, occurred_at DESC);
-CREATE INDEX IF NOT EXISTS idx_commerce_billing_history_source
-    ON commerce_billing_history (tenant_id, source_type, source_id);
+CREATE INDEX IF NOT EXISTS idx_acct_billing_history_owner_occurred
+    ON acct_billing_history (tenant_id, owner_type, owner_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_acct_billing_history_source
+    ON acct_billing_history (tenant_id, source_type, source_id);

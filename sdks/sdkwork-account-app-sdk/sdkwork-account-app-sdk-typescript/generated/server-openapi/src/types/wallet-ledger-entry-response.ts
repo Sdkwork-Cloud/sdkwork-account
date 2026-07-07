@@ -1,7 +1,7 @@
-import type { WalletLedgerEntryItem } from './wallet-ledger-entry-item';
+import type { WalletLedgerEntryData } from './wallet-ledger-entry-data';
 
 export interface WalletLedgerEntryResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: WalletLedgerEntryData;
   traceId: string;
 }

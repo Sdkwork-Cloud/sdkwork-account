@@ -1,7 +1,7 @@
-import type { AccountHoldItem } from './account-hold-item';
+import type { AccountHoldDetailData } from './account-hold-detail-data';
 
 export interface AccountHoldDetailResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: AccountHoldDetailData;
   traceId: string;
 }

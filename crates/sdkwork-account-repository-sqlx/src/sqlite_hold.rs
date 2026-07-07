@@ -120,7 +120,7 @@ impl SqliteCommerceAccountStore {
         let source_id = parse_subject_i64("source_id", &command.source_id)?;
         sqlx::query(
             r#"
-            INSERT INTO commerce_account_hold
+            INSERT INTO acct_hold
                 (id, uuid, tenant_id, organization_id, account_id, owner_type, owner_id, asset_code,
                  amount, settled_amount, released_amount, status, business_type, business_no,
                  source_type, source_id, idempotency_key, request_no, expires_at, version,
@@ -262,7 +262,7 @@ impl SqliteCommerceAccountStore {
 
         sqlx::query(
             r#"
-            UPDATE commerce_account_hold
+            UPDATE acct_hold
             SET status = ?, released_amount = amount, released_at = ?, updated_at = ?, version = version + 1
             WHERE tenant_id = ? AND uuid = ? AND status = ?
             "#,
@@ -402,7 +402,7 @@ impl SqliteCommerceAccountStore {
 
         sqlx::query(
             r#"
-            UPDATE commerce_account_hold
+            UPDATE acct_hold
             SET status = ?, settled_amount = amount, settled_at = ?, updated_at = ?, version = version + 1
             WHERE tenant_id = ? AND uuid = ? AND status = ?
             "#,
@@ -489,7 +489,7 @@ impl SqliteCommerceAccountStore {
                    hold.expires_at, hold.settled_at, hold.released_at, hold.version,
                    hold.created_at, hold.updated_at,
                    COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
-            FROM commerce_account_hold hold
+            FROM acct_hold hold
             WHERE hold.tenant_id = ?
               AND hold.organization_id = ?
               AND hold.owner_type = ?
@@ -545,7 +545,7 @@ impl SqliteCommerceAccountStore {
                    hold.source_type, hold.source_id, hold.request_no, hold.idempotency_key,
                    hold.expires_at, hold.settled_at, hold.released_at, hold.version,
                    hold.created_at, hold.updated_at
-            FROM commerce_account_hold hold
+            FROM acct_hold hold
             WHERE hold.tenant_id = ?
               AND hold.organization_id = ?
               AND hold.owner_type = ?
@@ -684,7 +684,7 @@ impl SqliteCommerceAccountStore {
         let trace_id = next_entity_uuid();
         sqlx::query(
             r#"
-            INSERT INTO commerce_account_journal
+            INSERT INTO acct_journal
                 (id, uuid, tenant_id, business_type, business_no, request_no, idempotency_key,
                  status, trace_id, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -775,7 +775,7 @@ impl SqliteCommerceAccountStore {
         let transfer_uuid = next_entity_uuid();
         sqlx::query(
             r#"
-            INSERT INTO commerce_account_transfer
+            INSERT INTO acct_transfer
                 (id, uuid, tenant_id, organization_id, from_account_id, to_account_id, asset_code,
                  amount, status, business_type, business_no, idempotency_key, request_no,
                  journal_id, trace_id, created_at)
@@ -915,8 +915,8 @@ impl SqliteCommerceAccountStore {
             let rows = sqlx::query(
                 r#"
                 SELECT hold.uuid, hold.account_id, hold.amount, hold.asset_code
-                FROM commerce_account_hold hold
-                INNER JOIN commerce_account account
+                FROM acct_hold hold
+                INNER JOIN acct_account account
                     ON account.id = hold.account_id
                    AND account.tenant_id = hold.tenant_id
                 WHERE hold.tenant_id = ?
@@ -1039,7 +1039,7 @@ async fn expire_one_expired_hold(
 
     sqlx::query(
         r#"
-        UPDATE commerce_account_hold
+        UPDATE acct_hold
         SET status = ?, released_amount = amount, released_at = ?, updated_at = ?, version = version + 1
         WHERE tenant_id = ? AND uuid = ? AND status = ?
         "#,
@@ -1137,7 +1137,7 @@ async fn complete_hold_expire_idempotency(
 
     sqlx::query(
         r#"
-        UPDATE commerce_idempotency_record
+        UPDATE acct_idempotency_record
         SET status = 'COMPLETED', target_id = 0, response_snapshot = ?, locked_until = NULL, updated_at = ?
         WHERE tenant_id = ? AND scope = ? AND idempotency_key = ?
         "#,
@@ -1186,7 +1186,7 @@ async fn append_settlement_ledger(
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_account_journal
+        INSERT INTO acct_journal
             (id, uuid, tenant_id, business_type, business_no, request_no, idempotency_key,
              status, trace_id, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1208,7 +1208,7 @@ async fn append_settlement_ledger(
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_account_ledger
+        INSERT INTO acct_ledger_entry
             (id, uuid, tenant_id, organization_id, account_id, journal_id, owner_type, owner_id,
              asset_code, currency_code, ledger_type, entry_type, direction, amount,
              balance_before, balance_after, business_type, business_no, request_no,
@@ -1333,7 +1333,7 @@ async fn insert_transfer_ledger(
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_account_ledger
+        INSERT INTO acct_ledger_entry
             (id, uuid, tenant_id, organization_id, account_id, journal_id, owner_type, owner_id,
              asset_code, currency_code, ledger_type, entry_type, direction, amount,
              balance_before, balance_after, business_type, business_no, request_no,
@@ -1372,7 +1372,7 @@ async fn insert_transfer_ledger(
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_account_journal_line
+        INSERT INTO acct_journal_line
             (id, journal_id, account_id, direction, amount, ledger_id, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         "#,
@@ -1445,7 +1445,7 @@ async fn load_account_by_owner_asset(
         r#"
         SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
-        FROM commerce_account
+        FROM acct_account
         WHERE tenant_id = ? AND organization_id = ? AND owner_type = ? AND owner_id = ? AND asset_code = ?
         LIMIT 1
         "#,
@@ -1471,7 +1471,7 @@ async fn load_account_by_owner_asset(
     };
     sqlx::query(
         r#"
-        INSERT INTO commerce_account
+        INSERT INTO acct_account
             (id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
              available_amount, frozen_amount, pending_amount, status, version, account_purpose, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, '0', '0', '0', ?, 0, ?, ?, ?)
@@ -1518,7 +1518,7 @@ async fn load_account_by_internal_id(
         r#"
         SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
-        FROM commerce_account
+        FROM acct_account
         WHERE tenant_id = ? AND id = ?
         LIMIT 1
         "#,
@@ -1544,7 +1544,7 @@ async fn update_account_balances(
     })?;
     let update = sqlx::query(
         r#"
-        UPDATE commerce_account
+        UPDATE acct_account
         SET available_amount = ?, frozen_amount = ?, version = ?, updated_at = ?
         WHERE id = ? AND version = ?
         "#,
@@ -1582,7 +1582,7 @@ async fn load_hold_by_uuid(
                settled_amount, released_amount, status, business_type, business_no, source_type,
                source_id, request_no, idempotency_key, expires_at, settled_at, released_at,
                version, created_at, updated_at
-        FROM commerce_account_hold
+        FROM acct_hold
         WHERE tenant_id = ? AND uuid = ?
         LIMIT 1
         "#,
@@ -1746,7 +1746,7 @@ async fn load_transfer_replay(
         SELECT id, uuid, tenant_id, organization_id, from_account_id, to_account_id, asset_code,
                amount, status, business_type, business_no, request_no, idempotency_key,
                journal_id, trace_id, created_at
-        FROM commerce_account_transfer
+        FROM acct_transfer
         WHERE tenant_id = ? AND idempotency_key = ?
         LIMIT 1
         "#,
@@ -1819,7 +1819,7 @@ async fn load_transfer_ledger_by_journal(
         SELECT id, uuid, account_id, tenant_id, organization_id, owner_id, asset_code,
                direction, amount, balance_before, balance_after, business_type, business_no,
                request_no, idempotency_key, created_at
-        FROM commerce_account_ledger
+        FROM acct_ledger_entry
         WHERE tenant_id = ? AND journal_id = ? AND account_id = ? AND direction = ?
         LIMIT 1
         "#,
@@ -1893,7 +1893,7 @@ pub(crate) async fn reclaim_idempotency_scoped_public(
     let lock_expires = crate::store::idempotency_lock_expires_at_rfc3339(Utc::now());
     let updated = sqlx::query(
         r#"
-        UPDATE commerce_idempotency_record
+        UPDATE acct_idempotency_record
         SET status = 'LOCKED', request_hash = ?, locked_until = ?, updated_at = ?
         WHERE tenant_id = ? AND scope = ? AND idempotency_key = ?
           AND (status = 'FAILED' OR (status = 'LOCKED' AND locked_until <= ?))
@@ -1936,7 +1936,7 @@ async fn load_idempotency_scoped(
     sqlx::query(
         r#"
         SELECT request_hash, status, response_snapshot
-        FROM commerce_idempotency_record
+        FROM acct_idempotency_record
         WHERE tenant_id = ? AND scope = ? AND idempotency_key = ?
         LIMIT 1
         "#,
@@ -1961,7 +1961,7 @@ async fn insert_idempotency_scoped(
     let lock_expires = crate::store::idempotency_lock_expires_at_rfc3339(Utc::now());
     sqlx::query(
         r#"
-        INSERT INTO commerce_idempotency_record
+        INSERT INTO acct_idempotency_record
             (id, uuid, tenant_id, scope, idempotency_key, request_hash, target_type, status,
              locked_until, expire_at, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, 'LOCKED', ?, ?, ?, ?)
@@ -1997,7 +1997,7 @@ async fn complete_idempotency_scoped(
 ) -> Result<(), CommerceServiceError> {
     sqlx::query(
         r#"
-        UPDATE commerce_idempotency_record
+        UPDATE acct_idempotency_record
         SET status = 'COMPLETED', target_id = ?, response_snapshot = ?, locked_until = NULL, updated_at = ?
         WHERE tenant_id = ? AND scope = ? AND idempotency_key = ?
         "#,

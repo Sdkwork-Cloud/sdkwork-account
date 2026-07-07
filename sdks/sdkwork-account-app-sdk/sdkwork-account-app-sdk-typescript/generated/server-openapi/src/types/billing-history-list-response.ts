@@ -1,8 +1,7 @@
-import type { BillingHistoryItem } from './billing-history-item';
-import type { PageInfo } from './page-info';
+import type { BillingHistoryListData } from './billing-history-list-data';
 
 export interface BillingHistoryListResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: BillingHistoryListData;
   traceId: string;
 }

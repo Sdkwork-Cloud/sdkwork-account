@@ -159,7 +159,7 @@ impl SqliteCommerceAccountStore {
             r#"
             SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
                    available_amount, frozen_amount, pending_amount, status, version
-            FROM commerce_account
+            FROM acct_account
             WHERE tenant_id = ?
               AND organization_id = ?
               AND owner_type = ?
@@ -214,7 +214,7 @@ impl SqliteCommerceAccountStore {
                        direction, amount, balance_before, balance_after, business_type, business_no,
                        request_no, idempotency_key, created_at,
                        COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
-                FROM commerce_account_ledger
+                FROM acct_ledger_entry
                 WHERE tenant_id = ?
                   AND organization_id = ?
                   AND owner_id = ?
@@ -243,7 +243,7 @@ impl SqliteCommerceAccountStore {
                        direction, amount, balance_before, balance_after, business_type, business_no,
                        request_no, idempotency_key, created_at,
                        COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
-                FROM commerce_account_ledger
+                FROM acct_ledger_entry
                 WHERE tenant_id = ?
                   AND organization_id = ?
                   AND owner_id = ?
@@ -293,7 +293,7 @@ impl SqliteCommerceAccountStore {
             SELECT id, uuid, account_id, tenant_id, organization_id, owner_id, asset_code,
                    direction, amount, balance_before, balance_after, business_type, business_no,
                    request_no, idempotency_key, created_at
-            FROM commerce_account_ledger
+            FROM acct_ledger_entry
             WHERE tenant_id = ?
               AND organization_id = ?
               AND owner_id = ?
@@ -326,7 +326,7 @@ impl SqliteCommerceAccountStore {
             SELECT id, uuid, account_id, tenant_id, organization_id, owner_id, asset_code,
                    direction, amount, balance_before, balance_after, business_type, business_no,
                    request_no, idempotency_key, created_at
-            FROM commerce_account_ledger
+            FROM acct_ledger_entry
             WHERE tenant_id = ?
               AND organization_id = ?
               AND owner_id = ?
@@ -405,7 +405,7 @@ impl SqliteCommerceAccountStore {
                     THEN remaining_amount
                     ELSE 0
                 END), 0) AS expiring_points
-            FROM commerce_points_lot
+            FROM acct_points_lot
             WHERE tenant_id = ?
               AND account_id = ?
               AND status = ?
@@ -440,8 +440,8 @@ impl SqliteCommerceAccountStore {
                    lot.source_type, lot.source_id, lot.expires_at, lot.status,
                    lot.created_at, lot.updated_at,
                    COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
-            FROM commerce_points_lot lot
-            INNER JOIN commerce_account account
+            FROM acct_points_lot lot
+            INNER JOIN acct_account account
                 ON account.id = lot.account_id
                AND account.tenant_id = lot.tenant_id
             WHERE lot.tenant_id = ?
@@ -571,7 +571,7 @@ impl SqliteCommerceAccountStore {
 
         let update = sqlx::query(
             r#"
-            UPDATE commerce_account
+            UPDATE acct_account
             SET available_amount = ?, version = ?, updated_at = ?
             WHERE id = ? AND version = ?
             "#,
@@ -601,7 +601,7 @@ impl SqliteCommerceAccountStore {
 
         sqlx::query(
             r#"
-            INSERT INTO commerce_account_journal
+            INSERT INTO acct_journal
                 (id, uuid, tenant_id, business_type, business_no, request_no, idempotency_key,
                  status, trace_id, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -634,7 +634,7 @@ impl SqliteCommerceAccountStore {
 
         sqlx::query(
             r#"
-            INSERT INTO commerce_account_ledger
+            INSERT INTO acct_ledger_entry
                 (id, uuid, tenant_id, organization_id, account_id, journal_id, owner_type, owner_id,
                  asset_code, currency_code, ledger_type, entry_type, direction, amount,
                  balance_before, balance_after, business_type, business_no, request_no,
@@ -670,7 +670,7 @@ impl SqliteCommerceAccountStore {
 
         sqlx::query(
             r#"
-            INSERT INTO commerce_account_journal_line
+            INSERT INTO acct_journal_line
                 (id, journal_id, account_id, direction, amount, ledger_id, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             "#,
@@ -845,7 +845,7 @@ async fn load_idempotency_row(
     sqlx::query(
         r#"
         SELECT request_hash, status
-        FROM commerce_idempotency_record
+        FROM acct_idempotency_record
         WHERE tenant_id = ? AND scope = ? AND idempotency_key = ?
         LIMIT 1
         "#,
@@ -868,7 +868,7 @@ async fn insert_idempotency_lock(
 ) -> Result<(), CommerceServiceError> {
     sqlx::query(
         r#"
-        INSERT INTO commerce_idempotency_record
+        INSERT INTO acct_idempotency_record
             (id, uuid, tenant_id, scope, idempotency_key, request_hash, target_type, status,
              locked_until, expire_at, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, 'ledger', 'LOCKED', ?, ?, ?, ?)
@@ -908,7 +908,7 @@ async fn complete_idempotency(
 
     sqlx::query(
         r#"
-        UPDATE commerce_idempotency_record
+        UPDATE acct_idempotency_record
         SET status = 'COMPLETED',
             target_id = ?,
             response_snapshot = ?,
@@ -963,7 +963,7 @@ async fn load_or_create_account_for_append(
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_account
+        INSERT INTO acct_account
             (id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
              account_purpose, available_amount, frozen_amount, pending_amount, status, version,
              created_at, updated_at)
@@ -1012,7 +1012,7 @@ async fn load_account_by_id(
         r#"
         SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
-        FROM commerce_account
+        FROM acct_account
         WHERE id = ? AND tenant_id = ? AND organization_id = ? AND owner_id = ?
         LIMIT 1
         "#,
@@ -1040,7 +1040,7 @@ async fn load_account_by_owner_asset(
         r#"
         SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
-        FROM commerce_account
+        FROM acct_account
         WHERE tenant_id = ?
           AND organization_id = ?
           AND owner_type = ?
@@ -1077,7 +1077,7 @@ async fn load_replayed_outcome(
         SELECT id, uuid, account_id, tenant_id, organization_id, owner_id, asset_code,
                direction, amount, balance_before, balance_after, business_type, business_no,
                request_no, idempotency_key, created_at
-        FROM commerce_account_ledger
+        FROM acct_ledger_entry
         WHERE tenant_id = ? AND owner_id = ? AND idempotency_key = ?
         ORDER BY created_at DESC, id DESC
         LIMIT 1
@@ -1105,7 +1105,7 @@ async fn load_account_item_for_replay(
         r#"
         SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
-        FROM commerce_account
+        FROM acct_account
         WHERE id = ?
         LIMIT 1
         "#,
@@ -1256,7 +1256,7 @@ pub(crate) async fn apply_points_lot_movement(
             let lot_uuid = next_entity_uuid();
             sqlx::query(
                 r#"
-                INSERT INTO commerce_points_lot
+                INSERT INTO acct_points_lot
                     (id, uuid, tenant_id, account_id, granted_amount, remaining_amount,
                      source_type, source_id, expires_at, status, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1291,7 +1291,7 @@ pub(crate) async fn apply_points_lot_movement(
                     sqlx::query(
                         r#"
                         SELECT id, remaining_amount
-                        FROM commerce_points_lot
+                        FROM acct_points_lot
                         WHERE tenant_id = ?
                           AND account_id = ?
                           AND status = ?
@@ -1319,7 +1319,7 @@ pub(crate) async fn apply_points_lot_movement(
                     sqlx::query(
                         r#"
                         SELECT id, remaining_amount
-                        FROM commerce_points_lot
+                        FROM acct_points_lot
                         WHERE tenant_id = ?
                           AND account_id = ?
                           AND status = ?
@@ -1362,7 +1362,7 @@ pub(crate) async fn apply_points_lot_movement(
                     };
                     sqlx::query(
                         r#"
-                        UPDATE commerce_points_lot
+                        UPDATE acct_points_lot
                         SET remaining_amount = ?, status = ?, updated_at = ?
                         WHERE id = ? AND tenant_id = ?
                         "#,
@@ -1378,7 +1378,7 @@ pub(crate) async fn apply_points_lot_movement(
 
                     sqlx::query(
                         r#"
-                        INSERT INTO commerce_points_lot_allocation
+                        INSERT INTO acct_points_lot_allocation
                             (id, uuid, tenant_id, account_id, ledger_id, lot_id, amount, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         "#,
@@ -1405,7 +1405,7 @@ pub(crate) async fn apply_points_lot_movement(
             let lot_sum: i64 = sqlx::query_scalar(
                 r#"
                 SELECT COALESCE(SUM(remaining_amount), 0)
-                FROM commerce_points_lot
+                FROM acct_points_lot
                 WHERE tenant_id = ? AND account_id = ?
                 "#,
             )
@@ -1415,7 +1415,7 @@ pub(crate) async fn apply_points_lot_movement(
             .await
             .map_err(|error| store_error("failed to sum points lot remaining", error))?;
             let available: String = sqlx::query_scalar(
-                "SELECT available_amount FROM commerce_account WHERE tenant_id = ? AND id = ?",
+                "SELECT available_amount FROM acct_account WHERE tenant_id = ? AND id = ?",
             )
             .bind(tenant_id)
             .bind(account_id)

@@ -145,6 +145,7 @@ struct ExpireExpiredHoldsRequest {
 struct ExpireExpiredHoldsResponse {
     accepted: bool,
     replayed: bool,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     expired_hold_count: i64,
     released_amount_total: String,
 }
@@ -195,6 +196,7 @@ struct AccountHoldItemResponse {
     expires_at: Option<String>,
     settled_at: Option<String>,
     released_at: Option<String>,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     version: i64,
     created_at: String,
     updated_at: String,
@@ -236,6 +238,7 @@ struct WalletAccountItemResponse {
     frozen_amount: String,
     pending_amount: String,
     status: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     version: i64,
 }
 
@@ -784,5 +787,54 @@ fn map_wallet_transaction(value: WalletTransactionItem) -> WalletTransactionItem
         request_no: value.request_no,
         idempotency_key: value.idempotency_key,
         created_at: value.created_at,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn backend_hold_response_int64_fields_serialize_as_strings() {
+        let expire = serde_json::to_value(ExpireExpiredHoldsResponse {
+            accepted: true,
+            replayed: false,
+            expired_hold_count: 4,
+            released_amount_total: "400".to_owned(),
+        })
+        .unwrap();
+
+        assert_eq!(expire["expiredHoldCount"], json!("4"));
+
+        let hold = serde_json::to_value(AccountHoldItemResponse {
+            id: "hold-1".to_owned(),
+            uuid: "hold-uuid".to_owned(),
+            tenant_id: "tenant-1".to_owned(),
+            organization_id: None,
+            account_id: "account-1".to_owned(),
+            owner_user_id: "user-1".to_owned(),
+            asset_type: "token_bank".to_owned(),
+            amount: "100".to_owned(),
+            settled_amount: "0".to_owned(),
+            released_amount: "0".to_owned(),
+            status: "holding".to_owned(),
+            business_type: "ai_generation".to_owned(),
+            business_no: "biz-1".to_owned(),
+            source_type: "workflow".to_owned(),
+            source_id: "workflow-1".to_owned(),
+            request_no: "req-1".to_owned(),
+            idempotency_key: "idem-1".to_owned(),
+            expires_at: None,
+            settled_at: None,
+            released_at: None,
+            version: 7,
+            created_at: "2026-07-08T00:00:00Z".to_owned(),
+            updated_at: "2026-07-08T00:00:00Z".to_owned(),
+        })
+        .unwrap();
+
+        assert_eq!(hold["version"], json!("7"));
     }
 }

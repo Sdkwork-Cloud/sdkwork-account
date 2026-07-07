@@ -98,23 +98,30 @@ Rules:
 
 ## 6. Database Rules
 
+Physical database prefix rules:
+
+- Account-owned physical tables must use the registered `acct_` prefix.
+- `acct_` means the account/accounting bounded context inside the commerce domain.
+- The `commerce.account` capability identity, API package names, and cross-capability boundary names remain unchanged.
+- Account-owned greenfield tables must not use the broad `commerce_` prefix.
+
 Required Token Bank tables:
 
 | Table | Requirement |
 | --- | --- |
-| `commerce_account` | Must support `asset_code = token_bank` and `currency_code = TOKEN_BANK`. |
-| `commerce_account_ledger` | Must support append-only Token Bank credit, debit, hold, settlement, income, burn, and reversal entries. |
-| `commerce_account_hold` | Must support AI budget reservation and final settlement or release. |
-| `commerce_account_transfer` | Must support same-asset transfer between Token Bank owner accounts. |
-| `commerce_token_bank_exchange_rate` | Must store governed fiat-to-Token-Bank exchange rates. |
-| `commerce_token_bank_exchange_quote` | Must store short-lived purchase quotes. |
-| `commerce_token_bank_exchange_snapshot` | Must store immutable purchase fulfillment snapshots. |
-| `commerce_token_bank_settlement_snapshot` | Must store immutable AI spending and service income settlement evidence. |
-| `commerce_billing_history` | Must project Token Bank income, spending, hold, release, purchase, transfer, and reversal history. |
+| `acct_account` | Must support `asset_code = token_bank` and `currency_code = TOKEN_BANK`. |
+| `acct_ledger_entry` | Must support append-only Token Bank credit, debit, hold, settlement, income, burn, and reversal entries. |
+| `acct_hold` | Must support AI budget reservation and final settlement or release. |
+| `acct_transfer` | Must support same-asset transfer between Token Bank owner accounts. |
+| `acct_token_bank_exchange_rate` | Must store governed fiat-to-Token-Bank exchange rates. |
+| `acct_token_bank_exchange_quote` | Must store short-lived purchase quotes. |
+| `acct_token_bank_exchange_snapshot` | Must store immutable purchase fulfillment snapshots. |
+| `acct_token_bank_settlement_snapshot` | Must store immutable AI spending and service income settlement evidence. |
+| `acct_billing_history` | Must project Token Bank income, spending, hold, release, purchase, transfer, and reversal history. |
 
 Database constraints:
 
-- `commerce_account.asset_code` must be one of `cash`, `points`, or `token_bank`.
+- `acct_account.asset_code` must be one of `cash`, `points`, or `token_bank`.
 - `token_bank` account rows must use `currency_code = TOKEN_BANK`.
 - Account balances and movement amounts must be non-negative integer values.
 - Ledger rows must be append-only; reversals must append new rows and reference `reversed_ledger_id`.

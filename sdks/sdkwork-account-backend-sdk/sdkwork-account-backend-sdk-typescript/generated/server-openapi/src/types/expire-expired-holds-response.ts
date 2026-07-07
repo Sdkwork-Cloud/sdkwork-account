@@ -1,5 +1,7 @@
+import type { ExpireExpiredHoldsData } from './expire-expired-holds-data';
+
 export interface ExpireExpiredHoldsResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: ExpireExpiredHoldsData;
   traceId: string;
 }

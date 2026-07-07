@@ -1,6 +1,8 @@
 # Account database module
 
-Managed by `sdkwork-database` lifecycle SPI. Table prefix: `commerce_`.
+Managed by `sdkwork-database` lifecycle SPI. Table prefix: `acct_`.
+
+`acct_` is the physical database prefix for account/accounting-owned tables. The capability remains `commerce.account`; broad commerce-owned tables such as order-owned `commerce_order` stay outside this module.
 
 ## Initialization State
 
@@ -32,10 +34,10 @@ Floating-point account arithmetic is forbidden.
 
 ## Token Bank Tables
 
-- `commerce_token_bank_exchange_rate`
-- `commerce_token_bank_exchange_quote`
-- `commerce_token_bank_exchange_snapshot`
-- `commerce_token_bank_settlement_snapshot`
+- `acct_token_bank_exchange_rate`
+- `acct_token_bank_exchange_quote`
+- `acct_token_bank_exchange_snapshot`
+- `acct_token_bank_settlement_snapshot`
 
 These tables support fiat exchange, immutable purchase evidence, AI spending, service income, burn routing, and reconciliation.
 

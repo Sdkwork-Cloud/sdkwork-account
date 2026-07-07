@@ -1,7 +1,7 @@
-import type { WalletAccountItem } from './wallet-account-item';
+import type { WalletOverviewData } from './wallet-overview-data';
 
 export interface WalletOverviewResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: WalletOverviewData;
   traceId: string;
 }

@@ -1,8 +1,7 @@
-import type { PageInfo } from './page-info';
-import type { PointsLotItem } from './points-lot-item';
+import type { PointsLotListData } from './points-lot-list-data';
 
 export interface PointsLotListResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: PointsLotListData;
   traceId: string;
 }

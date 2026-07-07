@@ -6,7 +6,7 @@
 -- reversible: true
 -- transactional: true
 
-CREATE TABLE IF NOT EXISTS commerce_account (
+CREATE TABLE IF NOT EXISTS acct_account (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -30,10 +30,10 @@ CREATE TABLE IF NOT EXISTS commerce_account (
     )
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_account_tenant_owner
-    ON commerce_account (tenant_id, organization_id, owner_type, owner_id, asset_code);
+CREATE INDEX IF NOT EXISTS idx_acct_account_tenant_owner
+    ON acct_account (tenant_id, organization_id, owner_type, owner_id, asset_code);
 
-CREATE TABLE IF NOT EXISTS commerce_account_journal (
+CREATE TABLE IF NOT EXISTS acct_journal (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS commerce_account_journal (
     UNIQUE (tenant_id, business_no)
 );
 
-CREATE TABLE IF NOT EXISTS commerce_account_journal_line (
+CREATE TABLE IF NOT EXISTS acct_journal_line (
     id INTEGER NOT NULL PRIMARY KEY,
     journal_id INTEGER NOT NULL,
     account_id INTEGER NOT NULL,
@@ -58,10 +58,10 @@ CREATE TABLE IF NOT EXISTS commerce_account_journal_line (
     created_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_account_journal_line_journal
-    ON commerce_account_journal_line (journal_id);
+CREATE INDEX IF NOT EXISTS idx_acct_journal_line_journal
+    ON acct_journal_line (journal_id);
 
-CREATE TABLE IF NOT EXISTS commerce_account_ledger (
+CREATE TABLE IF NOT EXISTS acct_ledger_entry (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -94,12 +94,12 @@ CREATE TABLE IF NOT EXISTS commerce_account_ledger (
     UNIQUE (tenant_id, idempotency_key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_account_ledger_account_created
-    ON commerce_account_ledger (tenant_id, account_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_commerce_account_ledger_request_no
-    ON commerce_account_ledger (tenant_id, request_no);
+CREATE INDEX IF NOT EXISTS idx_acct_ledger_entry_account_created
+    ON acct_ledger_entry (tenant_id, account_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_acct_ledger_entry_request_no
+    ON acct_ledger_entry (tenant_id, request_no);
 
-CREATE TABLE IF NOT EXISTS commerce_account_hold (
+CREATE TABLE IF NOT EXISTS acct_hold (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -127,10 +127,10 @@ CREATE TABLE IF NOT EXISTS commerce_account_hold (
     UNIQUE (tenant_id, idempotency_key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_account_hold_account
-    ON commerce_account_hold (tenant_id, account_id, status);
+CREATE INDEX IF NOT EXISTS idx_acct_hold_account
+    ON acct_hold (tenant_id, account_id, status);
 
-CREATE TABLE IF NOT EXISTS commerce_account_transfer (
+CREATE TABLE IF NOT EXISTS acct_transfer (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS commerce_account_transfer (
     UNIQUE (tenant_id, idempotency_key)
 );
 
-CREATE TABLE IF NOT EXISTS commerce_points_lot (
+CREATE TABLE IF NOT EXISTS acct_points_lot (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -165,10 +165,10 @@ CREATE TABLE IF NOT EXISTS commerce_points_lot (
     updated_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_points_lot_account_expires
-    ON commerce_points_lot (tenant_id, account_id, expires_at);
+CREATE INDEX IF NOT EXISTS idx_acct_points_lot_account_expires
+    ON acct_points_lot (tenant_id, account_id, expires_at);
 
-CREATE TABLE IF NOT EXISTS commerce_points_lot_allocation (
+CREATE TABLE IF NOT EXISTS acct_points_lot_allocation (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -180,10 +180,10 @@ CREATE TABLE IF NOT EXISTS commerce_points_lot_allocation (
     UNIQUE (tenant_id, ledger_id, lot_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_points_lot_allocation_ledger
-    ON commerce_points_lot_allocation (tenant_id, ledger_id);
+CREATE INDEX IF NOT EXISTS idx_acct_points_lot_allocation_ledger
+    ON acct_points_lot_allocation (tenant_id, ledger_id);
 
-CREATE TABLE IF NOT EXISTS commerce_idempotency_record (
+CREATE TABLE IF NOT EXISTS acct_idempotency_record (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS commerce_idempotency_record (
     UNIQUE (tenant_id, scope, idempotency_key)
 );
 
-CREATE TABLE IF NOT EXISTS commerce_outbox_event (
+CREATE TABLE IF NOT EXISTS acct_outbox_event (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -220,10 +220,10 @@ CREATE TABLE IF NOT EXISTS commerce_outbox_event (
     updated_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_outbox_event_status_retry
-    ON commerce_outbox_event (status, next_retry_at);
+CREATE INDEX IF NOT EXISTS idx_acct_outbox_event_status_retry
+    ON acct_outbox_event (status, next_retry_at);
 
-CREATE TABLE IF NOT EXISTS commerce_billing_history (
+CREATE TABLE IF NOT EXISTS acct_billing_history (
     id INTEGER NOT NULL PRIMARY KEY,
     uuid TEXT NOT NULL UNIQUE,
     tenant_id INTEGER NOT NULL,
@@ -250,5 +250,5 @@ CREATE TABLE IF NOT EXISTS commerce_billing_history (
     UNIQUE (tenant_id, history_no)
 );
 
-CREATE INDEX IF NOT EXISTS idx_commerce_billing_history_owner_occurred
-    ON commerce_billing_history (tenant_id, owner_id, occurred_at);
+CREATE INDEX IF NOT EXISTS idx_acct_billing_history_owner_occurred
+    ON acct_billing_history (tenant_id, owner_id, occurred_at);

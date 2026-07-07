@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { HttpClient } from '../http/client';
 
-import type { AccountHoldItem, PageInfo, WalletAccountItem, WalletLedgerEntryItem } from '../types';
+import type { AccountHoldListData, TokenBankBalanceItem, WalletAccountItem, WalletLedgerListData } from '../types';
 
 
 export interface TokenBankHoldsListParams {
@@ -19,14 +19,14 @@ export class TokenBankHoldsApi {
   }
 
 
-async list(params?: TokenBankHoldsListParams): Promise<Record<string, unknown>> {
+async list(params?: TokenBankHoldsListParams): Promise<AccountHoldListData> {
     const query = buildQueryString([
       { name: 'account_id', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<Record<string, unknown>>(appendQueryString(appApiPath(`/token_bank/holds`), query));
+    return this.client.get<AccountHoldListData>(appendQueryString(appApiPath(`/token_bank/holds`), query));
   }
 }
 
@@ -45,14 +45,14 @@ export class TokenBankLedgerEntriesApi {
   }
 
 
-async list(params?: TokenBankLedgerEntriesListParams): Promise<Record<string, unknown>> {
+async list(params?: TokenBankLedgerEntriesListParams): Promise<WalletLedgerListData> {
     const query = buildQueryString([
       { name: 'account_id', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<Record<string, unknown>>(appendQueryString(appApiPath(`/token_bank/ledger_entries`), query));
+    return this.client.get<WalletLedgerListData>(appendQueryString(appApiPath(`/token_bank/ledger_entries`), query));
   }
 }
 
@@ -64,8 +64,8 @@ export class TokenBankOverviewApi {
   }
 
 
-async retrieve(): Promise<Record<string, unknown>> {
-    return this.client.get<Record<string, unknown>>(appApiPath(`/token_bank/overview`));
+async retrieve(): Promise<TokenBankBalanceItem> {
+    return this.client.get<TokenBankBalanceItem>(appApiPath(`/token_bank/overview`));
   }
 }
 

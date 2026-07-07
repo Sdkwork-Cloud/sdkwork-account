@@ -8,7 +8,7 @@ use super::{next_entity_id, next_entity_uuid, store_error};
 
 pub const OUTBOX_STATUS_PENDING: &str = "PENDING";
 pub const OUTBOX_STATUS_PUBLISHED: &str = "PUBLISHED";
-pub const OUTBOX_AGGREGATE_TYPE_ACCOUNT: &str = "commerce_account";
+pub const OUTBOX_AGGREGATE_TYPE_ACCOUNT: &str = "account";
 pub const OUTBOX_EVENT_TYPE_LEDGER_APPENDED: &str = "account.ledger_appended";
 pub const OUTBOX_EVENT_TYPE_HOLD_CREATED: &str = "account.hold_created";
 pub const OUTBOX_EVENT_TYPE_HOLD_SETTLED: &str = "account.hold_settled";
@@ -106,7 +106,7 @@ where
 {
     sqlx::query(
         r#"
-        INSERT INTO commerce_outbox_event
+        INSERT INTO acct_outbox_event
             (id, uuid, tenant_id, aggregate_type, aggregate_id, event_type, event_version,
              event_key, payload, payload_hash, status, retry_count, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
@@ -192,7 +192,7 @@ where
 {
     sqlx::query(
         r#"
-        INSERT INTO commerce_outbox_event
+        INSERT INTO acct_outbox_event
             (id, uuid, tenant_id, aggregate_type, aggregate_id, event_type, event_version,
              event_key, payload, payload_hash, status, retry_count, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12, $13)

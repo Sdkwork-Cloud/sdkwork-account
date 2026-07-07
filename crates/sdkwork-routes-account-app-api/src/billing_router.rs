@@ -59,6 +59,7 @@ struct BillingHistoryItemResponse {
     asset_type: String,
     amount: String,
     currency_code: Option<String>,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     points_delta: i64,
     status: String,
     title: String,

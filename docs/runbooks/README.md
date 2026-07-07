@@ -54,7 +54,7 @@ Forward returned events to your message bus using `eventKey` for consumer idempo
 
 ## Idempotency lock recovery
 
-Write paths use `commerce_idempotency_record` with a 5-minute lock TTL (`locked_until`). Stale locks auto-expire; clients should retry with the same idempotency key after TTL.
+Write paths use `acct_idempotency_record` with a 5-minute lock TTL (`locked_until`). Stale locks auto-expire; clients should retry with the same idempotency key after TTL.
 
 ## Points reconciliation
 

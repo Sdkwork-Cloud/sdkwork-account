@@ -135,6 +135,7 @@ struct WalletAccountItemResponse {
     frozen_amount: String,
     pending_amount: String,
     status: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     version: i64,
 }
 
@@ -185,6 +186,7 @@ struct CashAccountResponse {
     frozen_amount: String,
     pending_amount: String,
     status: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     version: i64,
 }
 
@@ -200,9 +202,11 @@ struct PointsAccountResponse {
     frozen_points: String,
     pending_points: String,
     total_points: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     active_lot_count: i64,
     expiring_points: String,
     status: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     version: i64,
 }
 
@@ -212,7 +216,9 @@ struct PointsLotItemResponse {
     id: String,
     uuid: String,
     account_id: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     granted_amount: i64,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     remaining_amount: i64,
     source_type: String,
     source_id: String,
@@ -234,12 +240,17 @@ struct PointsSummaryResponse {
     frozen_points: String,
     pending_points: String,
     total_points: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     active_lot_count: i64,
     expiring_points: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     unswept_expired_points: i64,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     month_credit_points: i64,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     month_debit_points: i64,
     status: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     version: i64,
 }
 
@@ -250,6 +261,7 @@ struct PointsLotAllocationItemResponse {
     uuid: String,
     ledger_id: String,
     lot_id: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     amount: i64,
     created_at: String,
 }
@@ -264,6 +276,7 @@ struct AccountSummaryResponse {
     tier: String,
     organization: String,
     available_points: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     est_days_remaining: i64,
     monthly_points_consumed: String,
     consumption_by_service: Vec<AccountConsumptionItemResponse>,
@@ -294,7 +307,9 @@ struct AccountInvoiceSettingsResponse {
 #[serde(rename_all = "camelCase")]
 struct AccountSecuritySummaryResponse {
     mfa_enabled: bool,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     qps_limit: i64,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     ip_whitelist_count: i64,
 }
 
@@ -1008,6 +1023,7 @@ struct AccountHoldItemResponse {
     expires_at: Option<String>,
     settled_at: Option<String>,
     released_at: Option<String>,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     version: i64,
     created_at: String,
     updated_at: String,
@@ -1487,4 +1503,62 @@ fn parse_token_bank_amount(value: &str) -> Result<i128, CommerceServiceError> {
     normalized
         .parse::<i128>()
         .map_err(|_| CommerceServiceError::storage(format!("invalid token bank amount: {value}")))
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn app_response_int64_fields_serialize_as_strings() {
+        let summary = serde_json::to_value(AccountSummaryResponse {
+            id: "account-1".to_owned(),
+            name: "SDKWork".to_owned(),
+            email: "ops@sdkwork.test".to_owned(),
+            is_verified: true,
+            tier: "enterprise".to_owned(),
+            organization: "sdkwork".to_owned(),
+            available_points: "1000".to_owned(),
+            est_days_remaining: 42,
+            monthly_points_consumed: "500".to_owned(),
+            consumption_by_service: Vec::new(),
+            invoice_settings: AccountInvoiceSettingsResponse {
+                org_full: "SDKWork".to_owned(),
+                tax_id: "tax-1".to_owned(),
+                payment_method: "bank".to_owned(),
+                invoice_type: "general".to_owned(),
+            },
+            security: AccountSecuritySummaryResponse {
+                mfa_enabled: true,
+                qps_limit: 1000,
+                ip_whitelist_count: 2,
+            },
+            login_logs: Vec::new(),
+        })
+        .unwrap();
+
+        assert_eq!(summary["estDaysRemaining"], json!("42"));
+        assert_eq!(summary["security"]["qpsLimit"], json!("1000"));
+        assert_eq!(summary["security"]["ipWhitelistCount"], json!("2"));
+
+        let points_lot = serde_json::to_value(PointsLotItemResponse {
+            id: "lot-1".to_owned(),
+            uuid: "lot-uuid".to_owned(),
+            account_id: "account-1".to_owned(),
+            granted_amount: 100,
+            remaining_amount: 80,
+            source_type: "grant".to_owned(),
+            source_id: "source-1".to_owned(),
+            expires_at: None,
+            status: "active".to_owned(),
+            created_at: "2026-07-08T00:00:00Z".to_owned(),
+            updated_at: "2026-07-08T00:00:00Z".to_owned(),
+        })
+        .unwrap();
+
+        assert_eq!(points_lot["grantedAmount"], json!("100"));
+        assert_eq!(points_lot["remainingAmount"], json!("80"));
+    }
 }

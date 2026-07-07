@@ -1,19 +1,19 @@
 {
   "tables": [
-    "commerce_account",
-    "commerce_account_ledger",
-    "commerce_account_journal",
-    "commerce_account_journal_line",
-    "commerce_account_hold",
-    "commerce_account_transfer",
-    "commerce_points_lot",
-    "commerce_points_lot_allocation",
-    "commerce_token_bank_exchange_rate",
-    "commerce_token_bank_exchange_quote",
-    "commerce_token_bank_exchange_snapshot",
-    "commerce_token_bank_settlement_snapshot",
-    "commerce_idempotency_record",
-    "commerce_outbox_event",
-    "commerce_billing_history"
+    "acct_account",
+    "acct_ledger_entry",
+    "acct_journal",
+    "acct_journal_line",
+    "acct_hold",
+    "acct_transfer",
+    "acct_points_lot",
+    "acct_points_lot_allocation",
+    "acct_token_bank_exchange_rate",
+    "acct_token_bank_exchange_quote",
+    "acct_token_bank_exchange_snapshot",
+    "acct_token_bank_settlement_snapshot",
+    "acct_idempotency_record",
+    "acct_outbox_event",
+    "acct_billing_history"
   ]
 }

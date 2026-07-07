@@ -1,7 +1,7 @@
 import { backendApiPath } from './paths';
 import type { HttpClient } from '../http/client';
 
-import type { AccountHoldItem, AccountTransferItem, CreateTokenBankHoldRequest, CreateTokenBankLedgerMutationRequest, CreateTokenBankReversalRequest, CreateTokenBankTransferRequest, ReleaseAccountHoldRequest, SettleAccountHoldRequest, WalletAccountItem, WalletLedgerEntryItem } from '../types';
+import type { CreateTokenBankHoldRequest, CreateTokenBankLedgerMutationRequest, CreateTokenBankReversalRequest, CreateTokenBankTransferRequest, ReleaseAccountHoldRequest, SettleAccountHoldRequest, WalletAdjustmentResult, WalletHoldMutationResult, WalletTransferMutationResult } from '../types';
 
 
 export class TokenBankTransfersApi {
@@ -12,8 +12,8 @@ export class TokenBankTransfersApi {
   }
 
 
-async create(body: CreateTokenBankTransferRequest): Promise<Record<string, unknown>> {
-    return this.client.post<Record<string, unknown>>(backendApiPath(`/token_bank/transfers`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankTransferRequest): Promise<WalletTransferMutationResult> {
+    return this.client.post<WalletTransferMutationResult>(backendApiPath(`/token_bank/transfers`), body, undefined, undefined, 'application/json');
   }
 }
 
@@ -25,16 +25,16 @@ export class TokenBankHoldsApi {
   }
 
 
-async create(body: CreateTokenBankHoldRequest): Promise<Record<string, unknown>> {
-    return this.client.post<Record<string, unknown>>(backendApiPath(`/token_bank/holds`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankHoldRequest): Promise<WalletHoldMutationResult> {
+    return this.client.post<WalletHoldMutationResult>(backendApiPath(`/token_bank/holds`), body, undefined, undefined, 'application/json');
   }
 
-async settle(holdId: string, body: SettleAccountHoldRequest): Promise<Record<string, unknown>> {
-    return this.client.post<Record<string, unknown>>(backendApiPath(`/token_bank/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/settle`), body, undefined, undefined, 'application/json');
+async settle(holdId: string, body: SettleAccountHoldRequest): Promise<WalletHoldMutationResult> {
+    return this.client.post<WalletHoldMutationResult>(backendApiPath(`/token_bank/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/settle`), body, undefined, undefined, 'application/json');
   }
 
-async release(holdId: string, body: ReleaseAccountHoldRequest): Promise<Record<string, unknown>> {
-    return this.client.post<Record<string, unknown>>(backendApiPath(`/token_bank/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/release`), body, undefined, undefined, 'application/json');
+async release(holdId: string, body: ReleaseAccountHoldRequest): Promise<WalletHoldMutationResult> {
+    return this.client.post<WalletHoldMutationResult>(backendApiPath(`/token_bank/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/release`), body, undefined, undefined, 'application/json');
   }
 }
 
@@ -46,8 +46,8 @@ export class TokenBankReversalsApi {
   }
 
 
-async create(body: CreateTokenBankReversalRequest): Promise<Record<string, unknown>> {
-    return this.client.post<Record<string, unknown>>(backendApiPath(`/token_bank/reversals`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankReversalRequest): Promise<WalletAdjustmentResult> {
+    return this.client.post<WalletAdjustmentResult>(backendApiPath(`/token_bank/reversals`), body, undefined, undefined, 'application/json');
   }
 }
 
@@ -59,8 +59,8 @@ export class TokenBankGrantsApi {
   }
 
 
-async create(body: CreateTokenBankLedgerMutationRequest): Promise<Record<string, unknown>> {
-    return this.client.post<Record<string, unknown>>(backendApiPath(`/token_bank/grants`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankLedgerMutationRequest): Promise<WalletAdjustmentResult> {
+    return this.client.post<WalletAdjustmentResult>(backendApiPath(`/token_bank/grants`), body, undefined, undefined, 'application/json');
   }
 }
 
@@ -72,8 +72,8 @@ export class TokenBankDebitsApi {
   }
 
 
-async create(body: CreateTokenBankLedgerMutationRequest): Promise<Record<string, unknown>> {
-    return this.client.post<Record<string, unknown>>(backendApiPath(`/token_bank/debits`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankLedgerMutationRequest): Promise<WalletAdjustmentResult> {
+    return this.client.post<WalletAdjustmentResult>(backendApiPath(`/token_bank/debits`), body, undefined, undefined, 'application/json');
   }
 }
 
@@ -85,8 +85,8 @@ export class TokenBankCreditsApi {
   }
 
 
-async create(body: CreateTokenBankLedgerMutationRequest): Promise<Record<string, unknown>> {
-    return this.client.post<Record<string, unknown>>(backendApiPath(`/token_bank/credits`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankLedgerMutationRequest): Promise<WalletAdjustmentResult> {
+    return this.client.post<WalletAdjustmentResult>(backendApiPath(`/token_bank/credits`), body, undefined, undefined, 'application/json');
   }
 }
 

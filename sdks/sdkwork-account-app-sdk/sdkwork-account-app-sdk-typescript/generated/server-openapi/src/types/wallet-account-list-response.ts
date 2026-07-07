@@ -1,8 +1,7 @@
-import type { PageInfo } from './page-info';
-import type { WalletAccountItem } from './wallet-account-item';
+import type { WalletAccountListData } from './wallet-account-list-data';
 
 export interface WalletAccountListResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: WalletAccountListData;
   traceId: string;
 }

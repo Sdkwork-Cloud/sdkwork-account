@@ -1,8 +1,7 @@
-import type { AccountHoldItem } from './account-hold-item';
-import type { PageInfo } from './page-info';
+import type { AccountHoldListData } from './account-hold-list-data';
 
 export interface AccountHoldListResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: AccountHoldListData;
   traceId: string;
 }

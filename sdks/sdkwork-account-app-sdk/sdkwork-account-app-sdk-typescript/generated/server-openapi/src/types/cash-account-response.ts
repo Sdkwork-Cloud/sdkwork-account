@@ -1,7 +1,7 @@
-import type { CashAccountItem } from './cash-account-item';
+import type { CashAccountData } from './cash-account-data';
 
 export interface CashAccountResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: CashAccountData;
   traceId: string;
 }

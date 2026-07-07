@@ -9,7 +9,7 @@ Read `../sdkwork-specs/SOUL.md` before executing tasks in this root.
 - Domain: `commerce`
 - Capability: `account`
 - PC surface: `apps/sdkwork-account-pc/`
-- Table prefix: `commerce_`
+- Table prefix: `acct_`
 - App API prefixes: `/app/v3/api/wallet`, `/app/v3/api/token_bank`, `/app/v3/api/billing`, `/app/v3/api/accounts`
 - Backend API prefixes: `/backend/v3/api/wallet`, `/backend/v3/api/token_bank`
 

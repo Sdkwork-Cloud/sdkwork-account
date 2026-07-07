@@ -7,7 +7,7 @@
   "owner": "sdkwork-account",
   "engines": ["postgres", "sqlite"],
   "defaultEngine": "postgres",
-  "tablePrefix": "commerce_",
+  "tablePrefix": "acct_",
   "contractVersion": "3.0.0",
   "baselineStrategy": "baseline-plus-migrations",
   "modules": [],

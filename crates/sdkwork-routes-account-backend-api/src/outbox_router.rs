@@ -58,7 +58,9 @@ struct OutboxDispatchItemResponse {
 #[serde(rename_all = "camelCase")]
 struct OutboxDispatchResponse {
     accepted: bool,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     dispatched_count: i64,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     pending_lag: i64,
     items: Vec<OutboxDispatchItemResponse>,
 }
@@ -136,5 +138,26 @@ fn map_outbox_dispatch_response(outcome: OutboxDispatchOutcome) -> OutboxDispatc
                 created_at: item.created_at,
             })
             .collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn outbox_response_int64_fields_serialize_as_strings() {
+        let response = serde_json::to_value(OutboxDispatchResponse {
+            accepted: true,
+            dispatched_count: 5,
+            pending_lag: 12,
+            items: Vec::new(),
+        })
+        .unwrap();
+
+        assert_eq!(response["dispatchedCount"], json!("5"));
+        assert_eq!(response["pendingLag"], json!("12"));
     }
 }

@@ -1,5 +1,7 @@
+import type { WalletHealthData } from './wallet-health-data';
+
 export interface WalletHealthRetrieveResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: WalletHealthData;
   traceId: string;
 }

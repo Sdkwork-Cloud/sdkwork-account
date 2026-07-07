@@ -3,7 +3,7 @@
 Status: active
 Owner: SDKWork maintainers
 Application: account
-Updated: 2026-07-07
+Updated: 2026-07-08
 Specs: `DOCUMENTATION_SPEC.md`, `REQUIREMENTS_SPEC.md`, `API_SPEC.md`, `DATABASE_SPEC.md`
 
 ## 1. Background And Problem

@@ -1,7 +1,7 @@
-import type { PointsAccountItem } from './points-account-item';
+import type { PointsAccountData } from './points-account-data';
 
 export interface PointsAccountResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: PointsAccountData;
   traceId: string;
 }

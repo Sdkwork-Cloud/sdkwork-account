@@ -36,7 +36,7 @@ impl SqliteCommerceBillingHistoryStore {
                        reference_no, source_type, source_id, related_order_id, related_order_no,
                        payment_method, occurred_at,
                        COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
-                FROM commerce_billing_history
+                FROM acct_billing_history
                 WHERE tenant_id = ?
                   AND organization_id = ?
                   AND owner_id = ?
@@ -66,7 +66,7 @@ impl SqliteCommerceBillingHistoryStore {
                        reference_no, source_type, source_id, related_order_id, related_order_no,
                        payment_method, occurred_at,
                        COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
-                FROM commerce_billing_history
+                FROM acct_billing_history
                 WHERE tenant_id = ?
                   AND organization_id = ?
                   AND owner_id = ?

@@ -18,7 +18,7 @@ pub async fn count_pending_outbox_postgres(pool: &PgPool) -> Result<i64, Commerc
     sqlx::query_scalar(
         r#"
         SELECT COUNT(*)::bigint
-        FROM commerce_outbox_event
+        FROM acct_outbox_event
         WHERE status = $1
           AND (next_retry_at IS NULL OR next_retry_at <= $2)
         "#,
@@ -35,7 +35,7 @@ pub async fn count_pending_outbox_sqlite(pool: &SqlitePool) -> Result<i64, Comme
     sqlx::query_scalar(
         r#"
         SELECT COUNT(*)
-        FROM commerce_outbox_event
+        FROM acct_outbox_event
         WHERE status = ?
           AND (next_retry_at IS NULL OR next_retry_at <= ?)
         "#,
@@ -58,14 +58,14 @@ pub async fn dispatch_pending_outbox_postgres(
         r#"
         WITH candidates AS (
             SELECT id
-            FROM commerce_outbox_event
+            FROM acct_outbox_event
             WHERE status = $1
               AND (next_retry_at IS NULL OR next_retry_at <= $2)
             ORDER BY created_at ASC
             LIMIT $3
             FOR UPDATE SKIP LOCKED
         )
-        UPDATE commerce_outbox_event AS e
+        UPDATE acct_outbox_event AS e
         SET status = $4,
             published_at = $2,
             updated_at = $2
@@ -111,13 +111,13 @@ pub async fn dispatch_pending_outbox_sqlite(
 
     let rows = sqlx::query(
         r#"
-        UPDATE commerce_outbox_event
+        UPDATE acct_outbox_event
         SET status = ?1,
             published_at = ?2,
             updated_at = ?2
         WHERE rowid IN (
             SELECT rowid
-            FROM commerce_outbox_event
+            FROM acct_outbox_event
             WHERE status = ?3
               AND (next_retry_at IS NULL OR next_retry_at <= ?2)
             ORDER BY created_at ASC
@@ -228,7 +228,7 @@ mod tests {
         );
 
         let status: String =
-            sqlx::query_scalar("SELECT status FROM commerce_outbox_event WHERE event_key = ?1")
+            sqlx::query_scalar("SELECT status FROM acct_outbox_event WHERE event_key = ?1")
                 .bind("100001:idem-1:account.ledger_appended")
                 .fetch_one(&pool)
                 .await

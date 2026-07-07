@@ -99,7 +99,9 @@ struct ExpirePointsLotsRequest {
 struct ExpirePointsLotsResponse {
     accepted: bool,
     replayed: bool,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     expired_lot_count: i64,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     expired_points_total: i64,
 }
 
@@ -118,14 +120,18 @@ struct PointsReconciliationRequest {
 struct PointsLotMismatchResponse {
     account_id: String,
     available_points: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     lot_remaining_total: i64,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     delta: i64,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PointsReconciliationResponse {
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     checked_account_count: i64,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     mismatch_count: i64,
     mismatches: Vec<PointsLotMismatchResponse>,
 }
@@ -153,6 +159,7 @@ struct WalletAccountItemResponse {
     frozen_amount: String,
     pending_amount: String,
     status: String,
+    #[serde(with = "sdkwork_utils_rust::serde_int64")]
     version: i64,
 }
 
@@ -645,5 +652,46 @@ fn map_wallet_transaction(value: WalletTransactionItem) -> WalletTransactionItem
         request_no: value.request_no,
         idempotency_key: value.idempotency_key,
         created_at: value.created_at,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn backend_wallet_response_int64_fields_serialize_as_strings() {
+        let expire = serde_json::to_value(ExpirePointsLotsResponse {
+            accepted: true,
+            replayed: false,
+            expired_lot_count: 3,
+            expired_points_total: 1200,
+        })
+        .unwrap();
+
+        assert_eq!(expire["expiredLotCount"], json!("3"));
+        assert_eq!(expire["expiredPointsTotal"], json!("1200"));
+
+        let reconciliation = serde_json::to_value(PointsReconciliationResponse {
+            checked_account_count: 9,
+            mismatch_count: 1,
+            mismatches: vec![PointsLotMismatchResponse {
+                account_id: "account-1".to_owned(),
+                available_points: "100".to_owned(),
+                lot_remaining_total: 90,
+                delta: -10,
+            }],
+        })
+        .unwrap();
+
+        assert_eq!(reconciliation["checkedAccountCount"], json!("9"));
+        assert_eq!(reconciliation["mismatchCount"], json!("1"));
+        assert_eq!(
+            reconciliation["mismatches"][0]["lotRemainingTotal"],
+            json!("90")
+        );
+        assert_eq!(reconciliation["mismatches"][0]["delta"], json!("-10"));
     }
 }

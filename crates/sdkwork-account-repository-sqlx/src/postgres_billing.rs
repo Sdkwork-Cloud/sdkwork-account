@@ -38,7 +38,7 @@ impl PostgresCommerceBillingHistoryStore {
                        source_id, related_order_id, related_order_no, payment_method,
                        CAST(occurred_at AS TEXT) AS occurred_at,
                        COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
-                FROM commerce_billing_history
+                FROM acct_billing_history
                 WHERE tenant_id = $1
                   AND organization_id = $2
                   AND owner_id = $3
@@ -68,7 +68,7 @@ impl PostgresCommerceBillingHistoryStore {
                        source_id, related_order_id, related_order_no, payment_method,
                        CAST(occurred_at AS TEXT) AS occurred_at,
                        COUNT(*) OVER() AS {LIST_TOTAL_SQL_COLUMN}
-                FROM commerce_billing_history
+                FROM acct_billing_history
                 WHERE tenant_id = $1
                   AND organization_id = $2
                   AND owner_id = $3

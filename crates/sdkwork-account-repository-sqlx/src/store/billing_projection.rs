@@ -39,7 +39,7 @@ where
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_billing_history
+        INSERT INTO acct_billing_history
             (id, uuid, tenant_id, organization_id, owner_type, owner_id, history_no, history_type,
              direction, asset_code, amount, currency_code, points_delta, status, title,
              reference_no, source_type, source_id, occurred_at, created_at)
@@ -103,7 +103,7 @@ where
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_billing_history
+        INSERT INTO acct_billing_history
             (id, uuid, tenant_id, organization_id, owner_type, owner_id, history_no, history_type,
              direction, asset_code, amount, currency_code, points_delta, status, title,
              reference_no, source_type, source_id, occurred_at, created_at)

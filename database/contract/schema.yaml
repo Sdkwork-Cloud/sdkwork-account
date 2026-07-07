@@ -7,7 +7,7 @@ compliance_level: L3
 engines:
   - postgres
   - sqlite
-table_prefix: commerce_
+table_prefix: acct_
 id_strategy:
   type: snowflake
   provider: sdkwork-database-id
@@ -41,105 +41,105 @@ forbidden_asset_codes:
   - auth_token
   - blockchain_token
 tables:
-  - name: commerce_account
+  - name: acct_account
     profile: tenant_entity
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Owner-scoped balances for cash, points, and Token Bank with available, frozen, and pending dimensions.
 
-  - name: commerce_account_ledger
+  - name: acct_ledger_entry
     profile: ledger_entry
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Immutable append-only account balance movement ledger.
 
-  - name: commerce_account_journal
+  - name: acct_journal
     profile: core_entity
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Double-entry journal header for balanced account mutations.
 
-  - name: commerce_account_journal_line
+  - name: acct_journal_line
     profile: ledger_entry
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Double-entry journal lines referencing ledger entries.
 
-  - name: commerce_account_hold
+  - name: acct_hold
     profile: core_entity
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Pre-authorization holds moving balance from available to frozen.
 
-  - name: commerce_account_transfer
+  - name: acct_transfer
     profile: core_entity
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Atomic same-asset inter-account transfer records.
 
-  - name: commerce_points_lot
+  - name: acct_points_lot
     profile: core_entity
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: FEFO points lot batches with optional expiry.
 
-  - name: commerce_points_lot_allocation
+  - name: acct_points_lot_allocation
     profile: ledger_entry
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Immutable debit allocation rows linking ledger entries to consumed points lots.
 
-  - name: commerce_token_bank_exchange_rate
+  - name: acct_token_bank_exchange_rate
     profile: core_entity
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Governed fiat-to-Token-Bank exchange-rate configuration.
 
-  - name: commerce_token_bank_exchange_quote
+  - name: acct_token_bank_exchange_quote
     profile: core_entity
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Short-lived Token Bank purchase quotes generated from exchange rates.
 
-  - name: commerce_token_bank_exchange_snapshot
+  - name: acct_token_bank_exchange_snapshot
     profile: ledger_entry
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Immutable exchange snapshots attached to purchase fulfillment and ledger entries.
 
-  - name: commerce_token_bank_settlement_snapshot
+  - name: acct_token_bank_settlement_snapshot
     profile: ledger_entry
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Immutable AI spending, release, service income, and burn settlement evidence.
 
-  - name: commerce_idempotency_record
+  - name: acct_idempotency_record
     profile: event_log
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Scoped idempotency records for account write commands.
 
-  - name: commerce_outbox_event
+  - name: acct_outbox_event
     profile: outbox_event
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
     description: Transactional outbox for account domain events.
 
-  - name: commerce_billing_history
+  - name: acct_billing_history
     profile: projection
     compliance_level: L2
     system_of_record: false

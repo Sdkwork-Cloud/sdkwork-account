@@ -1,7 +1,7 @@
-import type { AccountSummaryItem } from './account-summary-item';
+import type { AccountSummaryData } from './account-summary-data';
 
 export interface AccountSummaryResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: AccountSummaryData;
   traceId: string;
 }

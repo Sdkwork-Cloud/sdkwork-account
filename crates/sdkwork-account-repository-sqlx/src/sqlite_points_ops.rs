@@ -81,8 +81,8 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
             let rows = sqlx::query(
                 r#"
                 SELECT lot.id, lot.account_id, lot.remaining_amount
-                FROM commerce_points_lot lot
-                INNER JOIN commerce_account account
+                FROM acct_points_lot lot
+                INNER JOIN acct_account account
                     ON account.id = lot.account_id
                    AND account.tenant_id = lot.tenant_id
                 WHERE lot.tenant_id = ?
@@ -193,7 +193,7 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
         let ledger = sqlx::query(
             r#"
             SELECT id
-            FROM commerce_account_ledger
+            FROM acct_ledger_entry
             WHERE tenant_id = ?
               AND organization_id = ?
               AND owner_id = ?
@@ -216,7 +216,7 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
         let rows = sqlx::query(
             r#"
             SELECT id, uuid, ledger_id, lot_id, amount, created_at
-            FROM commerce_points_lot_allocation
+            FROM acct_points_lot_allocation
             WHERE tenant_id = ? AND ledger_id = ?
             ORDER BY id ASC
             LIMIT ?
@@ -251,7 +251,7 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
                         WHEN expires_at IS NOT NULL AND expires_at <= ?
                         THEN remaining_amount ELSE 0
                     END), 0) AS unswept_expired_points
-                FROM commerce_points_lot
+                FROM acct_points_lot
                 WHERE tenant_id = ? AND account_id = ? AND status = ?
                 "#,
             )
@@ -268,7 +268,7 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
                 SELECT
                     COALESCE(SUM(CASE WHEN direction = 'credit' THEN CAST(amount AS INTEGER) ELSE 0 END), 0) AS month_credit,
                     COALESCE(SUM(CASE WHEN direction = 'debit' THEN CAST(amount AS INTEGER) ELSE 0 END), 0) AS month_debit
-                FROM commerce_account_ledger
+                FROM acct_ledger_entry
                 WHERE tenant_id = ?
                   AND account_id = ?
                   AND asset_code = 'points'
@@ -325,7 +325,7 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
             let account_rows = sqlx::query(
                 r#"
                 SELECT id, available_amount
-                FROM commerce_account
+                FROM acct_account
                 WHERE tenant_id = ?
                   AND organization_id = ?
                   AND asset_code = 'points'
@@ -356,7 +356,7 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
                 let lot_sum: i64 = sqlx::query_scalar(
                     r#"
                     SELECT COALESCE(SUM(remaining_amount), 0)
-                    FROM commerce_points_lot
+                    FROM acct_points_lot
                     WHERE tenant_id = ? AND account_id = ?
                     "#,
                 )
@@ -419,7 +419,7 @@ async fn expire_one_points_lot(
 
     let update = sqlx::query(
         r#"
-        UPDATE commerce_account
+        UPDATE acct_account
         SET available_amount = ?, version = ?, updated_at = ?
         WHERE id = ? AND version = ?
         "#,
@@ -448,7 +448,7 @@ async fn expire_one_points_lot(
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_account_journal
+        INSERT INTO acct_journal
             (id, uuid, tenant_id, business_type, business_no, request_no, idempotency_key,
              status, trace_id, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -470,7 +470,7 @@ async fn expire_one_points_lot(
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_account_ledger
+        INSERT INTO acct_ledger_entry
             (id, uuid, tenant_id, organization_id, account_id, journal_id, owner_type, owner_id,
              asset_code, currency_code, ledger_type, entry_type, direction, amount,
              balance_before, balance_after, business_type, business_no, request_no,
@@ -506,7 +506,7 @@ async fn expire_one_points_lot(
 
     sqlx::query(
         r#"
-        UPDATE commerce_points_lot
+        UPDATE acct_points_lot
         SET remaining_amount = 0, status = ?, updated_at = ?
         WHERE id = ? AND tenant_id = ? AND status = ?
         "#,
@@ -522,7 +522,7 @@ async fn expire_one_points_lot(
 
     sqlx::query(
         r#"
-        INSERT INTO commerce_points_lot_allocation
+        INSERT INTO acct_points_lot_allocation
             (id, uuid, tenant_id, account_id, ledger_id, lot_id, amount, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         "#,
@@ -582,7 +582,7 @@ async fn load_account_for_expire(
         r#"
         SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
-        FROM commerce_account
+        FROM acct_account
         WHERE tenant_id = ? AND id = ?
         LIMIT 1
         "#,
@@ -680,7 +680,7 @@ async fn complete_points_expire_idempotency(
 
     sqlx::query(
         r#"
-        UPDATE commerce_idempotency_record
+        UPDATE acct_idempotency_record
         SET status = 'COMPLETED', response_snapshot = ?, locked_until = NULL, updated_at = ?
         WHERE tenant_id = ? AND scope = ? AND idempotency_key = ?
         "#,

@@ -74,7 +74,7 @@ pub async fn load_wallet_summary_stats_postgres(
     let monthly_total: i64 = sqlx::query_scalar(
         r#"
         SELECT COALESCE(SUM(ABS(points_delta)), 0)
-        FROM commerce_billing_history
+        FROM acct_billing_history
         WHERE tenant_id = $1
           AND organization_id = $2
           AND owner_id = $3
@@ -92,7 +92,7 @@ pub async fn load_wallet_summary_stats_postgres(
     let breakdown_rows = sqlx::query(
         r#"
         SELECT history_type, COALESCE(SUM(ABS(points_delta)), 0) AS total
-        FROM commerce_billing_history
+        FROM acct_billing_history
         WHERE tenant_id = $1
           AND organization_id = $2
           AND owner_id = $3
@@ -137,7 +137,7 @@ pub async fn load_wallet_summary_stats_sqlite(
     let monthly_total: i64 = sqlx::query_scalar(
         r#"
         SELECT COALESCE(SUM(ABS(points_delta)), 0)
-        FROM commerce_billing_history
+        FROM acct_billing_history
         WHERE tenant_id = ?
           AND organization_id = ?
           AND owner_id = ?
@@ -155,7 +155,7 @@ pub async fn load_wallet_summary_stats_sqlite(
     let breakdown_rows = sqlx::query(
         r#"
         SELECT history_type, COALESCE(SUM(ABS(points_delta)), 0) AS total
-        FROM commerce_billing_history
+        FROM acct_billing_history
         WHERE tenant_id = ?
           AND organization_id = ?
           AND owner_id = ?
@@ -200,7 +200,7 @@ pub async fn sum_spendable_points_lots_postgres(
     sqlx::query_scalar(
         r#"
         SELECT COALESCE(SUM(remaining_amount), 0)
-        FROM commerce_points_lot
+        FROM acct_points_lot
         WHERE tenant_id = $1
           AND account_id = $2
           AND status = 1
@@ -225,7 +225,7 @@ pub async fn sum_spendable_points_lots_sqlite(
     sqlx::query_scalar(
         r#"
         SELECT COALESCE(SUM(remaining_amount), 0)
-        FROM commerce_points_lot
+        FROM acct_points_lot
         WHERE tenant_id = ?
           AND account_id = ?
           AND status = 1

@@ -219,17 +219,23 @@
             "name": "page",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string",
+              "format": "int64",
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
             "name": "page_size",
             "in": "query",
             "schema": {
-              "type": "integer",
+              "type": "string",
               "format": "int64",
-              "maximum": 200
+              "maximum": 200,
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
@@ -288,17 +294,23 @@
             "name": "page",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string",
+              "format": "int64",
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
             "name": "page_size",
             "in": "query",
             "schema": {
-              "type": "integer",
+              "type": "string",
               "format": "int64",
-              "maximum": 200
+              "maximum": 200,
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
@@ -357,17 +369,23 @@
             "name": "page",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string",
+              "format": "int64",
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
             "name": "page_size",
             "in": "query",
             "schema": {
-              "type": "integer",
+              "type": "string",
               "format": "int64",
-              "maximum": 200
+              "maximum": 200,
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
@@ -563,17 +581,23 @@
             "name": "page",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string",
+              "format": "int64",
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
             "name": "page_size",
             "in": "query",
             "schema": {
-              "type": "integer",
+              "type": "string",
               "format": "int64",
-              "maximum": 200
+              "maximum": 200,
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
@@ -687,17 +711,23 @@
             "name": "page",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string",
+              "format": "int64",
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
             "name": "page_size",
             "in": "query",
             "schema": {
-              "type": "integer",
+              "type": "string",
               "format": "int64",
-              "maximum": 200
+              "maximum": 200,
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           }
         ],
@@ -905,17 +935,23 @@
             "name": "page",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string",
+              "format": "int64",
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
             "name": "page_size",
             "in": "query",
             "schema": {
-              "type": "integer",
+              "type": "string",
               "format": "int64",
-              "maximum": 200
+              "maximum": 200,
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
@@ -982,17 +1018,23 @@
             "name": "page",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string",
+              "format": "int64",
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           },
           {
             "name": "page_size",
             "in": "query",
             "schema": {
-              "type": "integer",
+              "type": "string",
               "format": "int64",
-              "maximum": 200
+              "maximum": 200,
+              "pattern": "^-?[0-9]+$",
+              "x-sdkwork-int64-string": true,
+              "x-sdkwork-rust-type": "i64"
             }
           }
         ],
@@ -1078,154 +1120,119 @@
         }
       },
       "WalletOverviewResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "required": [
-              "data"
-            ],
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "accounts"
-                    ],
-                    "properties": {
-                      "accounts": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/WalletAccountItem"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/WalletOverviewData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "WalletAccountListResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "items",
-                  "pageInfo"
-                ],
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/WalletAccountItem"
-                    }
-                  },
-                  "pageInfo": {
-                    "$ref": "#/components/schemas/PageInfo"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/WalletAccountListData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "WalletLedgerListResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "items",
-                  "pageInfo"
-                ],
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/WalletLedgerEntryItem"
-                    }
-                  },
-                  "pageInfo": {
-                    "$ref": "#/components/schemas/PageInfo"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/WalletLedgerListData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "BillingHistoryListResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "items",
-                  "pageInfo"
-                ],
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/BillingHistoryItem"
-                    }
-                  },
-                  "pageInfo": {
-                    "$ref": "#/components/schemas/PageInfo"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/BillingHistoryListData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "AccountSummaryResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "$ref": "#/components/schemas/AccountSummaryItem"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/AccountSummaryData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "AccountSummaryItem": {
         "type": "object",
@@ -1263,8 +1270,11 @@
             "type": "string"
           },
           "estDaysRemaining": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "monthlyPointsConsumed": {
             "type": "string"
@@ -1276,15 +1286,15 @@
             }
           },
           "invoiceSettings": {
-            "type": "object"
+            "$ref": "#/components/schemas/AccountInvoiceSettingsItem"
           },
           "security": {
-            "type": "object"
+            "$ref": "#/components/schemas/AccountSecuritySummaryItem"
           },
           "loginLogs": {
             "type": "array",
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/AccountLoginLogItem"
             }
           }
         }
@@ -1313,27 +1323,27 @@
         }
       },
       "CashAccountResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "$ref": "#/components/schemas/CashAccountItem"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/CashAccountData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "CashAccountItem": {
         "type": "object",
@@ -1380,33 +1390,36 @@
             "type": "string"
           },
           "version": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           }
         }
       },
       "PointsAccountResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "$ref": "#/components/schemas/PointsAccountItem"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/PointsAccountData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "PointsAccountItem": {
         "type": "object",
@@ -1453,8 +1466,11 @@
             "type": "string"
           },
           "activeLotCount": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "expiringPoints": {
             "type": "string"
@@ -1463,33 +1479,36 @@
             "type": "string"
           },
           "version": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           }
         }
       },
       "PointsSummaryResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "$ref": "#/components/schemas/PointsSummaryItem"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/PointsSummaryData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "PointsSummaryItem": {
         "type": "object",
@@ -1539,62 +1558,70 @@
             "type": "string"
           },
           "activeLotCount": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "expiringPoints": {
             "type": "string"
           },
           "unsweptExpiredPoints": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "monthCreditPoints": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "monthDebitPoints": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "status": {
             "type": "string"
           },
           "version": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           }
         }
       },
       "PointsLotAllocationListResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "items",
-                  "pageInfo"
-                ],
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/PointsLotAllocationItem"
-                    }
-                  },
-                  "pageInfo": {
-                    "$ref": "#/components/schemas/PageInfo"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/PointsLotAllocationListData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "PointsLotAllocationItem": {
         "type": "object",
@@ -1620,8 +1647,11 @@
             "type": "string"
           },
           "amount": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "createdAt": {
             "type": "string",
@@ -1630,80 +1660,73 @@
         }
       },
       "WalletAccountItemResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "$ref": "#/components/schemas/WalletAccountItem"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/WalletAccountItemData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "WalletLedgerEntryResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "$ref": "#/components/schemas/WalletLedgerEntryItem"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/WalletLedgerEntryData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "PointsLotListResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "items",
-                  "pageInfo"
-                ],
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/PointsLotItem"
-                    }
-                  },
-                  "pageInfo": {
-                    "$ref": "#/components/schemas/PageInfo"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/PointsLotListData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "PointsLotItem": {
         "type": "object",
@@ -1730,12 +1753,18 @@
             "type": "string"
           },
           "grantedAmount": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "remainingAmount": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "sourceType": {
             "type": "string"
@@ -1809,8 +1838,11 @@
             "type": "string"
           },
           "version": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           }
         }
       },
@@ -1928,8 +1960,11 @@
             "type": "string"
           },
           "pointsDelta": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "status": {
             "type": "string"
@@ -2046,8 +2081,11 @@
             "format": "date-time"
           },
           "version": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "createdAt": {
             "type": "string",
@@ -2060,57 +2098,50 @@
         }
       },
       "AccountHoldListResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "items",
-                  "pageInfo"
-                ],
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/AccountHoldItem"
-                    }
-                  },
-                  "pageInfo": {
-                    "$ref": "#/components/schemas/PageInfo"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/AccountHoldListData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "AccountHoldDetailResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "$ref": "#/components/schemas/AccountHoldItem"
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/AccountHoldDetailData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "PageInfo": {
         "type": "object",
@@ -2134,8 +2165,11 @@
             "format": "int32"
           },
           "totalItems": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "totalPages": {
             "type": "integer",
@@ -2150,39 +2184,340 @@
         }
       },
       "TokenBankBalanceResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "availableAmount",
-                      "frozenAmount"
-                    ],
-                    "properties": {
-                      "availableAmount": {
-                        "type": "string"
-                      },
-                      "frozenAmount": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
+          "data": {
+            "$ref": "#/components/schemas/TokenBankBalanceData"
+          },
+          "traceId": {
+            "type": "string"
+          }
+        }
+      },
+      "AccountInvoiceSettingsItem": {
+        "type": "object",
+        "required": [
+          "orgFull",
+          "taxId",
+          "paymentMethod",
+          "invoiceType"
+        ],
+        "properties": {
+          "orgFull": {
+            "type": "string"
+          },
+          "taxId": {
+            "type": "string"
+          },
+          "paymentMethod": {
+            "type": "string"
+          },
+          "invoiceType": {
+            "type": "string"
+          }
+        }
+      },
+      "AccountSecuritySummaryItem": {
+        "type": "object",
+        "required": [
+          "mfaEnabled",
+          "qpsLimit",
+          "ipWhitelistCount"
+        ],
+        "properties": {
+          "mfaEnabled": {
+            "type": "boolean"
+          },
+          "qpsLimit": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          },
+          "ipWhitelistCount": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          }
+        }
+      },
+      "AccountLoginLogItem": {
+        "type": "object",
+        "required": [
+          "ip",
+          "location",
+          "device",
+          "time",
+          "status"
+        ],
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletOverviewItem": {
+        "type": "object",
+        "required": [
+          "accounts"
+        ],
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalletAccountItem"
             }
           }
-        ]
+        }
+      },
+      "WalletOverviewData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/WalletOverviewItem"
+          }
+        }
+      },
+      "WalletAccountListData": {
+        "type": "object",
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalletAccountItem"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "WalletLedgerListData": {
+        "type": "object",
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalletLedgerEntryItem"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "BillingHistoryListData": {
+        "type": "object",
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillingHistoryItem"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "AccountSummaryData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/AccountSummaryItem"
+          }
+        }
+      },
+      "CashAccountData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/CashAccountItem"
+          }
+        }
+      },
+      "PointsAccountData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/PointsAccountItem"
+          }
+        }
+      },
+      "PointsSummaryData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/PointsSummaryItem"
+          }
+        }
+      },
+      "PointsLotAllocationListData": {
+        "type": "object",
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PointsLotAllocationItem"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "WalletAccountItemData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/WalletAccountItem"
+          }
+        }
+      },
+      "WalletLedgerEntryData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/WalletLedgerEntryItem"
+          }
+        }
+      },
+      "PointsLotListData": {
+        "type": "object",
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PointsLotItem"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "AccountHoldListData": {
+        "type": "object",
+        "required": [
+          "items",
+          "pageInfo"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountHoldItem"
+            }
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "AccountHoldDetailData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/AccountHoldItem"
+          }
+        }
+      },
+      "TokenBankBalanceItem": {
+        "type": "object",
+        "required": [
+          "availableAmount",
+          "frozenAmount"
+        ],
+        "properties": {
+          "availableAmount": {
+            "type": "string"
+          },
+          "frozenAmount": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenBankBalanceData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/TokenBankBalanceItem"
+          }
+        }
       }
     },
     "securitySchemes": {

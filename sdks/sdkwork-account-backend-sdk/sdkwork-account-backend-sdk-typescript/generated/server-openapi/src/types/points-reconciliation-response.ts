@@ -1,5 +1,7 @@
+import type { PointsReconciliationData } from './points-reconciliation-data';
+
 export interface PointsReconciliationResponse {
   code: 0;
-  data: Record<string, unknown>;
+  data: PointsReconciliationData;
   traceId: string;
 }

@@ -35,52 +35,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SdkWorkApiResponse"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "type": "object",
-                              "required": [
-                                "status",
-                                "database",
-                                "outboxPendingLag"
-                              ],
-                              "properties": {
-                                "status": {
-                                  "type": "string",
-                                  "enum": [
-                                    "ready",
-                                    "degraded"
-                                  ]
-                                },
-                                "database": {
-                                  "type": "string",
-                                  "enum": [
-                                    "up",
-                                    "down"
-                                  ]
-                                },
-                                "outboxPendingLag": {
-                                  "type": "integer",
-                                  "format": "int64"
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
+                  "$ref": "#/components/schemas/WalletHealthRetrieveResponse"
                 }
               }
             }
@@ -105,7 +60,7 @@
           "wallet"
         ],
         "operationId": "wallet.outbox.dispatch",
-        "description": "Claims a batch of pending commerce_outbox_event rows, marks them PUBLISHED, and returns payloads for downstream relay workers.",
+        "description": "Claims a batch of pending acct_outbox_event rows, marks them PUBLISHED, and returns payloads for downstream relay workers.",
         "requestBody": {
           "required": false,
           "content": {
@@ -1181,49 +1136,27 @@
         }
       },
       "ExpirePointsLotsResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "accepted",
-                      "replayed",
-                      "expiredLotCount",
-                      "expiredPointsTotal"
-                    ],
-                    "properties": {
-                      "accepted": {
-                        "type": "boolean"
-                      },
-                      "replayed": {
-                        "type": "boolean"
-                      },
-                      "expiredLotCount": {
-                        "type": "integer",
-                        "format": "int64"
-                      },
-                      "expiredPointsTotal": {
-                        "type": "integer",
-                        "format": "int64"
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/ExpirePointsLotsData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "DispatchOutboxRequest": {
         "type": "object",
@@ -1237,52 +1170,27 @@
         }
       },
       "DispatchOutboxResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "accepted",
-                      "dispatchedCount",
-                      "pendingLag",
-                      "items"
-                    ],
-                    "properties": {
-                      "accepted": {
-                        "type": "boolean"
-                      },
-                      "dispatchedCount": {
-                        "type": "integer",
-                        "format": "int64"
-                      },
-                      "pendingLag": {
-                        "type": "integer",
-                        "format": "int64"
-                      },
-                      "items": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/OutboxDispatchItem"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/DispatchOutboxData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "OutboxDispatchItem": {
         "type": "object",
@@ -1362,48 +1270,27 @@
         }
       },
       "ExpireExpiredHoldsResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "accepted",
-                      "replayed",
-                      "expiredHoldCount",
-                      "releasedAmountTotal"
-                    ],
-                    "properties": {
-                      "accepted": {
-                        "type": "boolean"
-                      },
-                      "replayed": {
-                        "type": "boolean"
-                      },
-                      "expiredHoldCount": {
-                        "type": "integer",
-                        "format": "int64"
-                      },
-                      "releasedAmountTotal": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/ExpireExpiredHoldsData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "PointsReconciliationRequest": {
         "type": "object",
@@ -1423,113 +1310,50 @@
         }
       },
       "PointsReconciliationResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "checkedAccountCount",
-                      "mismatchCount",
-                      "mismatches"
-                    ],
-                    "properties": {
-                      "checkedAccountCount": {
-                        "type": "integer",
-                        "format": "int64"
-                      },
-                      "mismatchCount": {
-                        "type": "integer",
-                        "format": "int64"
-                      },
-                      "mismatches": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "required": [
-                            "accountId",
-                            "availablePoints",
-                            "lotRemainingTotal",
-                            "delta"
-                          ],
-                          "properties": {
-                            "accountId": {
-                              "type": "string"
-                            },
-                            "availablePoints": {
-                              "type": "string"
-                            },
-                            "lotRemainingTotal": {
-                              "type": "integer",
-                              "format": "int64"
-                            },
-                            "delta": {
-                              "type": "integer",
-                              "format": "int64"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/PointsReconciliationData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "WalletAdjustmentResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "accepted",
-                      "replayed",
-                      "account",
-                      "ledgerEntry"
-                    ],
-                    "properties": {
-                      "accepted": {
-                        "type": "boolean"
-                      },
-                      "replayed": {
-                        "type": "boolean"
-                      },
-                      "account": {
-                        "$ref": "#/components/schemas/WalletAccountItem"
-                      },
-                      "ledgerEntry": {
-                        "$ref": "#/components/schemas/WalletLedgerEntryItem"
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/WalletAdjustmentData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "WalletAccountItem": {
         "type": "object",
@@ -1580,8 +1404,11 @@
             "type": "string"
           },
           "version": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           }
         }
       },
@@ -1911,8 +1738,11 @@
             "format": "date-time"
           },
           "version": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
           },
           "createdAt": {
             "type": "string",
@@ -2000,105 +1830,50 @@
         }
       },
       "WalletHoldMutationResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "accepted",
-                      "replayed",
-                      "hold",
-                      "account"
-                    ],
-                    "properties": {
-                      "accepted": {
-                        "type": "boolean"
-                      },
-                      "replayed": {
-                        "type": "boolean"
-                      },
-                      "hold": {
-                        "$ref": "#/components/schemas/AccountHoldItem"
-                      },
-                      "account": {
-                        "$ref": "#/components/schemas/WalletAccountItem"
-                      },
-                      "ledgerEntry": {
-                        "$ref": "#/components/schemas/WalletLedgerEntryItem"
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/WalletHoldMutationData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "WalletTransferMutationResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
           },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "accepted",
-                      "replayed",
-                      "transfer",
-                      "fromAccount",
-                      "toAccount",
-                      "debitEntry",
-                      "creditEntry"
-                    ],
-                    "properties": {
-                      "accepted": {
-                        "type": "boolean"
-                      },
-                      "replayed": {
-                        "type": "boolean"
-                      },
-                      "transfer": {
-                        "$ref": "#/components/schemas/AccountTransferItem"
-                      },
-                      "fromAccount": {
-                        "$ref": "#/components/schemas/WalletAccountItem"
-                      },
-                      "toAccount": {
-                        "$ref": "#/components/schemas/WalletAccountItem"
-                      },
-                      "debitEntry": {
-                        "$ref": "#/components/schemas/WalletLedgerEntryItem"
-                      },
-                      "creditEntry": {
-                        "$ref": "#/components/schemas/WalletLedgerEntryItem"
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "data": {
+            "$ref": "#/components/schemas/WalletTransferMutationData"
+          },
+          "traceId": {
+            "type": "string"
           }
-        ]
+        }
       },
       "CreateTokenBankLedgerMutationRequest": {
         "type": "object",
@@ -2322,6 +2097,385 @@
           },
           "idempotencyKey": {
             "type": "string"
+          }
+        }
+      },
+      "WalletHealthRetrieveResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/WalletHealthData"
+          },
+          "traceId": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletHealthItem": {
+        "type": "object",
+        "required": [
+          "status",
+          "database",
+          "outboxPendingLag"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "degraded"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          },
+          "outboxPendingLag": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          }
+        }
+      },
+      "WalletHealthData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/WalletHealthItem"
+          }
+        }
+      },
+      "ExpirePointsLotsResult": {
+        "type": "object",
+        "required": [
+          "accepted",
+          "replayed",
+          "expiredLotCount",
+          "expiredPointsTotal"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "expiredLotCount": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          },
+          "expiredPointsTotal": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          }
+        }
+      },
+      "ExpirePointsLotsData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/ExpirePointsLotsResult"
+          }
+        }
+      },
+      "DispatchOutboxResult": {
+        "type": "object",
+        "required": [
+          "accepted",
+          "dispatchedCount",
+          "pendingLag",
+          "items"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "dispatchedCount": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          },
+          "pendingLag": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutboxDispatchItem"
+            }
+          }
+        }
+      },
+      "DispatchOutboxData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/DispatchOutboxResult"
+          }
+        }
+      },
+      "ExpireExpiredHoldsResult": {
+        "type": "object",
+        "required": [
+          "accepted",
+          "replayed",
+          "expiredHoldCount",
+          "releasedAmountTotal"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "expiredHoldCount": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          },
+          "releasedAmountTotal": {
+            "type": "string"
+          }
+        }
+      },
+      "ExpireExpiredHoldsData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/ExpireExpiredHoldsResult"
+          }
+        }
+      },
+      "PointsReconciliationMismatchItem": {
+        "type": "object",
+        "required": [
+          "accountId",
+          "availablePoints",
+          "lotRemainingTotal",
+          "delta"
+        ],
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "availablePoints": {
+            "type": "string"
+          },
+          "lotRemainingTotal": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          },
+          "delta": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          }
+        }
+      },
+      "PointsReconciliationResult": {
+        "type": "object",
+        "required": [
+          "checkedAccountCount",
+          "mismatchCount",
+          "mismatches"
+        ],
+        "properties": {
+          "checkedAccountCount": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          },
+          "mismatchCount": {
+            "type": "string",
+            "format": "int64",
+            "pattern": "^-?[0-9]+$",
+            "x-sdkwork-int64-string": true,
+            "x-sdkwork-rust-type": "i64"
+          },
+          "mismatches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PointsReconciliationMismatchItem"
+            }
+          }
+        }
+      },
+      "PointsReconciliationData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/PointsReconciliationResult"
+          }
+        }
+      },
+      "WalletAdjustmentResult": {
+        "type": "object",
+        "required": [
+          "accepted",
+          "replayed",
+          "account",
+          "ledgerEntry"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "account": {
+            "$ref": "#/components/schemas/WalletAccountItem"
+          },
+          "ledgerEntry": {
+            "$ref": "#/components/schemas/WalletLedgerEntryItem"
+          }
+        }
+      },
+      "WalletAdjustmentData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/WalletAdjustmentResult"
+          }
+        }
+      },
+      "WalletHoldMutationResult": {
+        "type": "object",
+        "required": [
+          "accepted",
+          "replayed",
+          "hold",
+          "account"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "hold": {
+            "$ref": "#/components/schemas/AccountHoldItem"
+          },
+          "account": {
+            "$ref": "#/components/schemas/WalletAccountItem"
+          },
+          "ledgerEntry": {
+            "$ref": "#/components/schemas/WalletLedgerEntryItem"
+          }
+        }
+      },
+      "WalletHoldMutationData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/WalletHoldMutationResult"
+          }
+        }
+      },
+      "WalletTransferMutationResult": {
+        "type": "object",
+        "required": [
+          "accepted",
+          "replayed",
+          "transfer",
+          "fromAccount",
+          "toAccount",
+          "debitEntry",
+          "creditEntry"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "transfer": {
+            "$ref": "#/components/schemas/AccountTransferItem"
+          },
+          "fromAccount": {
+            "$ref": "#/components/schemas/WalletAccountItem"
+          },
+          "toAccount": {
+            "$ref": "#/components/schemas/WalletAccountItem"
+          },
+          "debitEntry": {
+            "$ref": "#/components/schemas/WalletLedgerEntryItem"
+          },
+          "creditEntry": {
+            "$ref": "#/components/schemas/WalletLedgerEntryItem"
+          }
+        }
+      },
+      "WalletTransferMutationData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/WalletTransferMutationResult"
           }
         }
       }

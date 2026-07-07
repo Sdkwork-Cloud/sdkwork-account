@@ -6,6 +6,42 @@ import test from "node:test";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
+const accountOwnedTableNames = [
+  "acct_account",
+  "acct_ledger_entry",
+  "acct_journal",
+  "acct_journal_line",
+  "acct_hold",
+  "acct_transfer",
+  "acct_points_lot",
+  "acct_points_lot_allocation",
+  "acct_token_bank_exchange_rate",
+  "acct_token_bank_exchange_quote",
+  "acct_token_bank_exchange_snapshot",
+  "acct_token_bank_settlement_snapshot",
+  "acct_idempotency_record",
+  "acct_outbox_event",
+  "acct_billing_history",
+];
+
+const retiredAccountOwnedTableNames = [
+  "commerce_account",
+  "commerce_account_ledger",
+  "commerce_account_journal",
+  "commerce_account_journal_line",
+  "commerce_account_hold",
+  "commerce_account_transfer",
+  "commerce_points_lot",
+  "commerce_points_lot_allocation",
+  "commerce_token_bank_exchange_rate",
+  "commerce_token_bank_exchange_quote",
+  "commerce_token_bank_exchange_snapshot",
+  "commerce_token_bank_settlement_snapshot",
+  "commerce_idempotency_record",
+  "commerce_outbox_event",
+  "commerce_billing_history",
+];
+
 test("package.json wires sdkwork-specs verification into verify script", () => {
   const packageJson = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
   assert.match(packageJson.scripts.verify, /check:pagination/);
@@ -18,6 +54,14 @@ test("standalone gateway start script uses the declared binary name", () => {
     packageJson.scripts.start,
     /--bin sdkwork-account-standalone-gateway/,
   );
+});
+
+test("database materialization script uses acct prefix", () => {
+  const packageJson = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
+  const script = packageJson.scripts["db:materialize:contract"];
+
+  assert.match(script, /--prefixes acct_/);
+  assert.doesNotMatch(script, /--prefixes commerce_/);
 });
 
 test("app openapi exposes unified wallet ledger list route", () => {
@@ -46,6 +90,157 @@ test("account summary openapi uses explicit points fields", () => {
   assert.equal(summaryProperties.monthlyConsumption, undefined);
   assert.equal(summaryProperties.availablePoints.type, "string");
   assert.equal(summaryProperties.monthlyPointsConsumed.type, "string");
+});
+
+test("database contract registers acct prefix and account-owned tables", () => {
+  const manifest = JSON.parse(
+    readFileSync(join(repoRoot, "database/database.manifest.json"), "utf8"),
+  );
+  const prefixRegistry = JSON.parse(
+    readFileSync(join(repoRoot, "database/contract/prefix-registry.json"), "utf8"),
+  );
+  const tableRegistry = JSON.parse(
+    readFileSync(join(repoRoot, "database/contract/table-registry.json"), "utf8"),
+  );
+  const schema = readFileSync(
+    join(repoRoot, "database/contract/schema.yaml"),
+    "utf8",
+  );
+
+  assert.equal(manifest.tablePrefix, "acct_");
+  assert.deepEqual(prefixRegistry.prefixes, ["acct_"]);
+  assert.deepEqual(tableRegistry.tables, accountOwnedTableNames);
+  assert.match(schema, /^table_prefix: acct_$/m);
+  for (const tableName of accountOwnedTableNames) {
+    assert.match(schema, new RegExp(`name: ${tableName}\\b`));
+  }
+  for (const tableName of retiredAccountOwnedTableNames) {
+    assert.doesNotMatch(schema, new RegExp(`\\b${tableName}\\b`));
+  }
+});
+
+test("database DDL and repository SQL use acct account-owned table names", () => {
+  const baselineFiles = [
+    "database/ddl/baseline/postgres/0001_account_baseline.sql",
+    "database/ddl/baseline/sqlite/0001_account_baseline.sql",
+  ];
+  const repositorySchemaFiles = [
+    "crates/sdkwork-account-repository-sqlx/test_migrations/0001_account_repository_test.sql",
+  ];
+
+  for (const relativeFile of baselineFiles) {
+    const source = readFileSync(join(repoRoot, relativeFile), "utf8");
+    for (const tableName of accountOwnedTableNames) {
+      assert.match(source, new RegExp(`\\b${tableName}\\b`));
+    }
+    for (const tableName of retiredAccountOwnedTableNames) {
+      assert.doesNotMatch(source, new RegExp(`\\b${tableName}\\b`));
+    }
+  }
+
+  for (const relativeFile of repositorySchemaFiles) {
+    const source = readFileSync(join(repoRoot, relativeFile), "utf8");
+    for (const tableName of retiredAccountOwnedTableNames) {
+      assert.doesNotMatch(source, new RegExp(`\\b${tableName}\\b`));
+    }
+  }
+});
+
+test("outbox aggregate type uses logical account aggregate", () => {
+  const source = readFileSync(
+    join(repoRoot, "crates/sdkwork-account-repository-sqlx/src/store/outbox.rs"),
+    "utf8",
+  );
+
+  assert.match(
+    source,
+    /OUTBOX_AGGREGATE_TYPE_ACCOUNT:\s*&str\s*=\s*"account"/,
+  );
+  assert.doesNotMatch(source, /OUTBOX_AGGREGATE_TYPE_ACCOUNT:\s*&str\s*=\s*"acct_account"/);
+  assert.doesNotMatch(source, /OUTBOX_AGGREGATE_TYPE_ACCOUNT:\s*&str\s*=\s*"commerce_account"/);
+});
+
+test("account openapi response schemas use named data contracts", () => {
+  const apiFiles = [
+    "apis/app-api/account/account-app-api.openapi.json",
+    "apis/backend-api/account/account-backend-api.openapi.json",
+  ];
+  const weakResponses = [];
+  const inlineSuccessResponses = [];
+
+  for (const apiFile of apiFiles) {
+    const openapi = JSON.parse(readFileSync(join(repoRoot, apiFile), "utf8"));
+    for (const [schemaName, schema] of Object.entries(openapi.components.schemas)) {
+      if (!schemaName.endsWith("Response") || schemaName === "SdkWorkApiResponse") {
+        continue;
+      }
+      if (schema.allOf || !schema.properties?.data?.$ref) {
+        weakResponses.push(`${apiFile}#/components/schemas/${schemaName}`);
+      }
+    }
+
+    for (const [path, pathItem] of Object.entries(openapi.paths)) {
+      for (const [method, operation] of Object.entries(pathItem)) {
+        const responses = operation.responses ?? {};
+        for (const [status, response] of Object.entries(responses)) {
+          if (!/^2\d\d$/.test(status) || status === "204") {
+            continue;
+          }
+          const schema = response.content?.["application/json"]?.schema;
+          if (schema && !schema.$ref) {
+            inlineSuccessResponses.push(`${method.toUpperCase()} ${path} ${status}`);
+          }
+        }
+      }
+    }
+  }
+
+  assert.deepEqual(weakResponses, []);
+  assert.deepEqual(inlineSuccessResponses, []);
+});
+
+test("account openapi represents int64 values as strings", () => {
+  const apiFiles = [
+    "apis/app-api/account/account-app-api.openapi.json",
+    "apis/backend-api/account/account-backend-api.openapi.json",
+  ];
+  const integerInt64Schemas = [];
+  const invalidInt64StringSchemas = [];
+
+  function visit(value, path) {
+    if (!value || typeof value !== "object") {
+      return;
+    }
+    if (value.type === "integer" && value.format === "int64") {
+      integerInt64Schemas.push(path);
+    }
+    if (value.format === "int64") {
+      if (
+        value.type !== "string" ||
+        value["x-sdkwork-int64-string"] !== true ||
+        value["x-sdkwork-rust-type"] !== "i64" ||
+        typeof value.pattern !== "string" ||
+        !value.pattern.includes("[0-9]")
+      ) {
+        invalidInt64StringSchemas.push(path);
+      }
+    }
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => visit(item, `${path}/${index}`));
+      return;
+    }
+    for (const [key, child] of Object.entries(value)) {
+      visit(child, `${path}/${key}`);
+    }
+  }
+
+  for (const apiFile of apiFiles) {
+    const openapi = JSON.parse(readFileSync(join(repoRoot, apiFile), "utf8"));
+    visit(openapi, apiFile);
+  }
+
+  assert.deepEqual(integerInt64Schemas, []);
+  assert.deepEqual(invalidInt64StringSchemas, []);
 });
 
 test("generated SDK business methods expose typed response models", () => {
