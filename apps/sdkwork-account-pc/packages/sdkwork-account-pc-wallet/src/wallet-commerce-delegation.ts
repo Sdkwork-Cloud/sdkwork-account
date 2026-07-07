@@ -25,7 +25,7 @@ export function createWalletCommerceDelegationMessage(
   if (operation === "recharge") {
     return (
       "Point recharge is owned by sdkwork-order (creates a commerce_order with subject=points_recharge). "
-      + "Bootstrap @sdkwork/order-service and call recharges.orders.create via wallet-recharge-service; "
+      + "Inject an order-compatible recharge service and call recharges.orders.create via wallet-recharge-service; "
       + "account backend-api adjustments apply after payment succeeds."
     );
   }

@@ -8,6 +8,10 @@
     "commerce_account_transfer",
     "commerce_points_lot",
     "commerce_points_lot_allocation",
+    "commerce_token_bank_exchange_rate",
+    "commerce_token_bank_exchange_quote",
+    "commerce_token_bank_exchange_snapshot",
+    "commerce_token_bank_settlement_snapshot",
     "commerce_idempotency_record",
     "commerce_outbox_event",
     "commerce_billing_history"

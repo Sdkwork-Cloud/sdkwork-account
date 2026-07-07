@@ -3,7 +3,7 @@ export interface CreateAccountHoldRequest {
   organizationId?: string;
   ownerUserId: string;
   accountId?: string;
-  assetType: 'cash' | 'points' | 'token';
+  assetType: 'cash' | 'points' | 'token_bank';
   amount: string;
   businessType: string;
   businessNo: string;

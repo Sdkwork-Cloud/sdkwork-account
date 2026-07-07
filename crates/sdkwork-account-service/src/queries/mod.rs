@@ -85,6 +85,18 @@ pub struct AccountHoldListQuery {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AccountHoldListQueryInput<'a> {
+    pub account_id: Option<&'a str>,
+    pub asset_type: Option<CommerceAccountAssetType>,
+    pub organization_id: Option<&'a str>,
+    pub owner_user_id: &'a str,
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    pub status: Option<&'a str>,
+    pub tenant_id: &'a str,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PointsLotAllocationListQuery {
     pub ledger_entry_id: String,
     pub organization_id: Option<String>,
@@ -316,24 +328,15 @@ impl PointsLotListQuery {
 }
 
 impl AccountHoldListQuery {
-    pub fn new(
-        tenant_id: &str,
-        organization_id: Option<&str>,
-        owner_user_id: &str,
-        account_id: Option<&str>,
-        asset_type: Option<CommerceAccountAssetType>,
-        status: Option<&str>,
-        page: Option<i64>,
-        page_size: Option<i64>,
-    ) -> Result<Self, CommerceServiceError> {
-        if let Some(page) = page {
+    pub fn new(input: AccountHoldListQueryInput<'_>) -> Result<Self, CommerceServiceError> {
+        if let Some(page) = input.page {
             if page < 1 {
                 return Err(CommerceServiceError::validation(
                     "page must be greater than or equal to 1",
                 ));
             }
         }
-        if let Some(page_size) = page_size {
+        if let Some(page_size) = input.page_size {
             if !(1..=200).contains(&page_size) {
                 return Err(CommerceServiceError::validation(
                     "page_size must be between 1 and 200",
@@ -341,14 +344,14 @@ impl AccountHoldListQuery {
             }
         }
         Ok(Self {
-            account_id: optional_text(account_id),
-            asset_type,
-            organization_id: optional_text(organization_id),
-            owner_user_id: required_text("owner_user_id", owner_user_id)?,
-            page,
-            page_size,
-            status: optional_text(status),
-            tenant_id: required_text("tenant_id", tenant_id)?,
+            account_id: optional_text(input.account_id),
+            asset_type: input.asset_type,
+            organization_id: optional_text(input.organization_id),
+            owner_user_id: required_text("owner_user_id", input.owner_user_id)?,
+            page: input.page,
+            page_size: input.page_size,
+            status: optional_text(input.status),
+            tenant_id: required_text("tenant_id", input.tenant_id)?,
         })
     }
 

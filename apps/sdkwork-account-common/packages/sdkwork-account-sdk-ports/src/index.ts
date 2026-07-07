@@ -13,13 +13,13 @@ export const APP_ACCOUNT_METHOD_TREE = {
       list: true,
       cash: { retrieve: true },
       points: { retrieve: true },
-      tokens: { retrieve: true },
     },
     ledgerEntries: {
       list: true,
       retrieve: true,
       cash: { list: true },
       points: { list: true },
+      allocations: { list: true },
     },
     points: {
       summary: { retrieve: true },
@@ -29,7 +29,16 @@ export const APP_ACCOUNT_METHOD_TREE = {
       list: true,
       retrieve: true,
     },
-    tokens: { retrieve: true },
+  },
+  tokenBank: {
+    account: { retrieve: true },
+    overview: { retrieve: true },
+    ledgerEntries: {
+      list: true,
+    },
+    holds: {
+      list: true,
+    },
   },
 } as const;
 
@@ -45,7 +54,6 @@ export const BACKEND_ACCOUNT_METHOD_TREE = {
       create: true,
       cash: { create: true },
       points: { create: true },
-      tokens: { create: true },
     },
     holds: {
       create: true,
@@ -63,11 +71,25 @@ export const BACKEND_ACCOUNT_METHOD_TREE = {
       create: true,
     },
   },
+  tokenBank: {
+    credits: { create: true },
+    debits: { create: true },
+    grants: { create: true },
+    reversals: { create: true },
+    holds: {
+      create: true,
+      settle: true,
+      release: true,
+    },
+    transfers: {
+      create: true,
+    },
+  },
 } as const;
 
 export type AccountRequestParams = Record<string, unknown>;
 export type AccountSdkResponse<T> = Promise<
-  T | { code?: number | string; data?: T; message?: string; msg?: string; traceId?: string }
+  T | { code: number; data: T; traceId?: string }
 >;
 export type AccountSdkMethod = (...args: any[]) => AccountSdkResponse<any>;
 

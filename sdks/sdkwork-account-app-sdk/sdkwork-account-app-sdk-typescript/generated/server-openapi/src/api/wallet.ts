@@ -6,7 +6,7 @@ import type { AccountHoldItem, CashAccountItem, PageInfo, PointsAccountItem, Poi
 
 export interface WalletHoldsListParams {
   accountId?: string;
-  assetType?: 'cash' | 'points' | 'token';
+  assetType?: 'cash' | 'points' | 'token_bank';
   status?: string;
   page?: string;
   pageSize?: string;
@@ -22,30 +22,17 @@ export class WalletHoldsApi {
 
 async list(params?: WalletHoldsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
-      { name: 'accountId', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
-      { name: 'assetType', value: params?.assetType, style: 'form', explode: true, allowReserved: false },
+      { name: 'account_id', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
+      { name: 'asset_type', value: params?.assetType, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
-      { name: 'pageSize', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.get<Record<string, unknown>>(appendQueryString(appApiPath(`/wallet/holds`), query));
   }
 
 async retrieve(holdId: string): Promise<AccountHoldItem> {
     return this.client.get<AccountHoldItem>(appApiPath(`/wallet/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}`));
-  }
-}
-
-export class WalletTokensApi {
-  private client: HttpClient;
-
-  constructor(client: HttpClient) {
-    this.client = client;
-  }
-
-
-async retrieve(): Promise<Record<string, unknown>> {
-    return this.client.get<Record<string, unknown>>(appApiPath(`/wallet/tokens`));
   }
 }
 
@@ -67,10 +54,10 @@ export class WalletPointsLotsApi {
 
 async list(params?: WalletPointsLotsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
-      { name: 'accountId', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
+      { name: 'account_id', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
-      { name: 'pageSize', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.get<Record<string, unknown>>(appendQueryString(appApiPath(`/wallet/points/lots`), query));
@@ -133,9 +120,9 @@ export class WalletLedgerEntriesPointsApi {
 
 async list(params?: WalletLedgerEntriesPointsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
-      { name: 'accountId', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
+      { name: 'account_id', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
-      { name: 'pageSize', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.get<Record<string, unknown>>(appendQueryString(appApiPath(`/wallet/ledger_entries/points`), query));
@@ -159,9 +146,9 @@ export class WalletLedgerEntriesCashApi {
 
 async list(params?: WalletLedgerEntriesCashListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
-      { name: 'accountId', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
+      { name: 'account_id', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
-      { name: 'pageSize', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.get<Record<string, unknown>>(appendQueryString(appApiPath(`/wallet/ledger_entries/cash`), query));
@@ -170,7 +157,7 @@ async list(params?: WalletLedgerEntriesCashListParams): Promise<Record<string, u
 
 export interface WalletLedgerEntriesListParams {
   accountId?: string;
-  assetType?: 'cash' | 'points' | 'token';
+  assetType?: 'cash' | 'points' | 'token_bank';
   page?: string;
   pageSize?: string;
   cursor?: string;
@@ -192,10 +179,10 @@ export class WalletLedgerEntriesApi {
 
 async list(params?: WalletLedgerEntriesListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
-      { name: 'accountId', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
-      { name: 'assetType', value: params?.assetType, style: 'form', explode: true, allowReserved: false },
+      { name: 'account_id', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
+      { name: 'asset_type', value: params?.assetType, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
-      { name: 'pageSize', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.get<Record<string, unknown>>(appendQueryString(appApiPath(`/wallet/ledger_entries`), query));
@@ -203,19 +190,6 @@ async list(params?: WalletLedgerEntriesListParams): Promise<Record<string, unkno
 
 async retrieve(ledgerEntryId: string): Promise<WalletLedgerEntryItem> {
     return this.client.get<WalletLedgerEntryItem>(appApiPath(`/wallet/ledger_entries/${serializePathParameter(ledgerEntryId, { name: 'ledgerEntryId', style: 'simple', explode: false })}`));
-  }
-}
-
-export class WalletAccountsTokensApi {
-  private client: HttpClient;
-
-  constructor(client: HttpClient) {
-    this.client = client;
-  }
-
-
-async retrieve(): Promise<WalletAccountItem> {
-    return this.client.get<WalletAccountItem>(appApiPath(`/wallet/accounts/tokens`));
   }
 }
 
@@ -246,26 +220,24 @@ async retrieve(): Promise<CashAccountItem> {
 }
 
 export interface WalletAccountsListParams {
-  assetType?: 'cash' | 'points' | 'token';
+  assetType?: 'cash' | 'points' | 'token_bank';
 }
 
 export class WalletAccountsApi {
   private client: HttpClient;
   public readonly cash: WalletAccountsCashApi;
   public readonly points: WalletAccountsPointsApi;
-  public readonly tokens: WalletAccountsTokensApi;
 
   constructor(client: HttpClient) {
     this.client = client;
     this.cash = new WalletAccountsCashApi(client);
     this.points = new WalletAccountsPointsApi(client);
-    this.tokens = new WalletAccountsTokensApi(client);
   }
 
 
 async list(params?: WalletAccountsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
-      { name: 'assetType', value: params?.assetType, style: 'form', explode: true, allowReserved: false },
+      { name: 'asset_type', value: params?.assetType, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.get<Record<string, unknown>>(appendQueryString(appApiPath(`/wallet/accounts`), query));
   }
@@ -290,7 +262,6 @@ export class WalletApi {
   public readonly accounts: WalletAccountsApi;
   public readonly ledgerEntries: WalletLedgerEntriesApi;
   public readonly points: WalletPointsApi;
-  public readonly tokens: WalletTokensApi;
   public readonly holds: WalletHoldsApi;
 
   constructor(client: HttpClient) {
@@ -299,7 +270,6 @@ export class WalletApi {
     this.accounts = new WalletAccountsApi(client);
     this.ledgerEntries = new WalletLedgerEntriesApi(client);
     this.points = new WalletPointsApi(client);
-    this.tokens = new WalletTokensApi(client);
     this.holds = new WalletHoldsApi(client);
   }
 

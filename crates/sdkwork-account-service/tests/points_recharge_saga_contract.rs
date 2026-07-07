@@ -1,7 +1,5 @@
 use sdkwork_account_service::AppendLedgerEntryCommand;
-use sdkwork_contract_service::{
-    CommerceAccountAssetType, CommerceLedgerDirection, CommerceMoney,
-};
+use sdkwork_contract_service::{CommerceAccountAssetType, CommerceLedgerDirection, CommerceMoney};
 
 const POINTS_RECHARGE_LEDGER_BUSINESS_TYPE: &str = "points_recharge";
 

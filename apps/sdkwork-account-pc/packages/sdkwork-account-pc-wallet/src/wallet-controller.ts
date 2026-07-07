@@ -4,7 +4,6 @@
 } from "react";
 import {
   createSdkworkWalletService,
-  resolveSdkworkOrderAppService,
   type SdkworkWalletOverview,
   type SdkworkWalletRechargeInput,
   type SdkworkWalletRechargeResult,
@@ -12,6 +11,8 @@ import {
   type SdkworkWalletWithdrawInput,
   type SdkworkWalletWithdrawResult,
 } from "./wallet-service";
+
+const MAX_LOADED_TRANSACTIONS = 500;
 
 export interface SdkworkWalletControllerState {
   isBootstrapped: boolean;
@@ -48,13 +49,12 @@ export interface CreateSdkworkWalletControllerOptions {
 export function createSdkworkWalletController(
   options: CreateSdkworkWalletControllerOptions = {},
 ): SdkworkWalletController {
-  const orderAppService = resolveSdkworkOrderAppService();
   const service: SdkworkWalletService = options.service
     ? {
-        ...createSdkworkWalletService(orderAppService ? { orderAppService } : {}),
+        ...createSdkworkWalletService(),
         ...options.service,
       }
-    : createSdkworkWalletService(orderAppService ? { orderAppService } : {});
+    : createSdkworkWalletService();
   const listeners = new Set<() => void>();
   let state: SdkworkWalletControllerState = {
     isBootstrapped: false,
@@ -212,7 +212,9 @@ export function createSdkworkWalletController(
               ...page.transactions.filter(
                 (transaction) => !state.overview.transactions.some((existing) => existing.id === transaction.id),
               ),
-            ].sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
+            ]
+              .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+              .slice(0, MAX_LOADED_TRANSACTIONS),
           },
         });
         return state;

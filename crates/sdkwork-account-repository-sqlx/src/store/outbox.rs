@@ -87,15 +87,19 @@ fn serialize_outbox_payload(
     Ok((event_key.to_owned(), payload_json, payload_hash))
 }
 
+pub struct OutboxEventInsert<'a> {
+    pub aggregate_id: i64,
+    pub event_key: &'a str,
+    pub event_type: &'a str,
+    pub now: &'a str,
+    pub payload: &'a str,
+    pub payload_hash: &'a str,
+    pub tenant_id: i64,
+}
+
 pub async fn insert_outbox_event_sqlite<'e, E>(
     executor: E,
-    tenant_id: i64,
-    aggregate_id: i64,
-    event_type: &str,
-    event_key: &str,
-    payload: &str,
-    payload_hash: &str,
-    now: &str,
+    input: OutboxEventInsert<'_>,
 ) -> Result<(), CommerceServiceError>
 where
     E: Executor<'e, Database = Sqlite>,
@@ -110,17 +114,17 @@ where
     )
     .bind(next_entity_id()?)
     .bind(next_entity_uuid())
-    .bind(tenant_id)
+    .bind(input.tenant_id)
     .bind(OUTBOX_AGGREGATE_TYPE_ACCOUNT)
-    .bind(aggregate_id)
-    .bind(event_type)
+    .bind(input.aggregate_id)
+    .bind(input.event_type)
     .bind(OUTBOX_EVENT_VERSION)
-    .bind(event_key)
-    .bind(payload)
-    .bind(payload_hash)
+    .bind(input.event_key)
+    .bind(input.payload)
+    .bind(input.payload_hash)
     .bind(OUTBOX_STATUS_PENDING)
-    .bind(now)
-    .bind(now)
+    .bind(input.now)
+    .bind(input.now)
     .execute(executor)
     .await
     .map_err(|error| store_error("failed to insert outbox event", error))?;
@@ -140,13 +144,15 @@ pub async fn emit_domain_outbox_sqlite(
         build_domain_outbox(tenant_id, event_type, idempotency_key, payload)?;
     insert_outbox_event_sqlite(
         &mut **tx,
-        tenant_id,
-        aggregate_id,
-        event_type,
-        &event_key,
-        &payload_json,
-        &payload_hash,
-        now,
+        OutboxEventInsert {
+            aggregate_id,
+            event_key: &event_key,
+            event_type,
+            now,
+            payload: &payload_json,
+            payload_hash: &payload_hash,
+            tenant_id,
+        },
     )
     .await
 }
@@ -164,26 +170,22 @@ pub async fn emit_domain_outbox_postgres(
         build_domain_outbox(tenant_id, event_type, idempotency_key, payload)?;
     insert_outbox_event_postgres(
         &mut **tx,
-        tenant_id,
-        aggregate_id,
-        event_type,
-        &event_key,
-        &payload_json,
-        &payload_hash,
-        now,
+        OutboxEventInsert {
+            aggregate_id,
+            event_key: &event_key,
+            event_type,
+            now,
+            payload: &payload_json,
+            payload_hash: &payload_hash,
+            tenant_id,
+        },
     )
     .await
 }
 
 pub async fn insert_outbox_event_postgres<'e, E>(
     executor: E,
-    tenant_id: i64,
-    aggregate_id: i64,
-    event_type: &str,
-    event_key: &str,
-    payload: &str,
-    payload_hash: &str,
-    now: &str,
+    input: OutboxEventInsert<'_>,
 ) -> Result<(), CommerceServiceError>
 where
     E: Executor<'e, Database = sqlx::Postgres>,
@@ -198,17 +200,17 @@ where
     )
     .bind(next_entity_id()?)
     .bind(next_entity_uuid())
-    .bind(tenant_id)
+    .bind(input.tenant_id)
     .bind(OUTBOX_AGGREGATE_TYPE_ACCOUNT)
-    .bind(aggregate_id)
-    .bind(event_type)
+    .bind(input.aggregate_id)
+    .bind(input.event_type)
     .bind(OUTBOX_EVENT_VERSION)
-    .bind(event_key)
-    .bind(payload)
-    .bind(payload_hash)
+    .bind(input.event_key)
+    .bind(input.payload)
+    .bind(input.payload_hash)
     .bind(OUTBOX_STATUS_PENDING)
-    .bind(now)
-    .bind(now)
+    .bind(input.now)
+    .bind(input.now)
     .execute(executor)
     .await
     .map_err(|error| store_error("failed to insert outbox event", error))?;

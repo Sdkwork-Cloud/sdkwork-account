@@ -3,11 +3,10 @@ use sdkwork_account_service::{
     AccountHoldDetailQuery, AccountHoldItem, AccountHoldListQuery, AccountTransferItem,
     CreateAccountHoldCommand, CreateAccountTransferCommand, ExpireExpiredHoldsCommand,
     ExpireExpiredHoldsOutcome, HoldMutationOutcome, ReleaseAccountHoldCommand,
-    SettleAccountHoldCommand, TransferMutationOutcome, WalletTransactionItem, StoreListPage,
+    SettleAccountHoldCommand, StoreListPage, TransferMutationOutcome, WalletTransactionItem,
 };
 use sdkwork_contract_service::{
-    CommerceAccountAssetType, CommerceLedgerDirection, CommerceRequestHash,
-    CommerceServiceError,
+    CommerceAccountAssetType, CommerceLedgerDirection, CommerceRequestHash, CommerceServiceError,
 };
 use sdkwork_utils_rust::LIST_TOTAL_SQL_COLUMN;
 use sqlx::{Row, Sqlite, Transaction};
@@ -21,16 +20,16 @@ use crate::store::{
         validate_transfer_account_pair,
     },
     asset_code_from_type, asset_type_from_code, finalize_list_page, format_i64, hold_status_label,
-    next_entity_id, next_entity_uuid, optional_org_string, org_id_from_option, parse_subject_i64,
-    resolve_list_sql_paging,
+    next_entity_id, next_entity_uuid, optional_org_string, org_id_from_option,
     outbox::{
         emit_domain_outbox_sqlite, OUTBOX_EVENT_TYPE_HOLD_CREATED, OUTBOX_EVENT_TYPE_HOLD_EXPIRED,
         OUTBOX_EVENT_TYPE_HOLD_RELEASED, OUTBOX_EVENT_TYPE_HOLD_SETTLED,
         OUTBOX_EVENT_TYPE_TRANSFER_COMPLETED,
     },
-    store_error, ACCOUNT_STATUS_ACTIVE, HOLD_CREATE_SCOPE, HOLD_EXPIRE_SCOPE, HOLD_RELEASE_SCOPE,
-    HOLD_SETTLE_SCOPE, HOLD_STATUS_HELD, HOLD_STATUS_RELEASED, HOLD_STATUS_SETTLED, OWNER_TYPE_USER,
-    TRANSFER_CREATE_SCOPE, TRANSFER_STATUS_COMPLETED,
+    parse_subject_i64, resolve_list_sql_paging, store_error, ACCOUNT_STATUS_ACTIVE,
+    HOLD_CREATE_SCOPE, HOLD_EXPIRE_SCOPE, HOLD_RELEASE_SCOPE, HOLD_SETTLE_SCOPE, HOLD_STATUS_HELD,
+    HOLD_STATUS_RELEASED, HOLD_STATUS_SETTLED, OWNER_TYPE_USER, TRANSFER_CREATE_SCOPE,
+    TRANSFER_STATUS_COMPLETED,
 };
 
 impl SqliteCommerceAccountStore {
@@ -49,10 +48,18 @@ impl SqliteCommerceAccountStore {
         let organization_id = org_id_from_option(command.organization_id.as_deref())?;
         let owner_id = parse_subject_i64("owner_user_id", &command.owner_user_id)?;
 
-        if let Some(replayed) =
-            try_replay_hold_mutation(&mut tx, tenant_id, HOLD_CREATE_SCOPE, &command.idempotency_key, request_hash.as_str()).await?
+        if let Some(replayed) = try_replay_hold_mutation(
+            &mut tx,
+            tenant_id,
+            HOLD_CREATE_SCOPE,
+            &command.idempotency_key,
+            request_hash.as_str(),
+        )
+        .await?
         {
-            tx.commit().await.map_err(|error| store_error("failed to commit hold replay", error))?;
+            tx.commit()
+                .await
+                .map_err(|error| store_error("failed to commit hold replay", error))?;
             return Ok(replayed);
         }
 
@@ -93,10 +100,7 @@ impl SqliteCommerceAccountStore {
         }
         if command.asset_type == CommerceAccountAssetType::Points {
             let spendable = crate::store::account_summary::sum_spendable_points_lots_sqlite(
-                &mut tx,
-                tenant_id,
-                account.id,
-                &now,
+                &mut tx, tenant_id, account.id, &now,
             )
             .await?;
             if i128::from(spendable) < hold_amount {
@@ -108,14 +112,8 @@ impl SqliteCommerceAccountStore {
         let frozen = parse_amount_minor(&account.frozen_amount)?;
         let next_available = format_amount_minor(available - hold_amount);
         let next_frozen = format_amount_minor(frozen + hold_amount);
-        let account = update_account_balances(
-            &mut tx,
-            &account,
-            &next_available,
-            &next_frozen,
-            &now,
-        )
-        .await?;
+        let account =
+            update_account_balances(&mut tx, &account, &next_available, &next_frozen, &now).await?;
 
         let hold_id = next_entity_id()?;
         let hold_uuid = next_entity_uuid();
@@ -206,10 +204,18 @@ impl SqliteCommerceAccountStore {
         let now = Utc::now().to_rfc3339();
         let tenant_id = parse_subject_i64("tenant_id", &command.tenant_id)?;
 
-        if let Some(replayed) =
-            try_replay_hold_mutation(&mut tx, tenant_id, HOLD_RELEASE_SCOPE, &command.idempotency_key, request_hash.as_str()).await?
+        if let Some(replayed) = try_replay_hold_mutation(
+            &mut tx,
+            tenant_id,
+            HOLD_RELEASE_SCOPE,
+            &command.idempotency_key,
+            request_hash.as_str(),
+        )
+        .await?
         {
-            tx.commit().await.map_err(|error| store_error("failed to commit hold release replay", error))?;
+            tx.commit()
+                .await
+                .map_err(|error| store_error("failed to commit hold release replay", error))?;
             return Ok(replayed);
         }
 
@@ -232,7 +238,12 @@ impl SqliteCommerceAccountStore {
         }
         ensure_hold_not_expired(hold.expires_at.as_deref(), &now)?;
         let hold_amount = parse_amount_minor(&hold.amount)?;
-        let account = load_account_by_internal_id(&mut tx, tenant_id, parse_subject_i64("account_id", &hold.account_id)?).await?;
+        let account = load_account_by_internal_id(
+            &mut tx,
+            tenant_id,
+            parse_subject_i64("account_id", &hold.account_id)?,
+        )
+        .await?;
         let available = parse_amount_minor(&account.available_amount)?;
         let frozen = parse_amount_minor(&account.frozen_amount)?;
         if frozen < hold_amount {
@@ -319,10 +330,18 @@ impl SqliteCommerceAccountStore {
         let now = Utc::now().to_rfc3339();
         let tenant_id = parse_subject_i64("tenant_id", &command.tenant_id)?;
 
-        if let Some(replayed) =
-            try_replay_hold_mutation(&mut tx, tenant_id, HOLD_SETTLE_SCOPE, &command.idempotency_key, request_hash.as_str()).await?
+        if let Some(replayed) = try_replay_hold_mutation(
+            &mut tx,
+            tenant_id,
+            HOLD_SETTLE_SCOPE,
+            &command.idempotency_key,
+            request_hash.as_str(),
+        )
+        .await?
         {
-            tx.commit().await.map_err(|error| store_error("failed to commit hold settle replay", error))?;
+            tx.commit()
+                .await
+                .map_err(|error| store_error("failed to commit hold settle replay", error))?;
             return Ok(replayed);
         }
 
@@ -345,7 +364,12 @@ impl SqliteCommerceAccountStore {
         }
         ensure_hold_not_expired(hold.expires_at.as_deref(), &now)?;
         let hold_amount = parse_amount_minor(&hold.amount)?;
-        let account = load_account_by_internal_id(&mut tx, tenant_id, parse_subject_i64("account_id", &hold.account_id)?).await?;
+        let account = load_account_by_internal_id(
+            &mut tx,
+            tenant_id,
+            parse_subject_i64("account_id", &hold.account_id)?,
+        )
+        .await?;
         let frozen = parse_amount_minor(&account.frozen_amount)?;
         if frozen < hold_amount {
             return Err(CommerceServiceError::invalid_state(
@@ -364,13 +388,15 @@ impl SqliteCommerceAccountStore {
         let asset_type = asset_type_from_code(&hold.asset_type)?;
         let ledger_entry = append_settlement_ledger(
             &mut tx,
-            tenant_id,
-            &account,
-            asset_type,
-            hold_amount,
-            parse_subject_i64("hold_id", &hold.id)?,
-            &command,
-            &now,
+            SettlementLedgerInput {
+                account: &account,
+                amount: hold_amount,
+                asset_type,
+                command: &command,
+                hold_id: parse_subject_i64("hold_id", &hold.id)?,
+                now: &now,
+                tenant_id,
+            },
         )
         .await?;
 
@@ -398,7 +424,8 @@ impl SqliteCommerceAccountStore {
             HOLD_SETTLE_SCOPE,
             &command.idempotency_key,
             parse_subject_i64("hold_id", &hold.id)?,
-            &serde_json::json!({ "holdUuid": hold.uuid, "ledgerEntryUuid": ledger_entry.uuid }).to_string(),
+            &serde_json::json!({ "holdUuid": hold.uuid, "ledgerEntryUuid": ledger_entry.uuid })
+                .to_string(),
             &now,
         )
         .await?;
@@ -440,7 +467,9 @@ impl SqliteCommerceAccountStore {
         let organization_id = org_id_from_option(query.organization_id.as_deref())?;
         let owner_id = parse_subject_i64("owner_user_id", &query.owner_user_id)?;
         let account_id = match query.account_id.as_deref() {
-            Some(value) if !value.trim().is_empty() => Some(parse_subject_i64("account_id", value)?),
+            Some(value) if !value.trim().is_empty() => {
+                Some(parse_subject_i64("account_id", value)?)
+            }
             _ => None,
         };
         let asset_code = query
@@ -558,15 +587,27 @@ impl SqliteCommerceAccountStore {
             ));
         }
 
-        if let Some(row) = load_idempotency_scoped(&mut tx, tenant_id, TRANSFER_CREATE_SCOPE, &command.idempotency_key).await? {
-            match crate::store::resolve_idempotency_record_action(
+        if let Some(row) = load_idempotency_scoped(
+            &mut tx,
+            tenant_id,
+            TRANSFER_CREATE_SCOPE,
+            &command.idempotency_key,
+        )
+        .await?
+        {
+            match crate::store::resolve_idempotency_from_row_fields(
+                request_hash.as_str(),
                 &string_cell(&row, "request_hash"),
                 &string_cell(&row, "status"),
-                request_hash.as_str(),
+                &string_cell(&row, "locked_until"),
+                Utc::now(),
             )? {
                 crate::store::IdempotencyRecordAction::Replay => {
-                    let replayed = load_transfer_replay(&mut tx, tenant_id, &command.idempotency_key).await?;
-                    tx.commit().await.map_err(|error| store_error("failed to commit transfer replay", error))?;
+                    let replayed =
+                        load_transfer_replay(&mut tx, tenant_id, &command.idempotency_key).await?;
+                    tx.commit()
+                        .await
+                        .map_err(|error| store_error("failed to commit transfer replay", error))?;
                     return Ok(replayed);
                 }
                 crate::store::IdempotencyRecordAction::ReclaimLock => {
@@ -665,28 +706,32 @@ impl SqliteCommerceAccountStore {
 
         let debit_entry = insert_transfer_ledger(
             &mut tx,
-            tenant_id,
-            organization_id,
-            &from_account,
-            journal_id,
-            CommerceLedgerDirection::Debit,
-            amount,
-            &command,
-            &trace_id,
-            &now,
+            TransferLedgerInput {
+                account: &from_account,
+                amount,
+                command: &command,
+                direction: CommerceLedgerDirection::Debit,
+                journal_id,
+                now: &now,
+                organization_id,
+                tenant_id,
+                trace_id: &trace_id,
+            },
         )
         .await?;
         let credit_entry = insert_transfer_ledger(
             &mut tx,
-            tenant_id,
-            organization_id,
-            &to_account,
-            journal_id,
-            CommerceLedgerDirection::Credit,
-            amount,
-            &command,
-            &trace_id,
-            &now,
+            TransferLedgerInput {
+                account: &to_account,
+                amount,
+                command: &command,
+                direction: CommerceLedgerDirection::Credit,
+                journal_id,
+                now: &now,
+                organization_id,
+                tenant_id,
+                trace_id: &trace_id,
+            },
         )
         .await?;
 
@@ -696,27 +741,32 @@ impl SqliteCommerceAccountStore {
             })?;
             let debit_ledger_id = parse_subject_i64("ledger_id", &debit_entry.id)?;
             let credit_ledger_id = parse_subject_i64("ledger_id", &credit_entry.id)?;
-            crate::sqlite_account::apply_points_lot_movement_for_hold(
+            crate::sqlite_account::apply_points_lot_movement(
                 &mut tx,
-                tenant_id,
-                from_account.id,
-                &CommerceLedgerDirection::Debit,
-                lot_amount,
-                &command.business_type,
-                debit_ledger_id,
-                &now,
+                crate::sqlite_account::PointsLotMovementInput {
+                    account_id: from_account.id,
+                    amount: lot_amount,
+                    direction: CommerceLedgerDirection::Debit,
+                    expires_at: None,
+                    ledger_id: debit_ledger_id,
+                    now: &now,
+                    source_type: &command.business_type,
+                    tenant_id,
+                },
             )
             .await?;
             crate::sqlite_account::apply_points_lot_movement(
                 &mut tx,
-                tenant_id,
-                to_account.id,
-                &CommerceLedgerDirection::Credit,
-                lot_amount,
-                &command.business_type,
-                credit_ledger_id,
-                None,
-                &now,
+                crate::sqlite_account::PointsLotMovementInput {
+                    account_id: to_account.id,
+                    amount: lot_amount,
+                    direction: CommerceLedgerDirection::Credit,
+                    expires_at: None,
+                    ledger_id: credit_ledger_id,
+                    now: &now,
+                    source_type: &command.business_type,
+                    tenant_id,
+                },
             )
             .await?;
         }
@@ -752,18 +802,18 @@ impl SqliteCommerceAccountStore {
         .await
         .map_err(|error| store_error("failed to insert account transfer", error))?;
 
-        let transfer = map_transfer_row(
-            transfer_id,
-            &transfer_uuid,
-            tenant_id,
-            organization_id,
-            from_account.id,
-            to_account.id,
-            &command,
+        let transfer = map_transfer_row(TransferRowInput {
+            command: &command,
+            created_at: &now,
+            from_account_id: from_account.id,
             journal_id,
-            &trace_id,
-            &now,
-        )?;
+            organization_id,
+            tenant_id,
+            to_account_id: to_account.id,
+            trace_id: &trace_id,
+            transfer_id,
+            transfer_uuid: &transfer_uuid,
+        })?;
 
         complete_idempotency_scoped(
             &mut tx,
@@ -904,13 +954,7 @@ impl SqliteCommerceAccountStore {
                 let amount = string_cell(&row, "amount");
                 let asset_type = asset_type_from_code(&string_cell(&row, "asset_code"))?;
                 expire_one_expired_hold(
-                    &mut tx,
-                    tenant_id,
-                    account_id,
-                    &hold_uuid,
-                    &amount,
-                    asset_type,
-                    &now,
+                    &mut tx, tenant_id, account_id, &hold_uuid, &amount, asset_type, &now,
                 )
                 .await?;
                 expired_hold_count += 1;
@@ -1030,10 +1074,12 @@ async fn try_replay_hold_expire(
         ));
     }
 
-    match crate::store::resolve_idempotency_record_action(
+    match crate::store::resolve_idempotency_from_row_fields(
+        request_hash,
         &string_cell(&row, "request_hash"),
         &string_cell(&row, "status"),
-        request_hash,
+        &string_cell(&row, "locked_until"),
+        Utc::now(),
     )? {
         crate::store::IdempotencyRecordAction::ReclaimLock => {
             reclaim_idempotency_scoped_public(
@@ -1052,7 +1098,9 @@ async fn try_replay_hold_expire(
 
     let snapshot = string_cell(&row, "response_snapshot");
     let value: serde_json::Value = serde_json::from_str(&snapshot).map_err(|error| {
-        CommerceServiceError::storage(format!("failed to decode hold expire replay snapshot: {error}"))
+        CommerceServiceError::storage(format!(
+            "failed to decode hold expire replay snapshot: {error}"
+        ))
     })?;
     Ok(Some(ExpireExpiredHoldsOutcome {
         accepted: value
@@ -1105,16 +1153,29 @@ async fn complete_hold_expire_idempotency(
     Ok(())
 }
 
+struct SettlementLedgerInput<'a> {
+    account: &'a StoredAccount,
+    amount: i128,
+    asset_type: CommerceAccountAssetType,
+    command: &'a SettleAccountHoldCommand,
+    hold_id: i64,
+    now: &'a str,
+    tenant_id: i64,
+}
+
 async fn append_settlement_ledger(
     tx: &mut Transaction<'_, Sqlite>,
-    tenant_id: i64,
-    account: &StoredAccount,
-    asset_type: CommerceAccountAssetType,
-    amount: i128,
-    hold_id: i64,
-    command: &SettleAccountHoldCommand,
-    now: &str,
+    input: SettlementLedgerInput<'_>,
 ) -> Result<WalletTransactionItem, CommerceServiceError> {
+    let SettlementLedgerInput {
+        account,
+        amount,
+        asset_type,
+        command,
+        hold_id,
+        now,
+        tenant_id,
+    } = input;
     let balance_before = account.available_amount.clone();
     let balance_after = account.available_amount.clone();
     let journal_id = next_entity_id()?;
@@ -1180,17 +1241,20 @@ async fn append_settlement_ledger(
     .map_err(|error| store_error("failed to insert settlement ledger", error))?;
 
     if asset_type == CommerceAccountAssetType::Points {
-        crate::sqlite_account::apply_points_lot_movement_for_hold(
+        crate::sqlite_account::apply_points_lot_movement(
             tx,
-            tenant_id,
-            account.id,
-            &CommerceLedgerDirection::Debit,
-            i64::try_from(amount).map_err(|_| {
-                CommerceServiceError::validation("points amount exceeds supported lot range")
-            })?,
-            &command.business_type,
-            ledger_id,
-            now,
+            crate::sqlite_account::PointsLotMovementInput {
+                account_id: account.id,
+                amount: i64::try_from(amount).map_err(|_| {
+                    CommerceServiceError::validation("points amount exceeds supported lot range")
+                })?,
+                direction: CommerceLedgerDirection::Debit,
+                expires_at: None,
+                ledger_id,
+                now,
+                source_type: &command.business_type,
+                tenant_id,
+            },
         )
         .await?;
     }
@@ -1215,32 +1279,53 @@ async fn append_settlement_ledger(
     )
 }
 
+struct TransferLedgerInput<'a> {
+    account: &'a StoredAccount,
+    amount: i128,
+    command: &'a CreateAccountTransferCommand,
+    direction: CommerceLedgerDirection,
+    journal_id: i64,
+    now: &'a str,
+    organization_id: i64,
+    tenant_id: i64,
+    trace_id: &'a str,
+}
+
 async fn insert_transfer_ledger(
     tx: &mut Transaction<'_, Sqlite>,
-    tenant_id: i64,
-    organization_id: i64,
-    account: &StoredAccount,
-    journal_id: i64,
-    direction: CommerceLedgerDirection,
-    amount: i128,
-    command: &CreateAccountTransferCommand,
-    trace_id: &str,
-    now: &str,
+    input: TransferLedgerInput<'_>,
 ) -> Result<WalletTransactionItem, CommerceServiceError> {
+    let TransferLedgerInput {
+        account,
+        amount,
+        command,
+        direction,
+        journal_id,
+        now,
+        organization_id,
+        tenant_id,
+        trace_id,
+    } = input;
     let available = parse_amount_minor(&account.available_amount)?;
-    let (balance_before, balance_after) = match direction {
+    let (balance_before, balance_after) = match &direction {
         CommerceLedgerDirection::Debit => {
             let before = available + amount;
-            (format_amount_minor(before), account.available_amount.clone())
+            (
+                format_amount_minor(before),
+                account.available_amount.clone(),
+            )
         }
         CommerceLedgerDirection::Credit => {
             let before = available - amount;
-            (format_amount_minor(before), account.available_amount.clone())
+            (
+                format_amount_minor(before),
+                account.available_amount.clone(),
+            )
         }
     };
     let ledger_id = next_entity_id()?;
     let ledger_uuid = next_entity_uuid();
-    let entry_type = match direction {
+    let entry_type = match &direction {
         CommerceLedgerDirection::Credit => "CREDIT",
         CommerceLedgerDirection::Debit => "DEBIT",
     };
@@ -1274,7 +1359,11 @@ async fn insert_transfer_ledger(
     .bind(&command.business_type)
     .bind(&ledger_business_no)
     .bind(&command.request_no)
-    .bind(format!("{}:{}", command.idempotency_key, direction.as_str()))
+    .bind(format!(
+        "{}:{}",
+        command.idempotency_key,
+        direction.as_str()
+    ))
     .bind(trace_id)
     .bind(now)
     .execute(&mut **tx)
@@ -1378,7 +1467,7 @@ async fn load_account_by_owner_asset(
     let currency_code = match asset_type {
         CommerceAccountAssetType::Cash => "",
         CommerceAccountAssetType::Points => "POINT",
-        CommerceAccountAssetType::Token => "TOKEN",
+        CommerceAccountAssetType::TokenBank => "TOKEN_BANK",
     };
     sqlx::query(
         r#"
@@ -1515,7 +1604,9 @@ fn map_hold_row(row: &sqlx::sqlite::SqliteRow) -> Result<AccountHoldItem, Commer
         organization_id: optional_org_string(integer_cell(row, "organization_id")),
         account_id: format_i64(integer_cell(row, "account_id")),
         owner_user_id: format_i64(integer_cell(row, "owner_id")),
-        asset_type: asset_type_from_code(&string_cell(row, "asset_code"))?.as_str().to_owned(),
+        asset_type: asset_type_from_code(&string_cell(row, "asset_code"))?
+            .as_str()
+            .to_owned(),
         amount: string_cell(row, "amount"),
         settled_amount: string_cell(row, "settled_amount"),
         released_amount: string_cell(row, "released_amount"),
@@ -1535,18 +1626,34 @@ fn map_hold_row(row: &sqlx::sqlite::SqliteRow) -> Result<AccountHoldItem, Commer
     })
 }
 
-fn map_transfer_row(
-    transfer_id: i64,
-    transfer_uuid: &str,
-    tenant_id: i64,
-    organization_id: i64,
+struct TransferRowInput<'a> {
+    command: &'a CreateAccountTransferCommand,
+    created_at: &'a str,
     from_account_id: i64,
-    to_account_id: i64,
-    command: &CreateAccountTransferCommand,
     journal_id: i64,
-    trace_id: &str,
-    created_at: &str,
+    organization_id: i64,
+    tenant_id: i64,
+    to_account_id: i64,
+    trace_id: &'a str,
+    transfer_id: i64,
+    transfer_uuid: &'a str,
+}
+
+fn map_transfer_row(
+    input: TransferRowInput<'_>,
 ) -> Result<AccountTransferItem, CommerceServiceError> {
+    let TransferRowInput {
+        command,
+        created_at,
+        from_account_id,
+        journal_id,
+        organization_id,
+        tenant_id,
+        to_account_id,
+        trace_id,
+        transfer_id,
+        transfer_uuid,
+    } = input;
     Ok(AccountTransferItem {
         id: format_i64(transfer_id),
         uuid: transfer_uuid.to_owned(),
@@ -1584,13 +1691,23 @@ async fn try_replay_hold_mutation(
         ));
     }
 
-    match crate::store::resolve_idempotency_record_action(
+    match crate::store::resolve_idempotency_from_row_fields(
+        request_hash,
         &string_cell(&row, "request_hash"),
         &string_cell(&row, "status"),
-        request_hash,
+        &string_cell(&row, "locked_until"),
+        Utc::now(),
     )? {
         crate::store::IdempotencyRecordAction::ReclaimLock => {
-            reclaim_idempotency_scoped_public(tx, tenant_id, scope, idempotency_key, request_hash, &Utc::now().to_rfc3339()).await?;
+            reclaim_idempotency_scoped_public(
+                tx,
+                tenant_id,
+                scope,
+                idempotency_key,
+                request_hash,
+                &Utc::now().to_rfc3339(),
+            )
+            .await?;
             return Ok(None);
         }
         crate::store::IdempotencyRecordAction::Replay => {}
@@ -1601,9 +1718,16 @@ async fn try_replay_hold_mutation(
     let hold_uuid = snapshot
         .get("holdUuid")
         .and_then(|value| value.as_str())
-        .ok_or_else(|| CommerceServiceError::storage("hold idempotency snapshot missing holdUuid"))?;
+        .ok_or_else(|| {
+            CommerceServiceError::storage("hold idempotency snapshot missing holdUuid")
+        })?;
     let hold = load_hold_by_uuid(tx, tenant_id, hold_uuid).await?;
-    let account = load_account_by_internal_id(tx, tenant_id, parse_subject_i64("account_id", &hold.account_id)?).await?;
+    let account = load_account_by_internal_id(
+        tx,
+        tenant_id,
+        parse_subject_i64("account_id", &hold.account_id)?,
+    )
+    .await?;
     Ok(Some(HoldMutationOutcome {
         hold,
         account: account.to_wallet_item()?,
@@ -1642,7 +1766,9 @@ async fn load_transfer_replay(
         from_account_id: format_i64(integer_cell(&row, "from_account_id")),
         to_account_id: format_i64(integer_cell(&row, "to_account_id")),
         owner_user_id: String::new(),
-        asset_type: asset_type_from_code(&string_cell(&row, "asset_code"))?.as_str().to_owned(),
+        asset_type: asset_type_from_code(&string_cell(&row, "asset_code"))?
+            .as_str()
+            .to_owned(),
         amount: string_cell(&row, "amount"),
         status: "completed".to_owned(),
         business_type: string_cell(&row, "business_type"),
@@ -1764,19 +1890,22 @@ pub(crate) async fn reclaim_idempotency_scoped_public(
     request_hash: &str,
     now: &str,
 ) -> Result<(), CommerceServiceError> {
+    let lock_expires = crate::store::idempotency_lock_expires_at_rfc3339(Utc::now());
     let updated = sqlx::query(
         r#"
         UPDATE commerce_idempotency_record
         SET status = 'LOCKED', request_hash = ?, locked_until = ?, updated_at = ?
-        WHERE tenant_id = ? AND scope = ? AND idempotency_key = ? AND status = 'FAILED'
+        WHERE tenant_id = ? AND scope = ? AND idempotency_key = ?
+          AND (status = 'FAILED' OR (status = 'LOCKED' AND locked_until <= ?))
         "#,
     )
     .bind(request_hash)
-    .bind(now)
+    .bind(&lock_expires)
     .bind(now)
     .bind(tenant_id)
     .bind(scope)
     .bind(idempotency_key)
+    .bind(now)
     .execute(&mut **tx)
     .await
     .map_err(|error| store_error("failed to reclaim idempotency lock", error))?;
@@ -1829,6 +1958,7 @@ async fn insert_idempotency_scoped(
     target_type: &str,
     now: &str,
 ) -> Result<(), CommerceServiceError> {
+    let lock_expires = crate::store::idempotency_lock_expires_at_rfc3339(Utc::now());
     sqlx::query(
         r#"
         INSERT INTO commerce_idempotency_record
@@ -1844,13 +1974,15 @@ async fn insert_idempotency_scoped(
     .bind(idempotency_key)
     .bind(request_hash)
     .bind(target_type)
-    .bind(now)
-    .bind(now)
+    .bind(&lock_expires)
+    .bind(&lock_expires)
     .bind(now)
     .bind(now)
     .execute(&mut **tx)
     .await
-    .map_err(|error| store_error("failed to insert idempotency lock", error))?;
+    .map_err(|error| {
+        crate::store::map_idempotency_insert_error("failed to insert idempotency lock", error)
+    })?;
     Ok(())
 }
 
@@ -1882,7 +2014,9 @@ async fn complete_idempotency_scoped(
     Ok(())
 }
 
-fn map_stored_account(row: &sqlx::sqlite::SqliteRow) -> Result<StoredAccount, CommerceServiceError> {
+fn map_stored_account(
+    row: &sqlx::sqlite::SqliteRow,
+) -> Result<StoredAccount, CommerceServiceError> {
     crate::sqlite_account::map_stored_account(row)
 }
 

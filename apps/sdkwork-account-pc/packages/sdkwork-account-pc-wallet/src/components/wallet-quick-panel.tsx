@@ -23,6 +23,8 @@ export function SdkworkWalletQuickPanel({
     formatCurrencyCny,
     formatPoints,
     formatPointsRate,
+    formatTokenBank,
+    formatTokenBankDelta,
     formatWalletDelta,
   } = useSdkworkWalletIntl();
 
@@ -43,6 +45,9 @@ export function SdkworkWalletQuickPanel({
         <div className="mt-3 flex gap-4 text-xs text-[var(--sdk-color-text-muted)]">
           <span>
             {copy.quickPanel.cashAvailableLabel}: {formatCurrencyCny(overview.account.cashAvailable)}
+          </span>
+          <span>
+            {copy.quickPanel.tokenBankAvailableLabel}: {formatTokenBank(overview.account.tokenBankAvailable)}
           </span>
           <span>
             {copy.quickPanel.rateLabel}: {formatPointsRate(overview.pointsToCashRate)}
@@ -79,21 +84,30 @@ export function SdkworkWalletQuickPanel({
             <p className="rounded-[var(--sdk-radius-field)] border border-dashed border-[var(--sdk-color-border-default)] px-3 py-3 text-xs text-[var(--sdk-color-text-secondary)]">
               {copy.quickPanel.noRecentActivity}
             </p>
-          ) : recentTransactions.map((transaction) => (
-            <div
-              className="flex items-center justify-between gap-2 rounded-[var(--sdk-radius-field)] px-2 py-2 hover:bg-[var(--sdk-color-surface-panel-muted)]"
-              key={transaction.id}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium text-[var(--sdk-color-text-primary)]">
-                  {transaction.title}
-                </p>
+          ) : recentTransactions.map((transaction) => {
+            const displayDelta = transaction.tokenBankDelta !== 0
+              ? transaction.tokenBankDelta
+              : transaction.pointsDelta;
+            const displayDeltaLabel = transaction.tokenBankDelta !== 0
+              ? formatTokenBankDelta(transaction.tokenBankDelta)
+              : formatWalletDelta(transaction.pointsDelta);
+
+            return (
+              <div
+                className="flex items-center justify-between gap-2 rounded-[var(--sdk-radius-field)] px-2 py-2 hover:bg-[var(--sdk-color-surface-panel-muted)]"
+                key={transaction.id}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium text-[var(--sdk-color-text-primary)]">
+                    {transaction.title}
+                  </p>
+                </div>
+                <span className={`shrink-0 text-xs tabular-nums ${displayDelta >= 0 ? "text-[var(--sdk-color-state-success)]" : "text-[var(--sdk-color-text-primary)]"}`}>
+                  {displayDeltaLabel}
+                </span>
               </div>
-              <span className={`shrink-0 text-xs tabular-nums ${transaction.pointsDelta >= 0 ? "text-[var(--sdk-color-state-success)]" : "text-[var(--sdk-color-text-primary)]"}`}>
-                {formatWalletDelta(transaction.pointsDelta)}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

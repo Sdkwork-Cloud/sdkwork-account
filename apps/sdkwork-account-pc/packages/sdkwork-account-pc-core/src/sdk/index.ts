@@ -8,12 +8,6 @@ import {
   type SdkworkAccountAppService,
   type SdkworkAccountBackendService,
 } from "@sdkwork/account-service";
-import {
-  bootstrapSdkworkOrderAppService,
-  configureSdkworkOrderSessionTokenProvider,
-  type BootstrapSdkworkOrderAppServiceInput,
-  type SdkworkOrderAppService,
-} from "@sdkwork/order-service";
 
 export interface BootstrapSdkworkAccountPcSdkInput extends BootstrapSdkworkAccountAppServiceInput {
   tokenManager?: AuthTokenManager;
@@ -35,20 +29,6 @@ export function bootstrapSdkworkAccountPcBackendSdk(
   return bootstrapSdkworkAccountBackendService(input);
 }
 
-export interface BootstrapSdkworkAccountPcOrderSdkInput extends BootstrapSdkworkOrderAppServiceInput {
-  tokenManager?: AuthTokenManager;
-}
-
-export function bootstrapSdkworkAccountPcOrderSdk(
-  input: BootstrapSdkworkAccountPcOrderSdkInput,
-): SdkworkOrderAppService {
-  configureSdkworkOrderSessionTokenProvider(() => ({
-    accessToken: input.accessToken,
-    authToken: input.authToken,
-  }));
-  return bootstrapSdkworkOrderAppService(input);
-}
-
 export {
   bootstrapSdkworkAccountAppService,
   bootstrapSdkworkAccountBackendService,
@@ -60,12 +40,3 @@ export {
   resolveAccountBackendApiOrigin,
   type BootstrapSdkworkAccountBackendServiceInput,
 } from "@sdkwork/account-service";
-export {
-  bootstrapSdkworkOrderAppService,
-  configureSdkworkOrderSessionTokenProvider,
-  createOrderAppSdkClientFromTransport,
-  createOrderAppTransportClient,
-  resolveOrderAppApiOrigin,
-  type BootstrapSdkworkOrderAppServiceInput,
-  type SdkworkOrderAppService,
-} from "@sdkwork/order-service";

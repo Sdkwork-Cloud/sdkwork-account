@@ -24,4 +24,8 @@ impl AccountServiceHost {
     pub fn database_module(&self) -> std::sync::Arc<sdkwork_database_spi::DefaultDatabaseModule> {
         self.database.module()
     }
+
+    pub async fn close_database_pool(&self) {
+        self.database.pool().close().await;
+    }
 }

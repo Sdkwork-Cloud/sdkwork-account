@@ -22,8 +22,10 @@ use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, SqlitePool};
 
-use crate::api_response::{map_service_error, success_item, unauthorized, validation};
-use crate::subject::backend_runtime_subject_from_extension;
+use crate::api_response::{
+    map_service_error, success_created_item, success_item, unauthorized, validation,
+};
+use crate::subject::{backend_runtime_subject_from_extension, ensure_backend_owner_user_allowed};
 
 pub type CommerceLedgerWriteFuture<'a, T> =
     Pin<Box<dyn Future<Output = Result<T, CommerceServiceError>> + Send + 'a>>;
@@ -65,6 +67,7 @@ struct CreateWalletAdjustmentRequest {
     asset_type: String,
     #[serde(default)]
     currency_code: Option<String>,
+    #[serde(default)]
     direction: String,
     amount: String,
     business_type: String,
@@ -247,8 +250,20 @@ pub fn build_backend_wallet_router(store: Arc<dyn CommerceAccountLedgerWriteStor
             post(create_points_adjustment),
         )
         .route(
-            "/backend/v3/api/wallet/adjustments/tokens",
-            post(create_token_adjustment),
+            "/backend/v3/api/token_bank/credits",
+            post(create_token_bank_credit),
+        )
+        .route(
+            "/backend/v3/api/token_bank/debits",
+            post(create_token_bank_debit),
+        )
+        .route(
+            "/backend/v3/api/token_bank/grants",
+            post(create_token_bank_grant),
+        )
+        .route(
+            "/backend/v3/api/token_bank/reversals",
+            post(create_token_bank_reversal),
         )
         .route(
             "/backend/v3/api/wallet/points/lots/expire",
@@ -293,7 +308,58 @@ async fn create_points_adjustment(
     .await
 }
 
-async fn create_token_adjustment(
+async fn create_token_bank_credit(
+    State(state): State<BackendWalletState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    mut body: axum::Json<CreateWalletAdjustmentRequest>,
+) -> Response {
+    body.direction = "credit".to_owned();
+    create_wallet_adjustment_with_asset(
+        state,
+        request_context,
+        runtime_context,
+        body,
+        CommerceAccountAssetType::TokenBank,
+    )
+    .await
+}
+
+async fn create_token_bank_debit(
+    State(state): State<BackendWalletState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    mut body: axum::Json<CreateWalletAdjustmentRequest>,
+) -> Response {
+    body.direction = "debit".to_owned();
+    create_wallet_adjustment_with_asset(
+        state,
+        request_context,
+        runtime_context,
+        body,
+        CommerceAccountAssetType::TokenBank,
+    )
+    .await
+}
+
+async fn create_token_bank_grant(
+    State(state): State<BackendWalletState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    mut body: axum::Json<CreateWalletAdjustmentRequest>,
+) -> Response {
+    body.direction = "credit".to_owned();
+    create_wallet_adjustment_with_asset(
+        state,
+        request_context,
+        runtime_context,
+        body,
+        CommerceAccountAssetType::TokenBank,
+    )
+    .await
+}
+
+async fn create_token_bank_reversal(
     State(state): State<BackendWalletState>,
     request_context: Extension<WebRequestContext>,
     runtime_context: Option<Extension<IamAppContext>>,
@@ -304,7 +370,7 @@ async fn create_token_adjustment(
         request_context,
         runtime_context,
         body,
-        CommerceAccountAssetType::Token,
+        CommerceAccountAssetType::TokenBank,
     )
     .await
 }
@@ -331,6 +397,9 @@ async fn create_wallet_adjustment_with_asset(
     asset_type: CommerceAccountAssetType,
 ) -> Response {
     let ctx = request_context.0;
+    let iam_context = runtime_context
+        .as_ref()
+        .map(|Extension(context)| context.clone());
     let subject = match backend_runtime_subject_from_extension(runtime_context) {
         Ok(subject) => subject,
         Err(message) => return unauthorized(Some(&ctx), message),
@@ -341,6 +410,12 @@ async fn create_wallet_adjustment_with_asset(
             Some(&ctx),
             "tenant_id must match authenticated runtime tenant",
         );
+    }
+
+    if let Some(iam) = iam_context.as_ref() {
+        if let Err(message) = ensure_backend_owner_user_allowed(iam, body.owner_user_id.trim()) {
+            return validation(Some(&ctx), message);
+        }
     }
 
     body.asset_type = asset_type.as_str().to_owned();
@@ -378,12 +453,8 @@ async fn create_wallet_adjustment_with_asset(
         Err(error) => return map_service_error(Some(&ctx), error),
     };
 
-    match state
-        .store
-        .append_ledger_entry(command, request_hash)
-        .await
-    {
-        Ok(outcome) => success_item(
+    match state.store.append_ledger_entry(command, request_hash).await {
+        Ok(outcome) => success_created_item(
             Some(&ctx),
             WalletAdjustmentResponse {
                 accepted: true,
@@ -503,24 +574,26 @@ fn map_points_mismatch(value: PointsLotMismatchItem) -> PointsLotMismatchRespons
 fn request_hash_from_body(
     body: &CreateWalletAdjustmentRequest,
 ) -> Result<CommerceRequestHash, CommerceServiceError> {
-    let canonical = serde_json::to_string(body)
-        .map_err(|error| CommerceServiceError::validation(format!("request body is invalid: {error}")))?;
+    let canonical = serde_json::to_string(body).map_err(|error| {
+        CommerceServiceError::validation(format!("request body is invalid: {error}"))
+    })?;
     CommerceRequestHash::new(&sha256_hash(canonical.as_bytes()))
 }
 
 fn expire_request_hash_from_body(
     body: &ExpirePointsLotsRequest,
 ) -> Result<CommerceRequestHash, CommerceServiceError> {
-    let canonical = serde_json::to_string(body)
-        .map_err(|error| CommerceServiceError::validation(format!("request body is invalid: {error}")))?;
+    let canonical = serde_json::to_string(body).map_err(|error| {
+        CommerceServiceError::validation(format!("request body is invalid: {error}"))
+    })?;
     CommerceRequestHash::new(&sha256_hash(canonical.as_bytes()))
 }
 
 fn parse_asset_type(value: &str) -> Result<CommerceAccountAssetType, String> {
     match value.to_ascii_lowercase().as_str() {
         "cash" => Ok(CommerceAccountAssetType::Cash),
-        "point" | "points" => Ok(CommerceAccountAssetType::Points),
-        "token" | "tokens" => Ok(CommerceAccountAssetType::Token),
+        "points" => Ok(CommerceAccountAssetType::Points),
+        "token_bank" => Ok(CommerceAccountAssetType::TokenBank),
         _ => Err("asset_type is invalid".to_owned()),
     }
 }

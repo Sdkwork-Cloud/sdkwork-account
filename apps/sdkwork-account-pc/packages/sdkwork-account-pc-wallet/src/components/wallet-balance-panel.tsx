@@ -18,9 +18,9 @@ export function SdkworkWalletBalancePanel({
     formatAccountLevelLabel,
     formatAccountState,
     formatCurrencyCny,
-    formatPayProtection,
     formatPoints,
     formatPointsRate,
+    formatTokenBank,
   } = useSdkworkWalletIntl();
 
   const metrics = [
@@ -29,8 +29,8 @@ export function SdkworkWalletBalancePanel({
       value: formatCurrencyCny(overview.account.cashAvailable),
     },
     {
-      label: copy.balancePanel.payProtectionLabel,
-      value: formatPayProtection(overview.account.hasPayPassword),
+      label: copy.balancePanel.tokenBankAvailableLabel,
+      value: formatTokenBank(overview.account.tokenBankAvailable),
     },
     {
       label: copy.balancePanel.accountLevelLabel,

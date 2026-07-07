@@ -1,10 +1,10 @@
 use chrono::Utc;
 use sdkwork_account_service::{
     AccountBalance, AccountSummary, AccountSummaryQuery, AccountSummarySnapshot,
-    AppendLedgerEntryCommand, AppendLedgerEntryOutcome, PointsAccountSnapshot, PointsLotItem,
-    PointsLotListQuery, StoreListPage, WalletAccountItem, WalletAccountListQuery, WalletOperation,
-    WalletOperationQuery, WalletOverview, WalletTransactionDetailQuery, WalletTransactionItem,
-    WalletTransactionListQuery, OutboxDispatchOutcome,
+    AppendLedgerEntryCommand, AppendLedgerEntryOutcome, OutboxDispatchOutcome,
+    PointsAccountSnapshot, PointsLotItem, PointsLotListQuery, StoreListPage, WalletAccountItem,
+    WalletAccountListQuery, WalletOperation, WalletOperationQuery, WalletOverview,
+    WalletTransactionDetailQuery, WalletTransactionItem, WalletTransactionListQuery,
 };
 use sdkwork_contract_service::{
     CommerceAccountAssetType, CommerceLedgerDirection, CommerceMoney, CommercePoints,
@@ -15,15 +15,13 @@ use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
 use crate::store::{
     account_guard::{ensure_points_lot_debit_complete, require_positive_amount},
-    account_summary, account_status_label, asset_code_from_type, asset_type_from_code, balance,
-    billing_projection,
-    currency_code_for_command,
-    default_currency_code, format_i64, next_entity_id, next_entity_uuid, optional_org_string,
-    org_id_from_option, parse_subject_i64, points_lot_status_label,
-    store_error, IdempotencyRecordAction, resolve_idempotency_record_action,
-    finalize_list_page, resolve_list_sql_paging,
-    ACCOUNT_PURPOSE_GENERAL, ACCOUNT_STATUS_ACTIVE, LEDGER_APPEND_SCOPE, OWNER_TYPE_USER,
-    POINTS_LOT_STATUS_DEPLETED,
+    account_status_label, account_summary, asset_code_from_type, asset_type_from_code, balance,
+    billing_projection, currency_code_for_command, default_currency_code, finalize_list_page,
+    format_i64, idempotency_lock_expires_at_rfc3339, map_idempotency_insert_error, next_entity_id,
+    next_entity_uuid, optional_org_string, org_id_from_option, parse_subject_i64,
+    points_lot_status_label, resolve_idempotency_from_row_fields, resolve_list_sql_paging,
+    store_error, IdempotencyRecordAction, ACCOUNT_PURPOSE_GENERAL, ACCOUNT_STATUS_ACTIVE,
+    LEDGER_APPEND_SCOPE, OWNER_TYPE_USER, POINTS_LOT_DEBIT_BATCH_SIZE, POINTS_LOT_STATUS_DEPLETED,
 };
 
 #[derive(Debug, Clone)]
@@ -69,8 +67,8 @@ impl SqliteCommerceAccountStore {
         let mut cash_frozen = 0_i128;
         let mut points_available = 0_i128;
         let mut points_frozen = 0_i128;
-        let mut token_available = 0_i128;
-        let mut token_frozen = 0_i128;
+        let mut token_bank_available = 0_i128;
+        let mut token_bank_frozen = 0_i128;
 
         for account in accounts {
             match account.asset_type {
@@ -82,9 +80,9 @@ impl SqliteCommerceAccountStore {
                     points_available += parse_amount_minor(account.available_amount.as_str())?;
                     points_frozen += parse_amount_minor(account.frozen_amount.as_str())?;
                 }
-                CommerceAccountAssetType::Token => {
-                    token_available += parse_amount_minor(account.available_amount.as_str())?;
-                    token_frozen += parse_amount_minor(account.frozen_amount.as_str())?;
+                CommerceAccountAssetType::TokenBank => {
+                    token_bank_available += parse_amount_minor(account.available_amount.as_str())?;
+                    token_bank_frozen += parse_amount_minor(account.frozen_amount.as_str())?;
                 }
             }
         }
@@ -104,10 +102,10 @@ impl SqliteCommerceAccountStore {
                     .map_err(CommerceServiceError::storage)?,
             )?,
             tenant_id: query.tenant_id,
-            token: AccountBalance::new(
-                CommercePoints::new(&token_available.to_string())
+            token_bank: AccountBalance::new(
+                CommerceMoney::new(&format_amount_minor(token_bank_available))
                     .map_err(CommerceServiceError::storage)?,
-                CommercePoints::new(&token_frozen.to_string())
+                CommerceMoney::new(&format_amount_minor(token_bank_frozen))
                     .map_err(CommerceServiceError::storage)?,
             )?,
         })
@@ -125,8 +123,10 @@ impl SqliteCommerceAccountStore {
             .points
             .available
             .as_str()
-            .parse::<f64>()
-            .unwrap_or(0.0);
+            .parse::<i128>()
+            .map_err(|_| {
+                CommerceServiceError::storage("invalid points amount in account summary")
+            })?;
         let mut stats = account_summary::load_wallet_summary_stats_sqlite(
             &self.pool,
             tenant_id,
@@ -134,8 +134,10 @@ impl SqliteCommerceAccountStore {
             owner_id,
         )
         .await?;
-        stats.est_days_remaining =
-            account_summary::estimate_days_remaining(available_points, stats.monthly_consumption);
+        stats.est_days_remaining = account_summary::estimate_days_remaining(
+            available_points,
+            stats.monthly_points_consumed,
+        );
         Ok(account_summary::build_account_summary_snapshot(
             &query.owner_user_id,
             organization_id,
@@ -151,10 +153,7 @@ impl SqliteCommerceAccountStore {
         let tenant_id = parse_subject_i64("tenant_id", &query.tenant_id)?;
         let organization_id = org_id_from_option(query.organization_id.as_deref())?;
         let owner_id = parse_subject_i64("owner_user_id", &query.owner_user_id)?;
-        let asset_code = query
-            .asset_type
-            .as_ref()
-            .map(asset_code_from_type);
+        let asset_code = query.asset_type.as_ref().map(asset_code_from_type);
 
         let rows = sqlx::query(
             r#"
@@ -202,10 +201,7 @@ impl SqliteCommerceAccountStore {
             Some(value) => Some(parse_subject_i64("account_id", value)?),
             None => None,
         };
-        let asset_code = query
-            .asset_type
-            .as_ref()
-            .map(asset_code_from_type);
+        let asset_code = query.asset_type.as_ref().map(asset_code_from_type);
         let paging = resolve_list_sql_paging(query.page, query.page_size, query.cursor.as_deref())?;
         let fetch_limit = paging.fetch_limit;
         let sql_offset = paging.sql_offset;
@@ -276,7 +272,11 @@ impl SqliteCommerceAccountStore {
             .map(|row| integer_cell(row, LIST_TOTAL_SQL_COLUMN))
             .unwrap_or(0);
         let items: Result<Vec<_>, _> = rows.iter().map(map_wallet_transaction).collect();
-        Ok(finalize_list_page(items?, paging.params.page_size, total_items))
+        Ok(finalize_list_page(
+            items?,
+            paging.params.page_size,
+            total_items,
+        ))
     }
 
     pub async fn retrieve_wallet_transaction(
@@ -489,20 +489,26 @@ impl SqliteCommerceAccountStore {
             .begin()
             .await
             .map_err(|error| store_error("failed to begin ledger transaction", error))?;
-        let now = Utc::now().to_rfc3339();
+        let now_dt = Utc::now();
+        let now = now_dt.to_rfc3339();
+        let lock_expires = idempotency_lock_expires_at_rfc3339(now_dt);
         let tenant_id = parse_subject_i64("tenant_id", &command.tenant_id)?;
         let organization_id = org_id_from_option(command.organization_id.as_deref())?;
         let owner_id = parse_subject_i64("owner_user_id", &command.owner_user_id)?;
 
-        if let Some(row) = load_idempotency_row(&mut tx, tenant_id, &command.idempotency_key).await?
+        if let Some(row) =
+            load_idempotency_row(&mut tx, tenant_id, &command.idempotency_key).await?
         {
-            match resolve_idempotency_record_action(
+            match resolve_idempotency_from_row_fields(
+                request_hash.as_str(),
                 &string_cell(&row, "request_hash"),
                 &string_cell(&row, "status"),
-                request_hash.as_str(),
+                &string_cell(&row, "locked_until"),
+                now_dt,
             )? {
                 IdempotencyRecordAction::Replay => {
-                    let outcome = load_replayed_outcome(&mut tx, tenant_id, owner_id, &command).await?;
+                    let outcome =
+                        load_replayed_outcome(&mut tx, tenant_id, owner_id, &command).await?;
                     tx.commit()
                         .await
                         .map_err(|error| store_error("failed to commit ledger replay", error))?;
@@ -527,11 +533,20 @@ impl SqliteCommerceAccountStore {
                 &command,
                 request_hash.as_str(),
                 &now,
+                &lock_expires,
             )
             .await?;
         }
 
-        let mut account = load_or_create_account_for_append(&mut tx, &command, tenant_id, organization_id, owner_id, &now).await?;
+        let mut account = load_or_create_account_for_append(
+            &mut tx,
+            &command,
+            tenant_id,
+            organization_id,
+            owner_id,
+            &now,
+        )
+        .await?;
         let current_balance = parse_amount_minor(&account.available_amount)?;
         let amount = parse_amount_minor(command.amount.as_str())?;
         require_positive_amount(amount, "amount")?;
@@ -677,14 +692,16 @@ impl SqliteCommerceAccountStore {
             })?;
             apply_points_lot_movement(
                 &mut tx,
-                tenant_id,
-                account.id,
-                &command.direction,
-                lot_amount,
-                &command.business_type,
-                ledger_id,
-                command.expires_at.as_deref(),
-                &now,
+                PointsLotMovementInput {
+                    account_id: account.id,
+                    amount: lot_amount,
+                    direction: command.direction.clone(),
+                    expires_at: command.expires_at.as_deref(),
+                    ledger_id,
+                    now: &now,
+                    source_type: &command.business_type,
+                    tenant_id,
+                },
             )
             .await?;
         }
@@ -702,13 +719,15 @@ impl SqliteCommerceAccountStore {
 
         insert_ledger_appended_outbox(
             &mut tx,
-            tenant_id,
-            account.id,
-            &account.uuid,
-            &journal_uuid,
-            &ledger_uuid,
-            &command,
-            &now,
+            LedgerAppendedOutboxInput {
+                account_id: account.id,
+                account_uuid: &account.uuid,
+                command: &command,
+                journal_uuid: &journal_uuid,
+                ledger_uuid: &ledger_uuid,
+                now: &now,
+                tenant_id,
+            },
         )
         .await?;
 
@@ -746,7 +765,10 @@ impl SqliteCommerceAccountStore {
             .await
             .map_err(|error| store_error("failed to commit ledger transaction", error))?;
 
-        Ok(AppendLedgerEntryOutcome::executed(account_item, ledger_entry))
+        Ok(AppendLedgerEntryOutcome::executed(
+            account_item,
+            ledger_entry,
+        ))
     }
 
     pub async fn dispatch_outbox_batch(
@@ -780,27 +802,37 @@ impl StoredAccount {
     }
 }
 
+struct LedgerAppendedOutboxInput<'a> {
+    account_id: i64,
+    account_uuid: &'a str,
+    command: &'a AppendLedgerEntryCommand,
+    journal_uuid: &'a str,
+    ledger_uuid: &'a str,
+    now: &'a str,
+    tenant_id: i64,
+}
+
 async fn insert_ledger_appended_outbox(
     tx: &mut Transaction<'_, Sqlite>,
-    tenant_id: i64,
-    account_id: i64,
-    account_uuid: &str,
-    journal_uuid: &str,
-    ledger_uuid: &str,
-    command: &AppendLedgerEntryCommand,
-    now: &str,
+    input: LedgerAppendedOutboxInput<'_>,
 ) -> Result<(), CommerceServiceError> {
-    let (event_key, payload, payload_hash) =
-        crate::store::outbox::build_ledger_appended_outbox(journal_uuid, ledger_uuid, account_uuid, command)?;
+    let (event_key, payload, payload_hash) = crate::store::outbox::build_ledger_appended_outbox(
+        input.journal_uuid,
+        input.ledger_uuid,
+        input.account_uuid,
+        input.command,
+    )?;
     crate::store::outbox::insert_outbox_event_sqlite(
         &mut **tx,
-        tenant_id,
-        account_id,
-        crate::store::outbox::OUTBOX_EVENT_TYPE_LEDGER_APPENDED,
-        &event_key,
-        &payload,
-        &payload_hash,
-        now,
+        crate::store::outbox::OutboxEventInsert {
+            aggregate_id: input.account_id,
+            event_key: &event_key,
+            event_type: crate::store::outbox::OUTBOX_EVENT_TYPE_LEDGER_APPENDED,
+            now: input.now,
+            payload: &payload,
+            payload_hash: &payload_hash,
+            tenant_id: input.tenant_id,
+        },
     )
     .await
 }
@@ -832,6 +864,7 @@ async fn insert_idempotency_lock(
     command: &AppendLedgerEntryCommand,
     request_hash: &str,
     now: &str,
+    lock_expires: &str,
 ) -> Result<(), CommerceServiceError> {
     sqlx::query(
         r#"
@@ -847,13 +880,13 @@ async fn insert_idempotency_lock(
     .bind(LEDGER_APPEND_SCOPE)
     .bind(&command.idempotency_key)
     .bind(request_hash)
-    .bind(now)
-    .bind(now)
+    .bind(lock_expires)
+    .bind(lock_expires)
     .bind(now)
     .bind(now)
     .execute(&mut **tx)
     .await
-    .map_err(|error| store_error("failed to insert idempotency lock", error))?;
+    .map_err(|error| map_idempotency_insert_error("failed to insert idempotency lock", error))?;
     Ok(())
 }
 
@@ -912,7 +945,9 @@ async fn load_or_create_account_for_append(
         }
     }
 
-    if let Some(account) = load_account_by_owner_asset(tx, command, tenant_id, organization_id, owner_id).await? {
+    if let Some(account) =
+        load_account_by_owner_asset(tx, command, tenant_id, organization_id, owner_id).await?
+    {
         return Ok(account);
     }
 
@@ -953,7 +988,9 @@ async fn load_or_create_account_for_append(
 
     load_account_by_id(tx, tenant_id, organization_id, owner_id, account_id)
         .await?
-        .ok_or_else(|| CommerceServiceError::storage("created commerce account could not be loaded"))
+        .ok_or_else(|| {
+            CommerceServiceError::storage("created commerce account could not be loaded")
+        })
 }
 
 fn parse_optional_account_id(value: &str) -> Result<Option<i64>, CommerceServiceError> {
@@ -1082,7 +1119,9 @@ async fn load_account_item_for_replay(
     map_wallet_account(&row)
 }
 
-pub(crate) fn map_stored_account(row: &sqlx::sqlite::SqliteRow) -> Result<StoredAccount, CommerceServiceError> {
+pub(crate) fn map_stored_account(
+    row: &sqlx::sqlite::SqliteRow,
+) -> Result<StoredAccount, CommerceServiceError> {
     Ok(StoredAccount {
         id: integer_cell(row, "id"),
         uuid: string_cell(row, "uuid"),
@@ -1099,7 +1138,9 @@ pub(crate) fn map_stored_account(row: &sqlx::sqlite::SqliteRow) -> Result<Stored
     })
 }
 
-fn map_wallet_account(row: &sqlx::sqlite::SqliteRow) -> Result<WalletAccountItem, CommerceServiceError> {
+fn map_wallet_account(
+    row: &sqlx::sqlite::SqliteRow,
+) -> Result<WalletAccountItem, CommerceServiceError> {
     map_stored_account(row)?.to_wallet_item()
 }
 
@@ -1150,7 +1191,9 @@ fn parse_direction(value: &str) -> Result<CommerceLedgerDirection, CommerceServi
     match value.trim().to_ascii_lowercase().as_str() {
         "credit" => Ok(CommerceLedgerDirection::Credit),
         "debit" => Ok(CommerceLedgerDirection::Debit),
-        _ => Err(CommerceServiceError::validation("ledger direction is invalid")),
+        _ => Err(CommerceServiceError::validation(
+            "ledger direction is invalid",
+        )),
     }
 }
 
@@ -1163,21 +1206,9 @@ pub(crate) fn integer_cell(row: &sqlx::sqlite::SqliteRow, name: &str) -> i64 {
 }
 
 pub(crate) fn parse_amount_minor(value: &str) -> Result<i128, CommerceServiceError> {
-    if value.contains('.') {
-        let parts: Vec<_> = value.split('.').collect();
-        if parts.len() != 2 {
-            return Err(CommerceServiceError::validation("amount is invalid"));
-        }
-        let whole = parts[0].parse::<i128>().map_err(|_| {
-            CommerceServiceError::validation("amount whole part is invalid")
-        })?;
-        let fraction = parts[1].parse::<i128>().map_err(|_| {
-            CommerceServiceError::validation("amount fraction is invalid")
-        })?;
-        let scale = 10_i128.pow(parts[1].len() as u32);
-        return Ok(whole * scale + fraction);
-    }
-    value
+    let amount = CommerceMoney::new(value).map_err(CommerceServiceError::validation)?;
+    amount
+        .as_str()
         .parse::<i128>()
         .map_err(|_| CommerceServiceError::validation("amount is invalid"))
 }
@@ -1194,41 +1225,31 @@ fn checked_add(left: i128, right: i128) -> Result<i128, CommerceServiceError> {
         .ok_or_else(|| CommerceServiceError::storage("amount addition overflow"))
 }
 
-pub(crate) async fn apply_points_lot_movement_for_hold(
-    tx: &mut Transaction<'_, Sqlite>,
-    tenant_id: i64,
-    account_id: i64,
-    direction: &CommerceLedgerDirection,
-    amount: i64,
-    source_type: &str,
-    source_ledger_id: i64,
-    now: &str,
-) -> Result<(), CommerceServiceError> {
-    apply_points_lot_movement(
-        tx,
-        tenant_id,
-        account_id,
-        direction,
-        amount,
-        source_type,
-        source_ledger_id,
-        None,
-        now,
-    )
-    .await
+pub(crate) struct PointsLotMovementInput<'a> {
+    pub account_id: i64,
+    pub amount: i64,
+    pub direction: CommerceLedgerDirection,
+    pub expires_at: Option<&'a str>,
+    pub ledger_id: i64,
+    pub now: &'a str,
+    pub source_type: &'a str,
+    pub tenant_id: i64,
 }
 
 pub(crate) async fn apply_points_lot_movement(
     tx: &mut Transaction<'_, Sqlite>,
-    tenant_id: i64,
-    account_id: i64,
-    direction: &CommerceLedgerDirection,
-    amount: i64,
-    source_type: &str,
-    ledger_id: i64,
-    expires_at: Option<&str>,
-    now: &str,
+    input: PointsLotMovementInput<'_>,
 ) -> Result<(), CommerceServiceError> {
+    let PointsLotMovementInput {
+        account_id,
+        amount,
+        direction,
+        expires_at,
+        ledger_id,
+        now,
+        source_type,
+        tenant_id,
+    } = input;
     match direction {
         CommerceLedgerDirection::Credit => {
             let lot_id = next_entity_id()?;
@@ -1258,79 +1279,127 @@ pub(crate) async fn apply_points_lot_movement(
             .map_err(|error| store_error("failed to insert points lot", error))?;
         }
         CommerceLedgerDirection::Debit => {
-            let rows = sqlx::query(
-                r#"
-                SELECT id, remaining_amount
-                FROM commerce_points_lot
-                WHERE tenant_id = ?
-                  AND account_id = ?
-                  AND status = ?
-                  AND remaining_amount > 0
-                  AND (expires_at IS NULL OR expires_at > ?)
-                ORDER BY
-                    CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END,
-                    expires_at ASC,
-                    created_at ASC
-                "#,
-            )
-            .bind(tenant_id)
-            .bind(account_id)
-            .bind(ACCOUNT_STATUS_ACTIVE)
-            .bind(now)
-            .fetch_all(&mut **tx)
-            .await
-            .map_err(|error| store_error("failed to load points lots for debit", error))?;
-
             let mut remaining = amount;
-            for row in rows {
+            let mut last_lot_id: Option<i64> = None;
+
+            loop {
                 if remaining <= 0 {
                     break;
                 }
-                let lot_id = integer_cell(&row, "id");
-                let lot_remaining = integer_cell(&row, "remaining_amount");
-                let consume = remaining.min(lot_remaining);
-                let next_remaining = lot_remaining - consume;
-                let next_status = if next_remaining == 0 {
-                    POINTS_LOT_STATUS_DEPLETED
+
+                let rows = if let Some(last_id) = last_lot_id {
+                    sqlx::query(
+                        r#"
+                        SELECT id, remaining_amount
+                        FROM commerce_points_lot
+                        WHERE tenant_id = ?
+                          AND account_id = ?
+                          AND status = ?
+                          AND remaining_amount > 0
+                          AND (expires_at IS NULL OR expires_at > ?)
+                          AND id > ?
+                        ORDER BY
+                            CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END,
+                            expires_at ASC,
+                            created_at ASC,
+                            id ASC
+                        LIMIT ?
+                        "#,
+                    )
+                    .bind(tenant_id)
+                    .bind(account_id)
+                    .bind(ACCOUNT_STATUS_ACTIVE)
+                    .bind(now)
+                    .bind(last_id)
+                    .bind(POINTS_LOT_DEBIT_BATCH_SIZE)
+                    .fetch_all(&mut **tx)
+                    .await
+                    .map_err(|error| store_error("failed to load points lots for debit", error))?
                 } else {
-                    ACCOUNT_STATUS_ACTIVE
+                    sqlx::query(
+                        r#"
+                        SELECT id, remaining_amount
+                        FROM commerce_points_lot
+                        WHERE tenant_id = ?
+                          AND account_id = ?
+                          AND status = ?
+                          AND remaining_amount > 0
+                          AND (expires_at IS NULL OR expires_at > ?)
+                        ORDER BY
+                            CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END,
+                            expires_at ASC,
+                            created_at ASC,
+                            id ASC
+                        LIMIT ?
+                        "#,
+                    )
+                    .bind(tenant_id)
+                    .bind(account_id)
+                    .bind(ACCOUNT_STATUS_ACTIVE)
+                    .bind(now)
+                    .bind(POINTS_LOT_DEBIT_BATCH_SIZE)
+                    .fetch_all(&mut **tx)
+                    .await
+                    .map_err(|error| store_error("failed to load points lots for debit", error))?
                 };
-                sqlx::query(
-                    r#"
-                    UPDATE commerce_points_lot
-                    SET remaining_amount = ?, status = ?, updated_at = ?
-                    WHERE id = ? AND tenant_id = ?
-                    "#,
-                )
-                .bind(next_remaining)
-                .bind(next_status)
-                .bind(now)
-                .bind(lot_id)
-                .bind(tenant_id)
-                .execute(&mut **tx)
-                .await
-                .map_err(|error| store_error("failed to consume points lot", error))?;
 
-                sqlx::query(
-                    r#"
-                    INSERT INTO commerce_points_lot_allocation
-                        (id, uuid, tenant_id, account_id, ledger_id, lot_id, amount, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    "#,
-                )
-                .bind(next_entity_id()?)
-                .bind(next_entity_uuid())
-                .bind(tenant_id)
-                .bind(account_id)
-                .bind(ledger_id)
-                .bind(lot_id)
-                .bind(consume)
-                .bind(now)
-                .execute(&mut **tx)
-                .await
-                .map_err(|error| store_error("failed to insert points lot allocation", error))?;
+                if rows.is_empty() {
+                    break;
+                }
 
-                remaining -= consume;
+                for row in rows {
+                    if remaining <= 0 {
+                        break;
+                    }
+                    let lot_id = integer_cell(&row, "id");
+                    let lot_remaining = integer_cell(&row, "remaining_amount");
+                    let consume = remaining.min(lot_remaining);
+                    let next_remaining = lot_remaining - consume;
+                    let next_status = if next_remaining == 0 {
+                        POINTS_LOT_STATUS_DEPLETED
+                    } else {
+                        ACCOUNT_STATUS_ACTIVE
+                    };
+                    sqlx::query(
+                        r#"
+                        UPDATE commerce_points_lot
+                        SET remaining_amount = ?, status = ?, updated_at = ?
+                        WHERE id = ? AND tenant_id = ?
+                        "#,
+                    )
+                    .bind(next_remaining)
+                    .bind(next_status)
+                    .bind(now)
+                    .bind(lot_id)
+                    .bind(tenant_id)
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(|error| store_error("failed to consume points lot", error))?;
+
+                    sqlx::query(
+                        r#"
+                        INSERT INTO commerce_points_lot_allocation
+                            (id, uuid, tenant_id, account_id, ledger_id, lot_id, amount, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        "#,
+                    )
+                    .bind(next_entity_id()?)
+                    .bind(next_entity_uuid())
+                    .bind(tenant_id)
+                    .bind(account_id)
+                    .bind(ledger_id)
+                    .bind(lot_id)
+                    .bind(consume)
+                    .bind(now)
+                    .execute(&mut **tx)
+                    .await
+                    .map_err(|error| {
+                        store_error("failed to insert points lot allocation", error)
+                    })?;
+
+                    remaining -= consume;
+                    last_lot_id = Some(lot_id);
+                }
             }
             ensure_points_lot_debit_complete(remaining)?;
             let lot_sum: i64 = sqlx::query_scalar(
@@ -1352,7 +1421,9 @@ pub(crate) async fn apply_points_lot_movement(
             .bind(account_id)
             .fetch_one(&mut **tx)
             .await
-            .map_err(|error| store_error("failed to load account available for lot invariant", error))?;
+            .map_err(|error| {
+                store_error("failed to load account available for lot invariant", error)
+            })?;
             balance::validate_points_lot_balance_invariant(&available, lot_sum)?;
         }
     }
@@ -1396,6 +1467,13 @@ mod tests {
         let source = include_str!("sqlite_account.rs");
         assert!(source.contains("AND version = ?"));
         assert!(source.contains("rows_affected() != 1"));
+    }
+
+    #[test]
+    fn sqlite_amount_parser_requires_integer_smallest_units() {
+        assert_eq!(parse_amount_minor("1990").expect("integer amount"), 1990);
+        assert!(parse_amount_minor("19.90").is_err());
+        assert!(parse_amount_minor("-1").is_err());
     }
 
     #[tokio::test]
@@ -1503,8 +1581,7 @@ mod tests {
 
         let lots = store
             .list_points_lots(
-                PointsLotListQuery::new("100001", Some("0"), "1", None, None)
-                    .expect("query"),
+                PointsLotListQuery::new("100001", Some("0"), "1", None, None).expect("query"),
             )
             .await
             .expect("lots");
@@ -1664,13 +1741,8 @@ mod tests {
 
         let allocations = store
             .list_points_lot_allocations(
-                PointsLotAllocationListQuery::new(
-                    "100001",
-                    Some("0"),
-                    "1",
-                    &expire_entry.id,
-                )
-                .expect("query"),
+                PointsLotAllocationListQuery::new("100001", Some("0"), "1", &expire_entry.id)
+                    .expect("query"),
             )
             .await
             .expect("allocations");

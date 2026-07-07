@@ -2,7 +2,7 @@
   "openapi": "3.1.2",
   "info": {
     "title": "SDKWork Account App API",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "description": "Read-only wallet, billing, and account summary surfaces for authenticated app users.",
     "x-sdkwork-owner": "sdkwork-account",
     "x-sdkwork-api-authority": "sdkwork-account.app"
@@ -24,6 +24,10 @@
     {
       "name": "accounts",
       "description": "Account summary read models."
+    },
+    {
+      "name": "tokenBank",
+      "description": "Token Bank read models."
     }
   ],
   "paths": {
@@ -71,14 +75,14 @@
         "operationId": "wallet.accounts.list",
         "parameters": [
           {
-            "name": "assetType",
+            "name": "asset_type",
             "in": "query",
             "schema": {
               "type": "string",
               "enum": [
                 "cash",
                 "points",
-                "token"
+                "token_bank"
               ]
             }
           }
@@ -185,42 +189,6 @@
         ]
       }
     },
-    "/app/v3/api/wallet/accounts/tokens": {
-      "get": {
-        "tags": [
-          "wallet"
-        ],
-        "operationId": "wallet.accounts.tokens.retrieve",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletAccountItemResponse"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ]
-      }
-    },
     "/app/v3/api/wallet/ledger_entries": {
       "get": {
         "tags": [
@@ -229,21 +197,21 @@
         "operationId": "wallet.ledgerEntries.list",
         "parameters": [
           {
-            "name": "accountId",
+            "name": "account_id",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "assetType",
+            "name": "asset_type",
             "in": "query",
             "schema": {
               "type": "string",
               "enum": [
                 "cash",
                 "points",
-                "token"
+                "token_bank"
               ]
             }
           },
@@ -256,11 +224,12 @@
             }
           },
           {
-            "name": "pageSize",
+            "name": "page_size",
             "in": "query",
             "schema": {
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "maximum": 200
             }
           },
           {
@@ -309,7 +278,7 @@
         "operationId": "wallet.ledgerEntries.cash.list",
         "parameters": [
           {
-            "name": "accountId",
+            "name": "account_id",
             "in": "query",
             "schema": {
               "type": "string"
@@ -324,11 +293,12 @@
             }
           },
           {
-            "name": "pageSize",
+            "name": "page_size",
             "in": "query",
             "schema": {
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "maximum": 200
             }
           },
           {
@@ -377,7 +347,7 @@
         "operationId": "wallet.ledgerEntries.points.list",
         "parameters": [
           {
-            "name": "accountId",
+            "name": "account_id",
             "in": "query",
             "schema": {
               "type": "string"
@@ -392,11 +362,12 @@
             }
           },
           {
-            "name": "pageSize",
+            "name": "page_size",
             "in": "query",
             "schema": {
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "maximum": 200
             }
           },
           {
@@ -575,7 +546,7 @@
         "operationId": "wallet.points.lots.list",
         "parameters": [
           {
-            "name": "accountId",
+            "name": "account_id",
             "in": "query",
             "schema": {
               "type": "string"
@@ -597,11 +568,12 @@
             }
           },
           {
-            "name": "pageSize",
+            "name": "page_size",
             "in": "query",
             "schema": {
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "maximum": 200
             }
           },
           {
@@ -619,42 +591,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PointsLotListResponse"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ]
-      }
-    },
-    "/app/v3/api/wallet/tokens": {
-      "get": {
-        "tags": [
-          "wallet"
-        ],
-        "operationId": "wallet.tokens.retrieve",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenBalanceResponse"
                 }
               }
             }
@@ -722,21 +658,21 @@
         "operationId": "wallet.holds.list",
         "parameters": [
           {
-            "name": "accountId",
+            "name": "account_id",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "assetType",
+            "name": "asset_type",
             "in": "query",
             "schema": {
               "type": "string",
               "enum": [
                 "cash",
                 "points",
-                "token"
+                "token_bank"
               ]
             }
           },
@@ -756,11 +692,12 @@
             }
           },
           {
-            "name": "pageSize",
+            "name": "page_size",
             "in": "query",
             "schema": {
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "maximum": 200
             }
           }
         ],
@@ -874,6 +811,220 @@
             "AccessToken": []
           }
         ]
+      }
+    },
+    "/app/v3/api/token_bank/account": {
+      "get": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.account.retrieve",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAccountItemResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "description": "Retrieves the current user Token Bank account."
+      }
+    },
+    "/app/v3/api/token_bank/overview": {
+      "get": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.overview.retrieve",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenBankBalanceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "description": "Retrieves current user Token Bank available and frozen balances."
+      }
+    },
+    "/app/v3/api/token_bank/ledger_entries": {
+      "get": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.ledgerEntries.list",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "maximum": 200
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletLedgerListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "description": "Lists current user Token Bank ledger entries."
+      }
+    },
+    "/app/v3/api/token_bank/holds": {
+      "get": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.holds.list",
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountHoldListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "description": "Lists current user Token Bank holds."
       }
     }
   },
@@ -1023,43 +1174,6 @@
           }
         ]
       },
-      "TokenBalanceResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SdkWorkApiResponse"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "data": {
-                "type": "object",
-                "required": [
-                  "item"
-                ],
-                "properties": {
-                  "item": {
-                    "type": "object",
-                    "required": [
-                      "availableTokens",
-                      "frozenTokens"
-                    ],
-                    "properties": {
-                      "availableTokens": {
-                        "type": "integer",
-                        "format": "int64"
-                      },
-                      "frozenTokens": {
-                        "type": "integer",
-                        "format": "int64"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        ]
-      },
       "BillingHistoryListResponse": {
         "allOf": [
           {
@@ -1122,9 +1236,9 @@
           "isVerified",
           "tier",
           "organization",
-          "availableCredits",
+          "availablePoints",
           "estDaysRemaining",
-          "monthlyConsumption"
+          "monthlyPointsConsumed"
         ],
         "properties": {
           "id": {
@@ -1145,20 +1259,20 @@
           "organization": {
             "type": "string"
           },
-          "availableCredits": {
-            "type": "number"
+          "availablePoints": {
+            "type": "string"
           },
           "estDaysRemaining": {
             "type": "integer",
             "format": "int64"
           },
-          "monthlyConsumption": {
-            "type": "number"
+          "monthlyPointsConsumed": {
+            "type": "string"
           },
           "consumptionByService": {
             "type": "array",
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/AccountConsumptionItem"
             }
           },
           "invoiceSettings": {
@@ -1172,6 +1286,29 @@
             "items": {
               "type": "object"
             }
+          }
+        }
+      },
+      "AccountConsumptionItem": {
+        "type": "object",
+        "required": [
+          "name",
+          "pointsConsumed",
+          "color",
+          "percentage"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "pointsConsumed": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "percentage": {
+            "type": "number"
           }
         }
       },
@@ -2011,6 +2148,41 @@
             "type": "boolean"
           }
         }
+      },
+      "TokenBankBalanceResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SdkWorkApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": [
+                  "item"
+                ],
+                "properties": {
+                  "item": {
+                    "type": "object",
+                    "required": [
+                      "availableAmount",
+                      "frozenAmount"
+                    ],
+                    "properties": {
+                      "availableAmount": {
+                        "type": "string"
+                      },
+                      "frozenAmount": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "securitySchemes": {

@@ -6,11 +6,14 @@ use axum::extract::{Extension, Path, State};
 use axum::response::Response;
 use axum::routing::post;
 use axum::Router;
-use sdkwork_account_repository_sqlx::{hold_request_hash, PostgresCommerceAccountStore, SqliteCommerceAccountStore};
+use sdkwork_account_repository_sqlx::{
+    hold_request_hash, PostgresCommerceAccountStore, SqliteCommerceAccountStore,
+};
 use sdkwork_account_service::{
-    AccountHoldItem, CreateAccountHoldCommand, CreateAccountTransferCommand, ExpireExpiredHoldsCommand,
-    ExpireExpiredHoldsOutcome, HoldMutationOutcome, ReleaseAccountHoldCommand,
-    SettleAccountHoldCommand, TransferMutationOutcome, WalletAccountItem, WalletTransactionItem,
+    AccountHoldItem, CreateAccountHoldCommand, CreateAccountTransferCommand,
+    ExpireExpiredHoldsCommand, ExpireExpiredHoldsOutcome, HoldMutationOutcome,
+    ReleaseAccountHoldCommand, SettleAccountHoldCommand, TransferMutationOutcome,
+    WalletAccountItem, WalletTransactionItem,
 };
 use sdkwork_contract_service::{
     CommerceAccountAssetType, CommerceMoney, CommerceRequestHash, CommerceServiceError,
@@ -20,8 +23,10 @@ use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, SqlitePool};
 
-use crate::api_response::{map_service_error, success_item, unauthorized, validation};
-use crate::subject::backend_runtime_subject_from_extension;
+use crate::api_response::{
+    map_service_error, success_created_item, success_item, unauthorized, validation,
+};
+use crate::subject::{backend_runtime_subject_from_extension, ensure_backend_owner_user_allowed};
 
 pub type CommerceHoldWriteFuture<'a, T> =
     Pin<Box<dyn Future<Output = Result<T, CommerceServiceError>> + Send + 'a>>;
@@ -72,6 +77,7 @@ struct CreateAccountHoldRequest {
     owner_user_id: String,
     #[serde(default)]
     account_id: Option<String>,
+    #[serde(default)]
     asset_type: String,
     amount: String,
     business_type: String,
@@ -111,6 +117,7 @@ struct CreateAccountTransferRequest {
     from_account_id: String,
     to_account_id: String,
     owner_user_id: String,
+    #[serde(default)]
     asset_type: String,
     amount: String,
     business_type: String,
@@ -349,7 +356,15 @@ pub fn build_backend_hold_router(store: Arc<dyn CommerceAccountHoldWriteStore>) 
     Router::new()
         .route("/backend/v3/api/wallet/holds", post(create_account_hold))
         .route(
+            "/backend/v3/api/token_bank/holds",
+            post(create_token_bank_hold),
+        )
+        .route(
             "/backend/v3/api/wallet/holds/{holdId}/settle",
+            post(settle_account_hold),
+        )
+        .route(
+            "/backend/v3/api/token_bank/holds/{holdId}/settle",
             post(settle_account_hold),
         )
         .route(
@@ -357,11 +372,32 @@ pub fn build_backend_hold_router(store: Arc<dyn CommerceAccountHoldWriteStore>) 
             post(release_account_hold),
         )
         .route(
+            "/backend/v3/api/token_bank/holds/{holdId}/release",
+            post(release_account_hold),
+        )
+        .route(
             "/backend/v3/api/wallet/holds/expire",
             post(expire_expired_holds),
         )
-        .route("/backend/v3/api/wallet/transfers", post(create_account_transfer))
+        .route(
+            "/backend/v3/api/wallet/transfers",
+            post(create_account_transfer),
+        )
+        .route(
+            "/backend/v3/api/token_bank/transfers",
+            post(create_token_bank_transfer),
+        )
         .with_state(BackendHoldState { store })
+}
+
+async fn create_token_bank_hold(
+    State(state): State<BackendHoldState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    mut body: axum::Json<CreateAccountHoldRequest>,
+) -> Response {
+    body.asset_type = "token_bank".to_owned();
+    create_account_hold(State(state), request_context, runtime_context, body).await
 }
 
 async fn create_account_hold(
@@ -371,21 +407,33 @@ async fn create_account_hold(
     axum::Json(body): axum::Json<CreateAccountHoldRequest>,
 ) -> Response {
     let ctx = request_context.0;
+    let iam_context = runtime_context
+        .as_ref()
+        .map(|Extension(context)| context.clone());
     let subject = match backend_runtime_subject_from_extension(runtime_context) {
         Ok(subject) => subject,
         Err(message) => return unauthorized(Some(&ctx), message),
     };
     if body.tenant_id.trim() != subject.tenant_id {
-        return validation(Some(&ctx), "tenant_id must match authenticated runtime tenant");
+        return validation(
+            Some(&ctx),
+            "tenant_id must match authenticated runtime tenant",
+        );
+    }
+    if let Some(iam) = iam_context.as_ref() {
+        if let Err(message) = ensure_backend_owner_user_allowed(iam, body.owner_user_id.trim()) {
+            return validation(Some(&ctx), message);
+        }
     }
     let asset_type = match parse_asset_type(body.asset_type.trim()) {
         Ok(asset_type) => asset_type,
         Err(message) => return validation(Some(&ctx), message),
     };
-    let amount = match CommerceMoney::new(body.amount.trim()).map_err(CommerceServiceError::validation) {
-        Ok(amount) => amount,
-        Err(error) => return map_service_error(Some(&ctx), error),
-    };
+    let amount =
+        match CommerceMoney::new(body.amount.trim()).map_err(CommerceServiceError::validation) {
+            Ok(amount) => amount,
+            Err(error) => return map_service_error(Some(&ctx), error),
+        };
     let command = match CreateAccountHoldCommand::new(
         body.tenant_id.trim(),
         body.organization_id.as_deref(),
@@ -409,7 +457,7 @@ async fn create_account_hold(
         Err(error) => return map_service_error(Some(&ctx), error),
     };
     match state.store.create_account_hold(command, request_hash).await {
-        Ok(outcome) => success_item(Some(&ctx), map_hold_outcome(outcome)),
+        Ok(outcome) => success_created_item(Some(&ctx), map_hold_outcome(outcome)),
         Err(error) => map_service_error(Some(&ctx), error),
     }
 }
@@ -427,7 +475,10 @@ async fn settle_account_hold(
         Err(message) => return unauthorized(Some(&ctx), message),
     };
     if body.tenant_id.trim() != subject.tenant_id {
-        return validation(Some(&ctx), "tenant_id must match authenticated runtime tenant");
+        return validation(
+            Some(&ctx),
+            "tenant_id must match authenticated runtime tenant",
+        );
     }
     let command = match SettleAccountHoldCommand::new(
         body.tenant_id.trim(),
@@ -463,7 +514,10 @@ async fn release_account_hold(
         Err(message) => return unauthorized(Some(&ctx), message),
     };
     if body.tenant_id.trim() != subject.tenant_id {
-        return validation(Some(&ctx), "tenant_id must match authenticated runtime tenant");
+        return validation(
+            Some(&ctx),
+            "tenant_id must match authenticated runtime tenant",
+        );
     };
     let command = match ReleaseAccountHoldCommand::new(
         body.tenant_id.trim(),
@@ -478,7 +532,11 @@ async fn release_account_hold(
         Ok(hash) => hash,
         Err(error) => return map_service_error(Some(&ctx), error),
     };
-    match state.store.release_account_hold(command, request_hash).await {
+    match state
+        .store
+        .release_account_hold(command, request_hash)
+        .await
+    {
         Ok(outcome) => success_item(Some(&ctx), map_hold_outcome(outcome)),
         Err(error) => map_service_error(Some(&ctx), error),
     }
@@ -496,7 +554,10 @@ async fn expire_expired_holds(
         Err(message) => return unauthorized(Some(&ctx), message),
     };
     if body.tenant_id.trim() != subject.tenant_id {
-        return validation(Some(&ctx), "tenant_id must match authenticated runtime tenant");
+        return validation(
+            Some(&ctx),
+            "tenant_id must match authenticated runtime tenant",
+        );
     }
     let command = match ExpireExpiredHoldsCommand::new(
         body.tenant_id.trim(),
@@ -513,7 +574,11 @@ async fn expire_expired_holds(
         Ok(hash) => hash,
         Err(error) => return map_service_error(Some(&ctx), error),
     };
-    match state.store.expire_expired_holds(command, request_hash).await {
+    match state
+        .store
+        .expire_expired_holds(command, request_hash)
+        .await
+    {
         Ok(outcome) => success_item(
             Some(&ctx),
             ExpireExpiredHoldsResponse {
@@ -534,21 +599,33 @@ async fn create_account_transfer(
     axum::Json(body): axum::Json<CreateAccountTransferRequest>,
 ) -> Response {
     let ctx = request_context.0;
+    let iam_context = runtime_context
+        .as_ref()
+        .map(|Extension(context)| context.clone());
     let subject = match backend_runtime_subject_from_extension(runtime_context) {
         Ok(subject) => subject,
         Err(message) => return unauthorized(Some(&ctx), message),
     };
     if body.tenant_id.trim() != subject.tenant_id {
-        return validation(Some(&ctx), "tenant_id must match authenticated runtime tenant");
+        return validation(
+            Some(&ctx),
+            "tenant_id must match authenticated runtime tenant",
+        );
+    }
+    if let Some(iam) = iam_context.as_ref() {
+        if let Err(message) = ensure_backend_owner_user_allowed(iam, body.owner_user_id.trim()) {
+            return validation(Some(&ctx), message);
+        }
     }
     let asset_type = match parse_asset_type(body.asset_type.trim()) {
         Ok(asset_type) => asset_type,
         Err(message) => return validation(Some(&ctx), message),
     };
-    let amount = match CommerceMoney::new(body.amount.trim()).map_err(CommerceServiceError::validation) {
-        Ok(amount) => amount,
-        Err(error) => return map_service_error(Some(&ctx), error),
-    };
+    let amount =
+        match CommerceMoney::new(body.amount.trim()).map_err(CommerceServiceError::validation) {
+            Ok(amount) => amount,
+            Err(error) => return map_service_error(Some(&ctx), error),
+        };
     let command = match CreateAccountTransferCommand::new(
         body.tenant_id.trim(),
         body.organization_id.as_deref(),
@@ -569,17 +646,31 @@ async fn create_account_transfer(
         Ok(hash) => hash,
         Err(error) => return map_service_error(Some(&ctx), error),
     };
-    match state.store.create_account_transfer(command, request_hash).await {
-        Ok(outcome) => success_item(Some(&ctx), map_transfer_outcome(outcome)),
+    match state
+        .store
+        .create_account_transfer(command, request_hash)
+        .await
+    {
+        Ok(outcome) => success_created_item(Some(&ctx), map_transfer_outcome(outcome)),
         Err(error) => map_service_error(Some(&ctx), error),
     }
+}
+
+async fn create_token_bank_transfer(
+    State(state): State<BackendHoldState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    mut body: axum::Json<CreateAccountTransferRequest>,
+) -> Response {
+    body.asset_type = "token_bank".to_owned();
+    create_account_transfer(State(state), request_context, runtime_context, body).await
 }
 
 fn parse_asset_type(value: &str) -> Result<CommerceAccountAssetType, &'static str> {
     match value.to_ascii_lowercase().as_str() {
         "cash" => Ok(CommerceAccountAssetType::Cash),
-        "point" | "points" => Ok(CommerceAccountAssetType::Points),
-        "token" | "tokens" => Ok(CommerceAccountAssetType::Token),
+        "points" => Ok(CommerceAccountAssetType::Points),
+        "token_bank" => Ok(CommerceAccountAssetType::TokenBank),
         _ => Err("asset_type is invalid"),
     }
 }
@@ -634,7 +725,9 @@ fn map_hold_item(value: AccountHoldItem) -> AccountHoldItemResponse {
     }
 }
 
-fn map_transfer_item(value: sdkwork_account_service::AccountTransferItem) -> AccountTransferItemResponse {
+fn map_transfer_item(
+    value: sdkwork_account_service::AccountTransferItem,
+) -> AccountTransferItemResponse {
     AccountTransferItemResponse {
         id: value.id,
         uuid: value.uuid,

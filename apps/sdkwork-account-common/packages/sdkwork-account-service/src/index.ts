@@ -30,19 +30,27 @@ export type SdkworkAccountWalletService = ClientFromMethodTree<
 export type SdkworkAccountAccountsService = ClientFromMethodTree<
   (typeof APP_ACCOUNT_METHOD_TREE)["accounts"]
 >;
+export type SdkworkAccountTokenBankService = ClientFromMethodTree<
+  (typeof APP_ACCOUNT_METHOD_TREE)["tokenBank"]
+>;
 
 export type SdkworkAccountAppService = {
   billing: SdkworkAccountBillingService;
   wallet: SdkworkAccountWalletService;
   accounts: SdkworkAccountAccountsService;
+  tokenBank: SdkworkAccountTokenBankService;
 };
 
 export type SdkworkAccountBackendWalletService = ClientFromMethodTree<
   (typeof BACKEND_ACCOUNT_METHOD_TREE)["wallet"]
 >;
+export type SdkworkAccountBackendTokenBankService = ClientFromMethodTree<
+  (typeof BACKEND_ACCOUNT_METHOD_TREE)["tokenBank"]
+>;
 
 export type SdkworkAccountBackendService = {
   wallet: SdkworkAccountBackendWalletService;
+  tokenBank: SdkworkAccountBackendTokenBankService;
 };
 
 export type SdkworkAccountAppServiceProvider = () => SdkworkAccountAppService;
@@ -66,10 +74,9 @@ export interface CreateSdkworkAccountAppServiceInput {
 }
 
 export interface SdkworkAccountResponseEnvelope<T> {
-  code?: number | string;
-  data?: T;
-  message?: string;
-  msg?: string;
+  code: number;
+  data: T;
+  traceId?: string;
 }
 
 export function configureSdkworkAccountAppServiceProvider(
@@ -147,6 +154,11 @@ export function createSdkworkAccountAppService(
       input.appClient.commerce.accounts,
       ["commerce", "accounts"],
     ),
+    tokenBank: buildServiceTree<SdkworkAccountTokenBankService>(
+      APP_ACCOUNT_METHOD_TREE.tokenBank,
+      input.appClient.commerce.tokenBank,
+      ["commerce", "tokenBank"],
+    ),
   };
 }
 
@@ -163,6 +175,11 @@ export function createSdkworkAccountBackendService(
       input.backendClient.commerce.wallet,
       ["commerce", "wallet"],
     ),
+    tokenBank: buildServiceTree<SdkworkAccountBackendTokenBankService>(
+      BACKEND_ACCOUNT_METHOD_TREE.tokenBank,
+      input.backendClient.commerce.tokenBank,
+      ["commerce", "tokenBank"],
+    ),
   };
 }
 
@@ -170,14 +187,23 @@ export function unwrapSdkworkAccountResponse<T>(value: unknown, fallbackMessage 
   if (!value || typeof value !== "object") {
     return value as T;
   }
-  if (!("data" in value) && !("code" in value)) {
+  const envelopeCandidate = value as Record<string, unknown>;
+  const hasCode = Object.prototype.hasOwnProperty.call(envelopeCandidate, "code");
+  const hasData = Object.prototype.hasOwnProperty.call(envelopeCandidate, "data");
+  if (!hasCode && !hasData) {
     return value as T;
   }
-  const envelope = value as SdkworkAccountResponseEnvelope<T>;
-  if (!isSuccessCode(envelope.code)) {
-    throw new Error(String(envelope.message || envelope.msg || fallbackMessage).trim());
+  if (!hasCode || !hasData) {
+    throw new Error("SDKWork account response envelope must include numeric code 0 and data.");
   }
-  return (envelope.data ?? null) as T;
+  if (typeof envelopeCandidate.code !== "number") {
+    throw new Error("SDKWork account response envelope success code must be numeric code 0.");
+  }
+  if (envelopeCandidate.code !== 0) {
+    throw new Error(fallbackMessage.trim() || "Request failed.");
+  }
+  const envelope = value as SdkworkAccountResponseEnvelope<T>;
+  return envelope.data;
 }
 
 export function unwrapSdkworkAccountResource<T>(
@@ -214,14 +240,14 @@ export function unwrapSdkworkAccountListPage<T>(
     pageInfo?: SdkworkAccountPageInfo | null;
   } | T[]>(value, fallbackMessage);
   if (Array.isArray(data)) {
-    return {
-      items: data,
-      pageInfo: null,
-    };
+    throw new Error("SDKWork account list payload must include items and pageInfo.");
+  }
+  if (!data || typeof data !== "object" || !Array.isArray(data.items) || !data.pageInfo) {
+    throw new Error("SDKWork account list payload must include items and pageInfo.");
   }
   return {
-    items: data.items ?? [],
-    pageInfo: data.pageInfo ?? null,
+    items: data.items,
+    pageInfo: data.pageInfo,
   };
 }
 
@@ -345,17 +371,6 @@ async function callAccount(
 function normalizeSessionToken(value: unknown): string | undefined {
   const normalized = typeof value === "string" ? value.trim() : "";
   return normalized || undefined;
-}
-
-function isSuccessCode(code: number | string | undefined): boolean {
-  if (code === undefined || code === null || code === "") {
-    return true;
-  }
-  if (typeof code === "number") {
-    return code === 0;
-  }
-  const normalized = String(code).trim();
-  return normalized === "0";
 }
 
 export {

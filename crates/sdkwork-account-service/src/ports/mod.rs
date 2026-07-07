@@ -1,8 +1,8 @@
 use crate::{
     AccountLedgerQuery, AccountSummary, AccountSummaryQuery, AppendLedgerEntryCommand,
     AppendLedgerEntryOutcome, BillingHistoryItem, BillingHistoryListQuery, LedgerEntryDraft,
-    StoreListPage, WalletAccountItem, WalletAccountListQuery, WalletOperation, WalletOperationQuery,
-    WalletOverview, WalletTransactionDetailQuery, WalletTransactionItem,
+    StoreListPage, WalletAccountItem, WalletAccountListQuery, WalletOperation,
+    WalletOperationQuery, WalletOverview, WalletTransactionDetailQuery, WalletTransactionItem,
     WalletTransactionListQuery,
 };
 use sdkwork_contract_service::CommerceRequestHash;

@@ -1,10 +1,11 @@
 use sdkwork_contract_service::{
     assert_status_transition, validate_commerce_context, CapabilityFlag, CommerceAccountAssetType,
-    CommerceExchangeStatus, CommerceIdempotencyRecord, CommerceLedgerDirection, CommerceMoney,
-    CommercePaymentStatus, CommercePoints, CommerceRechargeStatus, CommerceRequestHash,
-    CommerceRuntimeContext, CommerceRuntimeContextInput, CommerceServiceContract,
-    CommerceServiceError, CommerceStatusMachine, CommerceSurfaceProfile, DeploymentMode,
-    Environment, IdempotencyDecision, IdempotencyRepositoryCommand, OperationExecutionPolicy,
+    CommerceExchangeStatus, CommerceIdempotencyRecord, CommerceLedgerBusinessType,
+    CommerceLedgerDirection, CommerceMoney, CommercePaymentStatus, CommercePoints,
+    CommerceRechargeStatus, CommerceRequestHash, CommerceRuntimeContext,
+    CommerceRuntimeContextInput, CommerceServiceContract, CommerceServiceError,
+    CommerceStatusMachine, CommerceSurfaceProfile, DeploymentMode, Environment,
+    IdempotencyDecision, IdempotencyRepositoryCommand, OperationExecutionPolicy,
     PromotionCouponStatus, TransactionBoundaryKind,
 };
 
@@ -50,7 +51,7 @@ fn rejects_contexts_without_required_tenant_or_user_identity() {
 fn exposes_standard_asset_and_ledger_direction_names() {
     assert_eq!(CommerceAccountAssetType::Cash.as_str(), "cash");
     assert_eq!(CommerceAccountAssetType::Points.as_str(), "points");
-    assert_eq!(CommerceAccountAssetType::Token.as_str(), "token");
+    assert_eq!(CommerceAccountAssetType::TokenBank.as_str(), "token_bank");
     assert_eq!(CommerceLedgerDirection::Credit.as_str(), "credit");
     assert_eq!(CommerceLedgerDirection::Debit.as_str(), "debit");
 }
@@ -80,13 +81,37 @@ fn exposes_standard_promotion_recharge_payment_and_exchange_status_names() {
 
 #[test]
 fn validates_money_and_points_amount_precision() {
-    assert_eq!(CommerceMoney::new("19.90").unwrap().as_str(), "19.90");
-    assert!(CommerceMoney::new("19.999").is_err());
+    assert_eq!(CommerceMoney::new("1990").unwrap().as_str(), "1990");
+    assert!(CommerceMoney::new("19.90").is_err());
     assert!(CommerceMoney::new("-1").is_err());
 
     assert_eq!(CommercePoints::new("1000").unwrap().as_str(), "1000");
     assert!(CommercePoints::new("1.5").is_err());
     assert!(CommercePoints::new("-1").is_err());
+}
+
+#[test]
+fn exposes_token_bank_ledger_business_types_without_naked_token_assets() {
+    assert_eq!(
+        CommerceLedgerBusinessType::TOKEN_BANK_PURCHASE_CREDIT,
+        "token_bank_purchase_credit"
+    );
+    assert_eq!(
+        CommerceLedgerBusinessType::TOKEN_BANK_DEBIT,
+        "token_bank_debit"
+    );
+    assert_eq!(
+        CommerceLedgerBusinessType::TOKEN_BANK_HOLD_SETTLE,
+        "token_bank_hold_settle"
+    );
+    assert_eq!(
+        CommerceLedgerBusinessType::TOKEN_BANK_REVERSAL,
+        "token_bank_reversal"
+    );
+    assert_eq!(
+        CommerceLedgerBusinessType::validate(CommerceLedgerBusinessType::TOKEN_BANK_DEBIT),
+        Ok(())
+    );
 }
 
 #[test]

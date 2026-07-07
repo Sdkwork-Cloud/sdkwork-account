@@ -1,3 +1,5 @@
+import type { AccountConsumptionItem } from './account-consumption-item';
+
 export interface AccountSummaryItem {
   id: string;
   name: string;
@@ -5,10 +7,10 @@ export interface AccountSummaryItem {
   isVerified: boolean;
   tier: string;
   organization: string;
-  availableCredits: number;
+  availablePoints: string;
   estDaysRemaining: string;
-  monthlyConsumption: number;
-  consumptionByService?: Record<string, unknown>[];
+  monthlyPointsConsumed: string;
+  consumptionByService?: AccountConsumptionItem[];
   invoiceSettings?: Record<string, unknown>;
   security?: Record<string, unknown>;
   loginLogs?: Record<string, unknown>[];

@@ -17,7 +17,9 @@ use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, SqlitePool};
 
-use crate::api_response::{success_cursor_list_page, success_offset_list_page, unauthorized, validation};
+use crate::api_response::{
+    success_cursor_list_page, success_offset_list_page, unauthorized, validation,
+};
 use crate::subject::app_runtime_subject_from_extension;
 
 pub type CommerceBillingHistoryFuture<'a, T> =
@@ -41,7 +43,7 @@ struct BillingHistoryQueryParams {
     history_type: Option<String>,
     status: Option<String>,
     page: Option<i64>,
-    #[serde(rename = "pageSize", alias = "page_size")]
+    #[serde(rename = "page_size")]
     page_size: Option<i64>,
     cursor: Option<String>,
 }
@@ -126,19 +128,8 @@ async fn fetch_billing_history(
     };
     let list_query_for_response = list_query.clone();
     let paging = OffsetListPageParams::parse(list_query.page, list_query.page_size);
-    let numeric_cursor = list_query
-        .cursor
-        .as_deref()
-        .and_then(|raw| raw.trim().parse::<i64>().ok());
-
     match state.store.list_billing_history(list_query).await {
-        Ok(page) => billing_history_list_response(
-            &ctx,
-            &list_query_for_response,
-            page,
-            paging,
-            numeric_cursor,
-        ),
+        Ok(page) => billing_history_list_response(&ctx, &list_query_for_response, page, paging),
         Err(error) => crate::api_response::map_service_error(Some(&ctx), error),
     }
 }
@@ -148,27 +139,12 @@ fn billing_history_list_response(
     list_query: &BillingHistoryListQuery,
     page: StoreListPage<BillingHistoryItem>,
     paging: OffsetListPageParams,
-    numeric_cursor: Option<i64>,
 ) -> Response {
     let mapped: Vec<_> = page
         .items
         .into_iter()
         .map(map_billing_history_item)
         .collect();
-
-    if numeric_cursor.is_some() {
-        let offset = numeric_cursor.unwrap_or(paging.offset);
-        let next_cursor = page
-            .has_more
-            .then(|| (offset + mapped.len() as i64).to_string());
-        return success_cursor_list_page(
-            Some(ctx),
-            mapped,
-            paging.page_size,
-            next_cursor,
-            page.has_more,
-        );
-    }
 
     if list_query
         .cursor

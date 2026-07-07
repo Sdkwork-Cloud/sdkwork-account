@@ -44,6 +44,8 @@ export interface SdkworkWalletIntlValue {
   formatRechargePackageSummary: (
     rechargePackage: Pick<SdkworkWalletRechargePackage, "points" | "priceCny">,
   ) => string;
+  formatTokenBank: (value: number) => string;
+  formatTokenBankDelta: (value: number) => string;
   formatTransactionStatus: (status: string | undefined) => string;
   formatHoldStatus: (status: string | undefined) => string;
   formatTransactionTimestamp: (value: string) => string;
@@ -196,6 +198,12 @@ function createSdkworkWalletIntlValue(
         points: formatPointsValue(rechargePackage.points),
         price: formatCurrency(rechargePackage.priceCny),
       });
+    },
+    formatTokenBank(value) {
+      return formatPointsValue(value);
+    },
+    formatTokenBankDelta(value) {
+      return formatSdkworkWalletDelta(value, resolvedLocale);
     },
     formatTransactionStatus(status) {
       const normalized = String(status || "").trim().toUpperCase();

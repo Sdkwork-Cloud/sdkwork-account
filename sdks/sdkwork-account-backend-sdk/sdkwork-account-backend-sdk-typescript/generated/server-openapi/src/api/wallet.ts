@@ -70,19 +70,6 @@ async reconciliation(body: PointsReconciliationRequest): Promise<Record<string, 
   }
 }
 
-export class WalletAdjustmentsTokensApi {
-  private client: HttpClient;
-
-  constructor(client: HttpClient) {
-    this.client = client;
-  }
-
-
-async create(body: CreateWalletAdjustmentRequest): Promise<Record<string, unknown>> {
-    return this.client.post<Record<string, unknown>>(backendApiPath(`/wallet/adjustments/tokens`), body, undefined, undefined, 'application/json');
-  }
-}
-
 export class WalletAdjustmentsPointsApi {
   private client: HttpClient;
 
@@ -113,13 +100,11 @@ export class WalletAdjustmentsApi {
   private client: HttpClient;
   public readonly cash: WalletAdjustmentsCashApi;
   public readonly points: WalletAdjustmentsPointsApi;
-  public readonly tokens: WalletAdjustmentsTokensApi;
 
   constructor(client: HttpClient) {
     this.client = client;
     this.cash = new WalletAdjustmentsCashApi(client);
     this.points = new WalletAdjustmentsPointsApi(client);
-    this.tokens = new WalletAdjustmentsTokensApi(client);
   }
 
 

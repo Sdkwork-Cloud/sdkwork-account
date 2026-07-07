@@ -32,6 +32,7 @@ export interface SdkworkWalletMessages {
     rechargeLaneLabel: string;
     signInToUnlock: string;
     title: string;
+    tokenBankAvailableLabel: string;
     accountStatusLabel: string;
   };
   common: {
@@ -74,6 +75,7 @@ export interface SdkworkWalletMessages {
     recentActivityTitle: string;
     rechargeLaneLabel: string;
     signInToUnlock: string;
+    tokenBankAvailableLabel: string;
   };
   rechargeDialog: {
     checkoutFlowDescription: string;
@@ -102,6 +104,7 @@ export interface SdkworkWalletMessages {
   summaryCards: {
     accountLevelLabel: string;
     cashAvailableLabel: string;
+    tokenBankAvailableLabel: string;
     totalEarnedLabel: string;
     totalSpentLabel: string;
   };
@@ -110,6 +113,7 @@ export interface SdkworkWalletMessages {
     columnDescription: string;
     columnPoints: string;
     columnStatus: string;
+    columnTokenBank: string;
     columnTime: string;
     description: string;
     emptyDescription: string;
@@ -120,13 +124,16 @@ export interface SdkworkWalletMessages {
   };
   holdList: {
     assetTypeLabel: string;
+    cashAsset: string;
     description: string;
     emptyDescription: string;
     emptyTitle: string;
     fallbackType: string;
     loadMore: string;
     title: string;
+    tokenBankAsset: string;
     unknownAsset: string;
+    pointsAsset: string;
   };
   holdStatus: {
     expired: string;
@@ -239,6 +246,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     rechargeLaneLabel: "Recharge lane",
     signInToUnlock: "Sign in to unlock wallet billing.",
     title: "Wallet",
+    tokenBankAvailableLabel: "Token Bank",
     accountStatusLabel: "Account status",
   },
   common: {
@@ -281,6 +289,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     recentActivityTitle: "Recent activity",
     rechargeLaneLabel: "Recharge lane",
     signInToUnlock: "Sign in to unlock wallet billing.",
+    tokenBankAvailableLabel: "Token Bank",
   },
   rechargeDialog: {
     checkoutFlowDescription: "Checkout creates a unified commerce_order via sdkwork-order and continues in sdkwork-payment.",
@@ -309,6 +318,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
   summaryCards: {
     accountLevelLabel: "Account level",
     cashAvailableLabel: "Cash available",
+    tokenBankAvailableLabel: "Token Bank",
     totalEarnedLabel: "Total earned",
     totalSpentLabel: "Total spent",
   },
@@ -317,6 +327,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     columnDescription: "Description",
     columnPoints: "Points",
     columnStatus: "Status",
+    columnTokenBank: "Token Bank",
     columnTime: "Time",
     description: "Unified recharge, consumption, withdrawal, and balance events.",
     emptyDescription: "Once balance events start flowing, they will appear here.",
@@ -327,12 +338,15 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
   },
   holdList: {
     assetTypeLabel: "Asset",
+    cashAsset: "Cash",
     description: "Active and recent pre-authorization holds on wallet balances.",
     emptyDescription: "When checkout or order flows create holds, they will appear here.",
     emptyTitle: "No holds yet",
     fallbackType: "Wallet hold",
     loadMore: "Load more holds",
+    pointsAsset: "Points",
     title: "Balance holds",
+    tokenBankAsset: "Token Bank",
     unknownAsset: "unknown",
   },
   holdStatus: {
@@ -411,6 +425,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     rechargeLaneLabel: "\u5145\u503c\u901a\u9053",
     signInToUnlock: "\u767b\u5f55\u540e\u5373\u53ef\u89e3\u9501\u94b1\u5305\u5546\u4e1a\u5316\u80fd\u529b\u3002",
     title: "\u94b1\u5305",
+    tokenBankAvailableLabel: "Token Bank",
     accountStatusLabel: "\u8d26\u6237\u72b6\u6001",
   },
   common: {
@@ -453,6 +468,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     recentActivityTitle: "\u6700\u8fd1\u6d3b\u52a8",
     rechargeLaneLabel: "\u5145\u503c\u901a\u9053",
     signInToUnlock: "\u767b\u5f55\u540e\u5373\u53ef\u89e3\u9501\u94b1\u5305\u5546\u4e1a\u5316\u80fd\u529b\u3002",
+    tokenBankAvailableLabel: "Token Bank",
   },
   rechargeDialog: {
     checkoutFlowDescription: "\u7ed3\u7b97\u9875\u7531 sdkwork-order \u521b\u5efa\u7edf\u4e00 commerce_order\uff08subject=points_recharge\uff09\uff0c\u7531 sdkwork-payment \u7ee7\u7eed\u6536\u6b3e\u3002",
@@ -481,6 +497,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
   summaryCards: {
     accountLevelLabel: "\u8d26\u6237\u7b49\u7ea7",
     cashAvailableLabel: "\u53ef\u63d0\u73b0\u4f59\u989d",
+    tokenBankAvailableLabel: "Token Bank",
     totalEarnedLabel: "\u7d2f\u8ba1\u83b7\u5f97",
     totalSpentLabel: "\u7d2f\u8ba1\u6d88\u8017",
   },
@@ -489,6 +506,7 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     columnDescription: "\u8bf4\u660e",
     columnPoints: "\u79ef\u5206",
     columnStatus: "\u72b6\u6001",
+    columnTokenBank: "Token Bank",
     columnTime: "\u65f6\u95f4",
     description: "\u7edf\u4e00\u5c55\u793a\u5145\u503c\u3001\u6d88\u8017\u3001\u63d0\u73b0\u548c\u4f59\u989d\u4e8b\u4ef6\u3002",
     emptyDescription: "\u5f53\u4f59\u989d\u4e8b\u4ef6\u5f00\u59cb\u6d41\u8f6c\u540e\uff0c\u5b83\u4eec\u4f1a\u51fa\u73b0\u5728\u8fd9\u91cc\u3002",
@@ -499,12 +517,15 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
   },
   holdList: {
     assetTypeLabel: "\u8d44\u4ea7",
+    cashAsset: "\u73b0\u91d1",
     description: "\u94b1\u5305\u4f59\u989d\u7684\u9884\u6263\u4e0e\u6700\u8fd1\u72b6\u6001\u3002",
     emptyDescription: "\u5f53\u652f\u4ed8\u6216\u8ba2\u5355\u6d41\u7a0b\u521b\u5efa\u9884\u6263\u540e\uff0c\u8bb0\u5f55\u4f1a\u51fa\u73b0\u5728\u8fd9\u91cc\u3002",
     emptyTitle: "\u6682\u65e0\u9884\u6263\u8bb0\u5f55",
     fallbackType: "\u94b1\u5305\u9884\u6263",
     loadMore: "\u52a0\u8f7d\u66f4\u591a\u9884\u6263",
+    pointsAsset: "\u79ef\u5206",
     title: "\u4f59\u989d\u9884\u6263",
+    tokenBankAsset: "Token Bank",
     unknownAsset: "\u672a\u77e5",
   },
   holdStatus: {

@@ -1,12 +1,14 @@
 import {
-  getSdkworkOrderService,
-  toSdkworkOrderNumber,
-  toSdkworkOrderOptionalString,
-  unwrapSdkworkOrderPage,
-  unwrapSdkworkOrderResource,
-  unwrapSdkworkOrderResponse,
-  type SdkworkOrderAppService,
-} from "@sdkwork/order-service";
+  toSdkworkAccountNumber,
+  toSdkworkAccountOptionalString,
+  unwrapSdkworkAccountListPage,
+  unwrapSdkworkAccountResource,
+} from "@sdkwork/account-service";
+import type {
+  SdkworkWalletRechargeInput,
+  SdkworkWalletRechargePackage,
+  SdkworkWalletRechargeResult,
+} from "./wallet-service.ts";
 
 const WALLET_PAYMENT_METHOD_ALIASES: Record<string, string> = {
   ALIPAY: "alipay",
@@ -23,11 +25,6 @@ function normalizeWalletPaymentMethod(value: string | undefined): string {
   const upper = trimmed.toUpperCase();
   return WALLET_PAYMENT_METHOD_ALIASES[upper] ?? trimmed.toLowerCase();
 }
-import type {
-  SdkworkWalletRechargeInput,
-  SdkworkWalletRechargePackage,
-  SdkworkWalletRechargeResult,
-} from "./wallet-service.ts";
 
 export interface RemoteRechargePackage {
   id?: string | number;
@@ -72,8 +69,30 @@ export interface RemoteRechargeOrderOutcome {
   next_action?: string;
 }
 
+export interface CreateSdkworkWalletRechargeOrderRequest {
+  amount: number;
+  clientRequestNo?: string;
+  currencyCode: string;
+  paymentMethod: string;
+  source: string;
+}
+
+export interface SdkworkWalletRechargeOrderService {
+  recharges: {
+    orders: {
+      create(input: CreateSdkworkWalletRechargeOrderRequest): Promise<unknown>;
+    };
+    packages: {
+      list(): Promise<unknown>;
+    };
+    settings: {
+      retrieve(): Promise<unknown>;
+    };
+  };
+}
+
 export interface CreateSdkworkWalletRechargeServiceOptions {
-  orderAppService?: SdkworkOrderAppService;
+  orderAppService: SdkworkWalletRechargeOrderService;
 }
 
 export interface SdkworkWalletRechargeService {
@@ -84,7 +103,7 @@ export interface SdkworkWalletRechargeService {
 
 function readRemotePriceCny(item: RemoteRechargePackage): number {
   const raw = item.priceAmount ?? item.price_amount ?? "0";
-  const amount = toSdkworkOrderNumber(raw);
+  const amount = toSdkworkAccountNumber(raw);
   const currency = (item.currencyCode ?? item.currency_code ?? "CNY").toUpperCase();
   return currency === "CNY" ? amount : amount;
 }
@@ -92,27 +111,27 @@ function readRemotePriceCny(item: RemoteRechargePackage): number {
 function mapRechargePackage(item: RemoteRechargePackage, index: number): SdkworkWalletRechargePackage {
   const idValue = item.id ?? index + 1;
   const numericId = typeof idValue === "number" ? idValue : Number.parseInt(String(idValue), 10);
-  const points = toSdkworkOrderNumber(item.points ?? item.grantAmount ?? item.grant_amount);
-  const bonus = toSdkworkOrderNumber(item.bonusPoints ?? item.bonus_points);
+  const points = toSdkworkAccountNumber(item.points ?? item.grantAmount ?? item.grant_amount);
+  const bonus = toSdkworkAccountNumber(item.bonusPoints ?? item.bonus_points);
   const title =
-    toSdkworkOrderOptionalString(item.title)
+    toSdkworkAccountOptionalString(item.title)
     || (bonus > 0 ? `${points} + ${bonus} bonus points` : `${points} points`);
 
   return {
-    description: toSdkworkOrderOptionalString(item.description),
+    description: toSdkworkAccountOptionalString(item.description),
     id: Number.isFinite(numericId) ? numericId : index + 1,
     points: points + bonus,
     priceCny: readRemotePriceCny(item),
     recommended: Boolean(item.recommended),
     sortWeight: item.sortWeight === null || item.sort_weight === null
       ? null
-      : toSdkworkOrderNumber(item.sortWeight ?? item.sort_weight, index),
+      : toSdkworkAccountNumber(item.sortWeight ?? item.sort_weight, index),
     title,
   };
 }
 
 function mapRechargeOutcome(outcome: RemoteRechargeOrderOutcome, input: SdkworkWalletRechargeInput): SdkworkWalletRechargeResult {
-  const status = toSdkworkOrderOptionalString(outcome.status)?.toLowerCase() ?? "pending";
+  const status = toSdkworkAccountOptionalString(outcome.status)?.toLowerCase() ?? "pending";
   const normalizedStatus =
     status === "paid" || status === "completed" || status === "success"
       ? "completed"
@@ -121,37 +140,37 @@ function mapRechargeOutcome(outcome: RemoteRechargeOrderOutcome, input: SdkworkW
         : "pending";
 
   return {
-    cashAmountCny: toSdkworkOrderNumber(outcome.amount),
-    paymentMethod: toSdkworkOrderOptionalString(outcome.paymentMethod ?? outcome.payment_method) ?? input.paymentMethod,
-    points: toSdkworkOrderNumber(outcome.points, input.points),
+    cashAmountCny: toSdkworkAccountNumber(outcome.amount),
+    paymentMethod: toSdkworkAccountOptionalString(outcome.paymentMethod ?? outcome.payment_method) ?? input.paymentMethod,
+    points: toSdkworkAccountNumber(outcome.points, input.points),
     processedAt: undefined,
     remainingPoints: null,
     requestNo:
-      toSdkworkOrderOptionalString(outcome.orderNo ?? outcome.order_no)
-      ?? toSdkworkOrderOptionalString(outcome.outTradeNo ?? outcome.out_trade_no)
+      toSdkworkAccountOptionalString(outcome.orderNo ?? outcome.order_no)
+      ?? toSdkworkAccountOptionalString(outcome.outTradeNo ?? outcome.out_trade_no)
       ?? input.requestNo,
     status: normalizedStatus,
-    transactionId: toSdkworkOrderOptionalString(outcome.outTradeNo ?? outcome.out_trade_no),
+    transactionId: toSdkworkAccountOptionalString(outcome.outTradeNo ?? outcome.out_trade_no),
   };
 }
 
 export function createSdkworkWalletRechargeService(
-  options: CreateSdkworkWalletRechargeServiceOptions = {},
+  options: CreateSdkworkWalletRechargeServiceOptions,
 ): SdkworkWalletRechargeService {
-  const getOrderAppService = () => options.orderAppService ?? getSdkworkOrderService();
+  const getOrderAppService = () => options.orderAppService;
 
   return {
     async listPackages() {
       const payload = await getOrderAppService().recharges.packages.list();
-      const items = unwrapSdkworkOrderPage<RemoteRechargePackage>(payload);
-      return items.map(mapRechargePackage);
+      const page = unwrapSdkworkAccountListPage<RemoteRechargePackage>(payload);
+      return page.items.map(mapRechargePackage);
     },
 
     async retrievePointsToCashRate() {
       const payload = await getOrderAppService().recharges.settings.retrieve();
-      const settings = unwrapSdkworkOrderResource<RemoteRechargeSettings>(payload);
+      const settings = unwrapSdkworkAccountResource<RemoteRechargeSettings>(payload);
       const rate = settings.basePointsPerCny ?? settings.base_points_per_cny;
-      const parsed = toSdkworkOrderNumber(rate, Number.NaN);
+      const parsed = toSdkworkAccountNumber(rate, Number.NaN);
       return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     },
 
@@ -163,10 +182,8 @@ export function createSdkworkWalletRechargeService(
         paymentMethod: normalizeWalletPaymentMethod(input.paymentMethod),
         source: "account-pc-wallet",
       });
-      const outcome = unwrapSdkworkOrderResource<RemoteRechargeOrderOutcome>(payload);
+      const outcome = unwrapSdkworkAccountResource<RemoteRechargeOrderOutcome>(payload);
       return mapRechargeOutcome(outcome, input);
     },
   };
 }
-
-export const sdkworkWalletRechargeService = createSdkworkWalletRechargeService();

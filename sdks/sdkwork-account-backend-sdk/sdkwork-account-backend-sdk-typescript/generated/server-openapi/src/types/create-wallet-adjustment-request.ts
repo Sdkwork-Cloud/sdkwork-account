@@ -3,7 +3,7 @@ export interface CreateWalletAdjustmentRequest {
   organizationId?: string;
   ownerUserId: string;
   accountId?: string;
-  assetType: 'cash' | 'points' | 'token';
+  assetType: 'cash' | 'points' | 'token_bank';
   currencyCode?: string;
   direction: 'credit' | 'debit';
   amount: string;

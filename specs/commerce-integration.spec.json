@@ -3,7 +3,34 @@
   "kind": "sdkwork.commerce.integration.spec",
   "capability": "account",
   "domain": "commerce",
-  "role": "ledger-foundation",
+  "role": "ledger-and-token-bank-foundation",
+  "accountTaxonomy": {
+    "cash": {
+      "assetCode": "cash",
+      "currencyCodes": ["CNY", "USD"],
+      "purpose": "Fiat balance, refund balance, withdrawal balance, or settlement display where product policy allows it."
+    },
+    "points": {
+      "assetCode": "points",
+      "currencyCodes": ["POINT"],
+      "purpose": "Traditional points, rewards, redemptions, lots, and expiry."
+    },
+    "tokenBank": {
+      "assetCode": "token_bank",
+      "currencyCodes": ["TOKEN_BANK"],
+      "capabilityNamespace": "token_bank",
+      "purpose": "Unified AI account for consumption, income, spending, holds, settlement, transfer, exchange, and reconciliation."
+    }
+  },
+  "forbiddenAssetCodes": [
+    "token",
+    "compute_token",
+    "compute_credit",
+    "llm_token",
+    "model_token",
+    "auth_token",
+    "blockchain_token"
+  ],
   "ownedTables": [
     "commerce_account",
     "commerce_account_ledger",
@@ -13,6 +40,10 @@
     "commerce_points_lot_allocation",
     "commerce_account_hold",
     "commerce_account_transfer",
+    "commerce_token_bank_exchange_rate",
+    "commerce_token_bank_exchange_quote",
+    "commerce_token_bank_exchange_snapshot",
+    "commerce_token_bank_settlement_snapshot",
     "commerce_idempotency_record",
     "commerce_outbox_event",
     "commerce_billing_history"
@@ -20,30 +51,49 @@
   "ownedApiPrefixes": {
     "app": [
       "/app/v3/api/wallet",
+      "/app/v3/api/token_bank",
       "/app/v3/api/billing",
       "/app/v3/api/accounts"
     ],
     "backend": [
-      "/backend/v3/api/wallet"
+      "/backend/v3/api/wallet",
+      "/backend/v3/api/token_bank"
     ]
   },
   "upstreamDependencies": [],
   "downstreamConsumers": [
     {
       "capability": "order",
-      "integration": "backend-api wallet adjustments / holds after order fulfillment"
+      "integration": "Calls account backend-api for points and Token Bank purchase fulfillment after payment success."
     },
     {
       "capability": "payment",
-      "integration": "indirect via order saga only; no direct account calls"
+      "integration": "Indirect via order fulfillment; payment provider execution never writes account ledger directly."
+    },
+    {
+      "capability": "pricing",
+      "integration": "Produces pricingSnapshotId and final Token Bank amount for AI settlement."
+    },
+    {
+      "capability": "metering",
+      "integration": "Produces usageSnapshotId for raw AI usage consumed by pricing."
+    },
+    {
+      "capability": "ai-runtime",
+      "integration": "Requests Token Bank hold/settle/release through backend services."
     }
   ],
   "forbidden": [
     "commerce_order writes",
-    "commerce_recharge_package ownership",
-    "app-api /recharges/* routes",
     "payment provider execution",
-    "recharges.* in account-app-sdk or account-service facade"
+    "raw AI model execution",
+    "raw usage metering ownership",
+    "model pricing formula ownership",
+    "provider cost and margin policy ownership",
+    "app-api /recharges/* routes",
+    "orders.* or recharges.* in account-service facade",
+    "alternate AI account asset naming",
+    "ambiguous token account asset naming"
   ],
   "sdkFamilies": {
     "owned": [
@@ -52,96 +102,108 @@
     ],
     "forbiddenInFacade": [
       "sdkwork-order-app-sdk",
-      "sdkwork-payment-app-sdk"
+      "sdkwork-payment-app-sdk",
+      "raw AI runtime SDK calls"
+    ]
+  },
+  "tokenBank": {
+    "capabilityNamespace": "token_bank",
+    "assetCode": "token_bank",
+    "currencyCodes": ["TOKEN_BANK"],
+    "displayNames": {
+      "en": "Token Bank"
+    },
+    "exchange": {
+      "fromAssetCode": "cash",
+      "toAssetCode": "token_bank",
+      "toCurrencyCode": "TOKEN_BANK",
+      "supportedFiatCurrencies": ["CNY", "USD"],
+      "requiresExchangeRateSnapshot": true,
+      "defaultRoundingMode": "floor"
+    },
+    "ownerTypes": ["USER", "ORG", "PROJECT", "SERVICE", "SYSTEM"],
+    "accountPurposes": ["GENERAL", "BUDGET", "RESERVE", "SETTLEMENT", "BURN", "SUSPENSE"],
+    "requiredOperations": [
+      "token_bank.issue",
+      "token_bank.purchase_credit",
+      "token_bank.grant",
+      "token_bank.transfer",
+      "token_bank.hold",
+      "token_bank.settle",
+      "token_bank.release",
+      "token_bank.debit",
+      "token_bank.service_income",
+      "token_bank.burn",
+      "token_bank.reverse"
     ]
   },
   "pcPackages": {
     "account-pc-wallet": {
       "ownedUi": [
-        "balances",
+        "cash-balances",
+        "points-balances",
+        "token-bank-balances",
+        "token-bank-summary",
         "holds",
         "ledger",
-        "recharge-dialog",
+        "purchase-dialog",
         "withdraw-dialog"
       ],
-      "requiredSdkDependencies": [
+      "requiredIntegratorPorts": [
         {
-          "family": "sdkwork-order-app-sdk",
-          "via": "@sdkwork/order-service",
+          "capability": "sdkwork-order",
+          "port": "order-compatible recharge service",
           "methods": [
             "recharges.packages.list",
             "recharges.settings.retrieve",
-            "recharges.orders.create",
-            "recharges.orders.retrieve",
-            "orders.pay"
+            "recharges.orders.create"
           ],
-          "purpose": "Recharge packages and recharge order lifecycle; not account domain"
+          "purpose": "Token Bank and points purchase order lifecycle stays outside account domain."
         }
       ],
       "forbiddenSdkUsage": [
         "raw HTTP to /recharges/*",
-        "recharges.* on account-service"
+        "orders.* or recharges.* on account-service",
+        "raw AI runtime calls from account wallet UI"
       ]
     }
   },
   "implementationPhases": [
     {
       "id": "A1",
-      "title": "Boundary specs frozen",
-      "status": "complete",
-      "repos": [
-        "sdkwork-account",
-        "sdkwork-order",
-        "sdkwork-payment"
-      ]
+      "title": "Greenfield account taxonomy and Token Bank specs",
+      "status": "active",
+      "repos": ["sdkwork-account"]
     },
     {
       "id": "A2",
-      "title": "Account PC wallet-recharge-service + order SDK bootstrap",
-      "status": "complete",
-      "repos": [
-        "sdkwork-account"
-      ],
-      "blockedBy": [
-        "O2"
-      ]
+      "title": "Ledger schema for cash, points, token_bank, multi-owner accounts, and integer amounts",
+      "status": "active",
+      "repos": ["sdkwork-account"]
     },
     {
       "id": "A3",
-      "title": "Remove wallet-service recharge delegation throws; wire order SDK",
-      "status": "complete",
-      "repos": [
-        "sdkwork-account"
-      ],
-      "blockedBy": [
-        "A2",
-        "O3"
-      ]
+      "title": "Token Bank exchange rates, quotes, and immutable exchange snapshots for CNY/USD",
+      "status": "active-contract",
+      "repos": ["sdkwork-account", "sdkwork-order", "sdkwork-payment"]
     },
     {
       "id": "A4",
-      "title": "Ledger hardening: idempotency LOCKED, SQL pagination, batched expire sweeps, outbox dispatch",
-      "status": "complete",
-      "repos": [
-        "sdkwork-account"
-      ]
+      "title": "Token Bank hold, settle, release, debit, transfer, reverse, service income, burn, and reconciliation APIs",
+      "status": "active-contract",
+      "repos": ["sdkwork-account"]
     },
     {
       "id": "A5",
-      "title": "PC wallet load-more, checkout returnUrl, post-pay commerceRefresh refresh",
-      "status": "complete",
-      "repos": [
-        "sdkwork-account"
-      ]
+      "title": "AI runtime, pricing, and metering integration through usage/pricing snapshots",
+      "status": "governed-roadmap",
+      "repos": ["sdkwork-account", "sdkwork-pricing", "sdkwork-metering", "sdkwork-ai-runtime"]
     },
     {
       "id": "A6",
-      "title": "IAM profile on account summary via IamAppContext user fields",
-      "status": "complete",
-      "repos": [
-        "sdkwork-account",
-        "sdkwork-iam"
-      ]
+      "title": "PC Token Bank wallet UX and SDK facade alignment",
+      "status": "active",
+      "repos": ["sdkwork-account"]
     }
   ]
 }

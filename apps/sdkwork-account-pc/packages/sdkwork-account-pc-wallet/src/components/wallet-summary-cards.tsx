@@ -13,12 +13,17 @@ export function SdkworkWalletSummaryCards({
     formatAccountLevelLabel,
     formatCurrencyCny,
     formatPoints,
+    formatTokenBank,
   } = useSdkworkWalletIntl();
 
   const items = [
     {
       label: copy.summaryCards.cashAvailableLabel,
       value: formatCurrencyCny(overview.account.cashAvailable),
+    },
+    {
+      label: copy.summaryCards.tokenBankAvailableLabel,
+      value: formatTokenBank(overview.account.tokenBankAvailable),
     },
     ...(overview.account.totalEarned !== null
       ? [{

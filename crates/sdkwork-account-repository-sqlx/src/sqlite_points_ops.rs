@@ -15,12 +15,12 @@ use crate::sqlite_account::StoredAccount;
 use crate::sqlite_account::{format_amount_minor, integer_cell, parse_amount_minor, string_cell};
 use crate::store::{
     account_guard::require_positive_amount,
-    billing_projection, format_i64, next_entity_id, next_entity_uuid,
-    org_id_from_option, parse_subject_i64, store_error,
-    balance::sum_amount_strings,
-    outbox::{emit_domain_outbox_sqlite, OUTBOX_EVENT_TYPE_POINTS_LOTS_EXPIRED},
-    ACCOUNT_STATUS_ACTIVE, OWNER_TYPE_USER, POINTS_LOT_EXPIRE_SCOPE, POINTS_LOT_STATUS_EXPIRED,
     asset_code_from_type,
+    balance::sum_amount_strings,
+    billing_projection, format_i64, next_entity_id, next_entity_uuid, org_id_from_option,
+    outbox::{emit_domain_outbox_sqlite, OUTBOX_EVENT_TYPE_POINTS_LOTS_EXPIRED},
+    parse_subject_i64, store_error, ACCOUNT_STATUS_ACTIVE, OWNER_TYPE_USER,
+    POINTS_LOT_EXPIRE_SCOPE, POINTS_LOT_STATUS_EXPIRED, POINTS_RECONCILE_BATCH_SIZE,
 };
 
 impl crate::sqlite_account::SqliteCommerceAccountStore {
@@ -124,13 +124,7 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
                     continue;
                 }
                 expire_one_points_lot(
-                    &mut tx,
-                    tenant_id,
-                    lot_id,
-                    account_id,
-                    amount,
-                    &command,
-                    &now,
+                    &mut tx, tenant_id, lot_id, account_id, amount, &command, &now,
                 )
                 .await?;
                 expired_lot_count += 1;
@@ -246,8 +240,7 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
         let tenant_id = parse_subject_i64("tenant_id", &query.tenant_id)?;
         let account_id = snapshot.account.id.parse::<i64>().unwrap_or(0);
 
-        let (unswept_expired_points, month_credit_points, month_debit_points) = if account_id <= 0
-        {
+        let (unswept_expired_points, month_credit_points, month_debit_points) = if account_id <= 0 {
             (0, 0, 0)
         } else {
             let now = Utc::now().to_rfc3339();
@@ -325,53 +318,72 @@ impl crate::sqlite_account::SqliteCommerceAccountStore {
             .map(|value| parse_subject_i64("owner_user_id", value))
             .transpose()?;
 
-        let account_rows = sqlx::query(
-            r#"
-            SELECT id, available_amount
-            FROM commerce_account
-            WHERE tenant_id = ?
-              AND organization_id = ?
-              AND asset_code = 'points'
-              AND (? IS NULL OR owner_id = ?)
-            "#,
-        )
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(owner_filter)
-        .bind(owner_filter)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|error| store_error("failed to load points accounts for reconciliation", error))?;
-
-        let checked_account_count = account_rows.len() as i64;
         let mut mismatches = Vec::new();
-        for row in &account_rows {
-            let account_id = integer_cell(row, "id");
-            let available = string_cell(row, "available_amount");
-            let lot_sum: i64 = sqlx::query_scalar(
+        let mut offset = 0_i64;
+
+        loop {
+            let account_rows = sqlx::query(
                 r#"
-                SELECT COALESCE(SUM(remaining_amount), 0)
-                FROM commerce_points_lot
-                WHERE tenant_id = ? AND account_id = ?
+                SELECT id, available_amount
+                FROM commerce_account
+                WHERE tenant_id = ?
+                  AND organization_id = ?
+                  AND asset_code = 'points'
+                  AND (? IS NULL OR owner_id = ?)
+                ORDER BY id ASC
+                LIMIT ? OFFSET ?
                 "#,
             )
             .bind(tenant_id)
-            .bind(account_id)
-            .fetch_one(&self.pool)
+            .bind(organization_id)
+            .bind(owner_filter)
+            .bind(owner_filter)
+            .bind(POINTS_RECONCILE_BATCH_SIZE)
+            .bind(offset)
+            .fetch_all(&self.pool)
             .await
-            .map_err(|error| store_error("failed to sum lot remaining for reconciliation", error))?;
-            let available_i64 = available.trim().parse::<i64>().map_err(|_| {
-                CommerceServiceError::storage("available_amount is not a valid integer")
+            .map_err(|error| {
+                store_error("failed to load points accounts for reconciliation", error)
             })?;
-            if available_i64 != lot_sum {
-                mismatches.push(PointsLotMismatchItem {
-                    account_id: format_i64(account_id),
-                    available_points: available,
-                    lot_remaining_total: lot_sum,
-                    delta: available_i64 - lot_sum,
-                });
+
+            if account_rows.is_empty() {
+                break;
             }
+
+            for row in &account_rows {
+                let account_id = integer_cell(row, "id");
+                let available = string_cell(row, "available_amount");
+                let lot_sum: i64 = sqlx::query_scalar(
+                    r#"
+                    SELECT COALESCE(SUM(remaining_amount), 0)
+                    FROM commerce_points_lot
+                    WHERE tenant_id = ? AND account_id = ?
+                    "#,
+                )
+                .bind(tenant_id)
+                .bind(account_id)
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|error| {
+                    store_error("failed to sum lot remaining for reconciliation", error)
+                })?;
+                let available_i64 = available.trim().parse::<i64>().map_err(|_| {
+                    CommerceServiceError::storage("available_amount is not a valid integer")
+                })?;
+                if available_i64 != lot_sum {
+                    mismatches.push(PointsLotMismatchItem {
+                        account_id: format_i64(account_id),
+                        available_points: available,
+                        lot_remaining_total: lot_sum,
+                        delta: available_i64 - lot_sum,
+                    });
+                }
+            }
+
+            offset += account_rows.len() as i64;
         }
+
+        let checked_account_count = offset;
 
         Ok(PointsReconciliationSnapshot {
             checked_account_count,
@@ -538,8 +550,7 @@ async fn expire_one_points_lot(
         CommerceAccountAssetType::Points,
         Some("POINT"),
         CommerceLedgerDirection::Debit,
-        CommerceMoney::new(&amount.to_string())
-            .map_err(CommerceServiceError::validation)?,
+        CommerceMoney::new(&amount.to_string()).map_err(CommerceServiceError::validation)?,
         CommerceLedgerBusinessType::POINTS_EXPIRE,
         &transaction_no,
         &command.request_no,
@@ -609,10 +620,12 @@ async fn try_replay_points_expire(
         ));
     }
 
-    match crate::store::resolve_idempotency_record_action(
+    match crate::store::resolve_idempotency_from_row_fields(
+        request_hash,
         &string_cell(&row, "request_hash"),
         &string_cell(&row, "status"),
-        request_hash,
+        &string_cell(&row, "locked_until"),
+        Utc::now(),
     )? {
         crate::store::IdempotencyRecordAction::ReclaimLock => {
             crate::sqlite_hold::reclaim_idempotency_scoped_public(

@@ -22,6 +22,7 @@ export function createAccountBackendSdkClientFromTransport(
   return {
     commerce: {
       wallet: transport.wallet,
+      tokenBank: transport.tokenBank,
     },
   } as AccountBackendSdkClient;
 }

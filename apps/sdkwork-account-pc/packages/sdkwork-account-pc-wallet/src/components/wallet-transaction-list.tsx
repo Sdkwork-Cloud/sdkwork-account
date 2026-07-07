@@ -18,6 +18,7 @@ export function SdkworkWalletTransactionList({
   const {
     copy,
     formatCurrencyCny,
+    formatTokenBankDelta,
     formatTransactionStatus,
     formatTransactionTimestamp,
     formatWalletDelta,
@@ -42,11 +43,12 @@ export function SdkworkWalletTransactionList({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[36rem] text-sm">
+          <table className="w-full min-w-[42rem] text-sm">
             <thead>
               <tr className="border-b border-[var(--sdk-color-border-subtle)] text-left text-xs text-[var(--sdk-color-text-muted)]">
                 <th className="px-5 py-3 font-medium sm:px-6">{copy.transactionList.columnDescription}</th>
                 <th className="px-5 py-3 font-medium sm:px-6">{copy.transactionList.columnPoints}</th>
+                <th className="px-5 py-3 font-medium sm:px-6">{copy.transactionList.columnTokenBank}</th>
                 <th className="px-5 py-3 font-medium sm:px-6">{copy.transactionList.columnAmount}</th>
                 <th className="px-5 py-3 font-medium sm:px-6">{copy.transactionList.columnStatus}</th>
                 <th className="px-5 py-3 text-right font-medium sm:px-6">{copy.transactionList.columnTime}</th>
@@ -55,6 +57,7 @@ export function SdkworkWalletTransactionList({
             <tbody className="divide-y divide-[var(--sdk-color-border-subtle)]">
               {transactions.map((transaction) => {
                 const isPositive = transaction.pointsDelta > 0;
+                const isTokenBankPositive = transaction.tokenBankDelta > 0;
 
                 return (
                   <tr className="hover:bg-[var(--sdk-color-surface-panel-muted)]" key={transaction.id}>
@@ -68,6 +71,9 @@ export function SdkworkWalletTransactionList({
                     </td>
                     <td className={`px-5 py-3 tabular-nums sm:px-6 ${isPositive ? "text-[var(--sdk-color-state-success)]" : "text-[var(--sdk-color-text-primary)]"}`}>
                       {formatWalletDelta(transaction.pointsDelta)}
+                    </td>
+                    <td className={`px-5 py-3 tabular-nums sm:px-6 ${isTokenBankPositive ? "text-[var(--sdk-color-state-success)]" : "text-[var(--sdk-color-text-primary)]"}`}>
+                      {formatTokenBankDelta(transaction.tokenBankDelta)}
                     </td>
                     <td className="px-5 py-3 tabular-nums text-[var(--sdk-color-text-secondary)] sm:px-6">
                       {formatCurrencyCny(transaction.cashAmountCny)}

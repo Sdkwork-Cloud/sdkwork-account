@@ -1,19 +1,19 @@
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use sdkwork_account_service::StoreListPage;
 use sdkwork_contract_service::CommerceServiceError;
 use sdkwork_utils_rust::{
     cursor_list_page_data, offset_list_page_data, OffsetListPageParams, SdkWorkApiResponse,
     SdkWorkProblemDetail, SdkWorkProblemRouting, SdkWorkResourceData, SdkWorkResultCode,
 };
 use sdkwork_web_core::WebRequestContext;
-use sdkwork_account_service::StoreListPage;
 
 pub fn resolve_trace_id(context: Option<&WebRequestContext>) -> String {
     context
         .map(WebRequestContext::resolved_trace_id)
         .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| sdkwork_utils_rust::uuid())
+        .unwrap_or_else(sdkwork_utils_rust::uuid)
 }
 
 fn problem_routing(context: Option<&WebRequestContext>) -> SdkWorkProblemRouting {
@@ -38,10 +38,7 @@ fn problem_for_context(
     attach_trace_header((status, Json(problem)).into_response(), &trace_id)
 }
 
-pub fn success_item<T: serde::Serialize>(
-    context: Option<&WebRequestContext>,
-    item: T,
-) -> Response {
+pub fn success_item<T: serde::Serialize>(context: Option<&WebRequestContext>, item: T) -> Response {
     let trace_id = resolve_trace_id(context);
     let envelope = SdkWorkApiResponse::success(SdkWorkResourceData { item }, trace_id.clone());
     attach_trace_header((StatusCode::OK, Json(envelope)).into_response(), &trace_id)
@@ -169,10 +166,9 @@ pub fn not_found(context: Option<&WebRequestContext>, detail: impl Into<String>)
 fn attach_trace_header(response: Response, trace_id: &str) -> Response {
     let mut response = response;
     if let Ok(value) = HeaderValue::from_str(trace_id) {
-        response.headers_mut().insert(
-            HeaderName::from_static("x-sdkwork-trace-id"),
-            value,
-        );
+        response
+            .headers_mut()
+            .insert(HeaderName::from_static("x-sdkwork-trace-id"), value);
     }
     response
 }

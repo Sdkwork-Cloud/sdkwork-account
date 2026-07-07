@@ -89,9 +89,7 @@ mod tests {
     use sdkwork_account_service::{
         AccountInvoiceSettings, AccountSecuritySummary, AccountSummarySnapshot,
     };
-    use sdkwork_iam_context_service::{
-        AuthLevel, DeploymentMode, Environment, IamAppContext,
-    };
+    use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamAppContext};
 
     use super::enrich_account_summary_from_iam;
 
@@ -103,9 +101,9 @@ mod tests {
             is_verified: false,
             tier: String::new(),
             organization: String::new(),
-            available_credits: 0.0,
+            available_points: "0".to_owned(),
             est_days_remaining: 0,
-            monthly_consumption: 0.0,
+            monthly_points_consumed: "0".to_owned(),
             consumption_by_service: Vec::new(),
             invoice_settings: AccountInvoiceSettings::default(),
             security: AccountSecuritySummary::default(),

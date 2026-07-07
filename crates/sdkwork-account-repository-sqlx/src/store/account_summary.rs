@@ -5,7 +5,7 @@ use sqlx::Row;
 use crate::store::{optional_org_string, store_error};
 
 pub struct WalletSummaryStats {
-    pub monthly_consumption: f64,
+    pub monthly_points_consumed: i64,
     pub consumption_by_service: Vec<AccountConsumptionItem>,
     pub est_days_remaining: i64,
 }
@@ -13,7 +13,7 @@ pub struct WalletSummaryStats {
 pub fn build_account_summary_snapshot(
     owner_user_id: &str,
     organization_id: i64,
-    available_points: f64,
+    available_points: i128,
     stats: WalletSummaryStats,
 ) -> AccountSummarySnapshot {
     AccountSummarySnapshot {
@@ -23,9 +23,9 @@ pub fn build_account_summary_snapshot(
         is_verified: false,
         tier: String::new(),
         organization: optional_org_string(organization_id).unwrap_or_default(),
-        available_credits: available_points,
+        available_points: available_points.to_string(),
         est_days_remaining: stats.est_days_remaining,
-        monthly_consumption: stats.monthly_consumption,
+        monthly_points_consumed: stats.monthly_points_consumed.to_string(),
         consumption_by_service: stats.consumption_by_service,
         invoice_settings: Default::default(),
         security: Default::default(),
@@ -39,7 +39,6 @@ pub fn consumption_items_from_rows(
 ) -> Vec<AccountConsumptionItem> {
     rows.iter()
         .map(|(name, value)| {
-            let value_f64 = *value as f64;
             let percentage = if monthly_total > 0 {
                 (*value as f64 / monthly_total as f64) * 100.0
             } else {
@@ -47,7 +46,7 @@ pub fn consumption_items_from_rows(
             };
             AccountConsumptionItem {
                 name: name.clone(),
-                value: value_f64,
+                points_consumed: value.to_string(),
                 color: String::new(),
                 percentage,
             }
@@ -55,15 +54,15 @@ pub fn consumption_items_from_rows(
         .collect()
 }
 
-pub fn estimate_days_remaining(available_points: f64, monthly_consumption: f64) -> i64 {
-    if monthly_consumption <= 0.0 || available_points <= 0.0 {
+pub fn estimate_days_remaining(available_points: i128, monthly_points_consumed: i64) -> i64 {
+    if monthly_points_consumed <= 0 || available_points <= 0 {
         return 0;
     }
-    let daily = monthly_consumption / 30.0;
+    let daily = monthly_points_consumed as f64 / 30.0;
     if daily <= 0.0 {
         return 0;
     }
-    (available_points / daily).floor() as i64
+    (available_points as f64 / daily).floor() as i64
 }
 
 pub async fn load_wallet_summary_stats_postgres(
@@ -123,7 +122,7 @@ pub async fn load_wallet_summary_stats_postgres(
         .collect();
 
     Ok(WalletSummaryStats {
-        monthly_consumption: monthly_total as f64,
+        monthly_points_consumed: monthly_total,
         consumption_by_service: consumption_items_from_rows(&breakdown, monthly_total),
         est_days_remaining: 0,
     })
@@ -186,7 +185,7 @@ pub async fn load_wallet_summary_stats_sqlite(
         .collect();
 
     Ok(WalletSummaryStats {
-        monthly_consumption: monthly_total as f64,
+        monthly_points_consumed: monthly_total,
         consumption_by_service: consumption_items_from_rows(&breakdown, monthly_total),
         est_days_remaining: 0,
     })

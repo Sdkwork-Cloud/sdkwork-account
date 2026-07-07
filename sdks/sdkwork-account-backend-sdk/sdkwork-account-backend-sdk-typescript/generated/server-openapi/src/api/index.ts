@@ -1,3 +1,4 @@
 export { BaseApi } from './base';
 export { backendApiPath } from './paths';
 export { WalletApi, createWalletApi } from './wallet';
+export { TokenBankApi, createTokenBankApi } from './token-bank';

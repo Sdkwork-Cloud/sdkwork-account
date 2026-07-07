@@ -10,7 +10,7 @@ name = "sdkwork-account-standalone-gateway"
 path = "src/main.rs"
 
 [dependencies]
-sdkwork_account_gateway_assembly = { package = "sdkwork-account-gateway-assembly", path = "../sdkwork-account-gateway-assembly" }
+sdkwork_account_gateway_assembly.workspace = true
 axum = { workspace = true }
 tokio = { workspace = true }
 tower-http = { workspace = true }
@@ -20,3 +20,5 @@ sdkwork-web-bootstrap.workspace = true
 sdkwork_routes_account_app_api.workspace = true
 sdkwork_routes_account_backend_api.workspace = true
 sdkwork_account_service_host.workspace = true
+sqlx = { workspace = true }
+sdkwork-database-sqlx.workspace = true

@@ -48,7 +48,7 @@ pub struct CommerceRuntimeContextInput {
 pub enum CommerceAccountAssetType {
     Cash,
     Points,
-    Token,
+    TokenBank,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -241,7 +241,7 @@ impl CommerceAccountAssetType {
         match self {
             Self::Cash => "cash",
             Self::Points => "points",
-            Self::Token => "token",
+            Self::TokenBank => "token_bank",
         }
     }
 }
@@ -301,10 +301,10 @@ impl CommerceExchangeStatus {
 
 impl CommerceMoney {
     pub fn new(value: &str) -> Result<Self, &'static str> {
-        if is_non_negative_decimal(value, 2) {
+        if is_non_negative_integer(value) {
             Ok(Self(value.to_string()))
         } else {
-            Err("money amount must be a non-negative decimal with scale <= 2")
+            Err("money amount must be a non-negative integer smallest-unit amount")
         }
     }
 
@@ -835,13 +835,25 @@ impl CommerceLedgerBusinessType {
     pub const POINTS_TRANSFER: &str = "points_transfer";
     pub const HOLD_SETTLE: &str = "hold_settle";
     pub const CASH_ADJUSTMENT: &str = "cash_adjustment";
-    pub const TOKEN_ADJUSTMENT: &str = "token_adjustment";
+    pub const TOKEN_BANK_ISSUE: &str = "token_bank_issue";
+    pub const TOKEN_BANK_PURCHASE_CREDIT: &str = "token_bank_purchase_credit";
+    pub const TOKEN_BANK_GRANT: &str = "token_bank_grant";
+    pub const TOKEN_BANK_TRANSFER: &str = "token_bank_transfer";
+    pub const TOKEN_BANK_HOLD: &str = "token_bank_hold";
+    pub const TOKEN_BANK_HOLD_SETTLE: &str = "token_bank_hold_settle";
+    pub const TOKEN_BANK_HOLD_RELEASE: &str = "token_bank_hold_release";
+    pub const TOKEN_BANK_DEBIT: &str = "token_bank_debit";
+    pub const TOKEN_BANK_SERVICE_INCOME: &str = "token_bank_service_income";
+    pub const TOKEN_BANK_BURN: &str = "token_bank_burn";
+    pub const TOKEN_BANK_REVERSAL: &str = "token_bank_reversal";
     pub const MANUAL_ADJUSTMENT: &str = "manual_adjustment";
 
     pub fn validate(value: &str) -> Result<(), CommerceServiceError> {
         let value = value.trim();
         if value.is_empty() {
-            return Err(CommerceServiceError::validation("business_type is required"));
+            return Err(CommerceServiceError::validation(
+                "business_type is required",
+            ));
         }
         if value.len() > 64 {
             return Err(CommerceServiceError::validation(
@@ -857,29 +869,6 @@ impl CommerceLedgerBusinessType {
             ));
         }
         Ok(())
-    }
-}
-
-fn is_non_negative_decimal(value: &str, max_scale: usize) -> bool {
-    if value.is_empty() || value.starts_with('-') || value.starts_with('+') {
-        return false;
-    }
-
-    let mut parts = value.split('.');
-    let integer = parts.next().unwrap_or_default();
-    let fraction = parts.next();
-
-    if parts.next().is_some() || !is_non_negative_integer(integer) {
-        return false;
-    }
-
-    match fraction {
-        Some(fraction) => {
-            !fraction.is_empty()
-                && fraction.len() <= max_scale
-                && fraction.chars().all(|value| value.is_ascii_digit())
-        }
-        None => true,
     }
 }
 

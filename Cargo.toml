@@ -52,3 +52,4 @@ sdkwork_routes_account_app_api = { path = "crates/sdkwork-routes-account-app-api
 sdkwork_routes_account_backend_api = { path = "crates/sdkwork-routes-account-backend-api", package = "sdkwork-routes-account-backend-api" }
 sdkwork_account_database_host = { path = "crates/sdkwork-account-database-host", package = "sdkwork-account-database-host" }
 sdkwork_account_service_host = { path = "crates/sdkwork-account-service-host", package = "sdkwork-account-service-host" }
+sdkwork_account_gateway_assembly = { path = "crates/sdkwork-account-gateway-assembly", package = "sdkwork-account-gateway-assembly" }

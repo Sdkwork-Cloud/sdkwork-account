@@ -109,7 +109,8 @@ fn map_billing_history_item(
     BillingHistoryItem::new(
         &format_i64(row.try_get::<i64, _>("id").unwrap_or_default()),
         &format_i64(row.try_get::<i64, _>("tenant_id").unwrap_or_default()),
-        optional_org_string(row.try_get::<i64, _>("organization_id").unwrap_or_default()).as_deref(),
+        optional_org_string(row.try_get::<i64, _>("organization_id").unwrap_or_default())
+            .as_deref(),
         &format_i64(row.try_get::<i64, _>("owner_id").unwrap_or_default()),
         &string_cell(row, "history_no"),
         &string_cell(row, "history_type"),
@@ -126,7 +127,7 @@ fn map_billing_history_item(
         row.try_get::<Option<i64>, _>("related_order_id")
             .ok()
             .flatten()
-            .map(|value| format_i64(value))
+            .map(format_i64)
             .as_deref(),
         optional_string_cell(row, "related_order_no").as_deref(),
         optional_string_cell(row, "payment_method").as_deref(),

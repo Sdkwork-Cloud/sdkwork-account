@@ -20,6 +20,7 @@ export function SdkworkWalletHoldsList({
     formatCurrencyCny,
     formatHoldStatus,
     formatPoints,
+    formatTokenBank,
     formatTransactionTimestamp,
   } = useSdkworkWalletIntl();
 
@@ -43,10 +44,19 @@ export function SdkworkWalletHoldsList({
           <table className="w-full min-w-[32rem] text-sm">
             <tbody className="divide-y divide-[var(--sdk-color-border-subtle)]">
               {holds.map((hold) => {
-                const isPoints = hold.assetType.toLowerCase() === "points";
-                const amountLabel = isPoints
+                const normalizedAssetType = hold.assetType.toLowerCase();
+                const assetLabel = normalizedAssetType === "points"
+                  ? copy.holdList.pointsAsset
+                  : normalizedAssetType === "token_bank"
+                    ? copy.holdList.tokenBankAsset
+                    : normalizedAssetType === "cash"
+                      ? copy.holdList.cashAsset
+                      : copy.holdList.unknownAsset;
+                const amountLabel = normalizedAssetType === "points"
                   ? formatPoints(hold.amount)
-                  : formatCurrencyCny(hold.amount);
+                  : normalizedAssetType === "token_bank"
+                    ? formatTokenBank(hold.amount)
+                    : formatCurrencyCny(hold.amount);
 
                 return (
                   <tr className="hover:bg-[var(--sdk-color-surface-panel-muted)]" key={hold.id}>
@@ -55,7 +65,7 @@ export function SdkworkWalletHoldsList({
                         {hold.businessType || copy.holdList.fallbackType}
                       </div>
                       <div className="mt-0.5 text-xs text-[var(--sdk-color-text-muted)]">
-                        {hold.businessNo || hold.holdId}
+                        {assetLabel} - {hold.businessNo || hold.holdId}
                       </div>
                     </td>
                     <td className="px-5 py-3 tabular-nums text-[var(--sdk-color-text-primary)] sm:px-6">

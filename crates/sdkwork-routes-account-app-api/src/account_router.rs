@@ -10,13 +10,13 @@ use sdkwork_account_repository_sqlx::{
     store::balance::sum_amount_strings, PostgresCommerceAccountStore, SqliteCommerceAccountStore,
 };
 use sdkwork_account_service::{
-    AccountConsumptionItem, AccountInvoiceSettings, AccountLoginLog, AccountSecuritySummary,
-    AccountHoldDetailQuery, AccountHoldItem, AccountHoldListQuery, AccountSummaryQuery,
-    AccountSummarySnapshot, PointsAccountSnapshot, PointsLotAllocationItem,
+    AccountConsumptionItem, AccountHoldDetailQuery, AccountHoldItem, AccountHoldListQuery,
+    AccountHoldListQueryInput, AccountInvoiceSettings, AccountLoginLog, AccountSecuritySummary,
+    AccountSummaryQuery, AccountSummarySnapshot, PointsAccountSnapshot, PointsLotAllocationItem,
     PointsLotAllocationListQuery, PointsLotItem, PointsLotListQuery, PointsSummarySnapshot,
-    WalletAccountItem, WalletAccountListQuery, WalletOperation,
+    StoreListPage, WalletAccountItem, WalletAccountListQuery, WalletOperation,
     WalletOperationQuery, WalletOverview, WalletTransactionDetailQuery, WalletTransactionItem,
-    WalletTransactionListQuery, StoreListPage,
+    WalletTransactionListQuery,
 };
 use sdkwork_contract_service::{CommerceAccountAssetType, CommerceServiceError};
 use sdkwork_iam_context_service::IamAppContext;
@@ -105,18 +105,18 @@ struct AppAccountWalletState {
 
 #[derive(Debug, Deserialize)]
 struct WalletAccountQueryParams {
-    #[serde(rename = "assetType", alias = "asset_type")]
+    #[serde(rename = "asset_type")]
     asset_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct WalletTransactionQueryParams {
-    #[serde(rename = "accountId", alias = "account_id")]
+    #[serde(rename = "account_id")]
     account_id: Option<String>,
-    #[serde(rename = "assetType", alias = "asset_type")]
+    #[serde(rename = "asset_type")]
     asset_type: Option<String>,
     page: Option<i64>,
-    #[serde(rename = "pageSize", alias = "page_size")]
+    #[serde(rename = "page_size")]
     page_size: Option<i64>,
     cursor: Option<String>,
 }
@@ -167,9 +167,9 @@ struct WalletOverviewResponse {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct TokenBalanceResponse {
-    available_tokens: i128,
-    frozen_tokens: i128,
+struct TokenBankBalanceResponse {
+    available_amount: String,
+    frozen_amount: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -263,9 +263,9 @@ struct AccountSummaryResponse {
     is_verified: bool,
     tier: String,
     organization: String,
-    available_credits: f64,
+    available_points: String,
     est_days_remaining: i64,
-    monthly_consumption: f64,
+    monthly_points_consumed: String,
     consumption_by_service: Vec<AccountConsumptionItemResponse>,
     invoice_settings: AccountInvoiceSettingsResponse,
     security: AccountSecuritySummaryResponse,
@@ -276,7 +276,7 @@ struct AccountSummaryResponse {
 #[serde(rename_all = "camelCase")]
 struct AccountConsumptionItemResponse {
     name: String,
-    value: f64,
+    points_consumed: String,
     color: String,
     percentage: f64,
 }
@@ -363,7 +363,10 @@ impl CommerceAccountWalletStore for SqliteCommerceAccountStore {
         query: WalletAccountListQuery,
         asset_type: CommerceAccountAssetType,
     ) -> CommerceWalletFuture<'a, WalletAccountItem> {
-        Box::pin(async move { self.retrieve_wallet_account_for_asset(query, asset_type).await })
+        Box::pin(async move {
+            self.retrieve_wallet_account_for_asset(query, asset_type)
+                .await
+        })
     }
 
     fn list_points_lots<'a>(
@@ -457,7 +460,10 @@ impl CommerceAccountWalletStore for PostgresCommerceAccountStore {
         query: WalletAccountListQuery,
         asset_type: CommerceAccountAssetType,
     ) -> CommerceWalletFuture<'a, WalletAccountItem> {
-        Box::pin(async move { self.retrieve_wallet_account_for_asset(query, asset_type).await })
+        Box::pin(async move {
+            self.retrieve_wallet_account_for_asset(query, asset_type)
+                .await
+        })
     }
 
     fn list_points_lots<'a>(
@@ -513,10 +519,17 @@ pub fn build_app_account_wallet_router(store: Arc<dyn CommerceAccountWalletStore
         .route("/app/v3/api/wallet/overview", get(fetch_wallet_overview))
         .route("/app/v3/api/wallet/accounts", get(fetch_wallet_accounts))
         .route("/app/v3/api/wallet/accounts/cash", get(fetch_cash_account))
-        .route("/app/v3/api/wallet/accounts/points", get(fetch_points_account))
         .route(
-            "/app/v3/api/wallet/accounts/tokens",
-            get(fetch_token_account),
+            "/app/v3/api/wallet/accounts/points",
+            get(fetch_points_account),
+        )
+        .route(
+            "/app/v3/api/token_bank/account",
+            get(fetch_token_bank_account),
+        )
+        .route(
+            "/app/v3/api/token_bank/overview",
+            get(fetch_token_bank_overview),
         )
         .route(
             "/app/v3/api/wallet/ledger_entries",
@@ -530,13 +543,18 @@ pub fn build_app_account_wallet_router(store: Arc<dyn CommerceAccountWalletStore
             "/app/v3/api/wallet/ledger_entries/points",
             get(fetch_points_ledger_entries),
         )
-        .route("/app/v3/api/wallet/points/lots", get(fetch_points_lots))
-        .route("/app/v3/api/wallet/points/summary", get(fetch_points_summary))
-        .route("/app/v3/api/wallet/holds", get(fetch_account_holds))
         .route(
-            "/app/v3/api/wallet/holds/{holdId}",
-            get(fetch_account_hold),
+            "/app/v3/api/token_bank/ledger_entries",
+            get(fetch_token_bank_ledger_entries),
         )
+        .route("/app/v3/api/token_bank/holds", get(fetch_token_bank_holds))
+        .route("/app/v3/api/wallet/points/lots", get(fetch_points_lots))
+        .route(
+            "/app/v3/api/wallet/points/summary",
+            get(fetch_points_summary),
+        )
+        .route("/app/v3/api/wallet/holds", get(fetch_account_holds))
+        .route("/app/v3/api/wallet/holds/{holdId}", get(fetch_account_hold))
         .route(
             "/app/v3/api/wallet/ledger_entries/{ledgerEntryId}",
             get(fetch_wallet_transaction),
@@ -545,7 +563,6 @@ pub fn build_app_account_wallet_router(store: Arc<dyn CommerceAccountWalletStore
             "/app/v3/api/wallet/ledger_entries/{ledgerEntryId}/allocations",
             get(fetch_points_lot_allocations),
         )
-        .route("/app/v3/api/wallet/tokens", get(fetch_token_balance))
         .with_state(AppAccountWalletState { store })
 }
 
@@ -716,7 +733,7 @@ async fn fetch_wallet_transaction(
     }
 }
 
-async fn fetch_token_balance(
+async fn fetch_token_bank_overview(
     State(state): State<AppAccountWalletState>,
     request_context: Extension<WebRequestContext>,
     runtime_context: Option<Extension<IamAppContext>>,
@@ -733,10 +750,10 @@ async fn fetch_token_balance(
 
     match state
         .store
-        .retrieve_wallet_account_for_asset(query, CommerceAccountAssetType::Token)
+        .retrieve_wallet_account_for_asset(query, CommerceAccountAssetType::TokenBank)
         .await
     {
-        Ok(account) => match map_token_balance(vec![account]) {
+        Ok(account) => match map_token_bank_balance(vec![account]) {
             Ok(balance) => success_item(Some(&ctx), balance),
             Err(error) => crate::api_response::map_service_error(Some(&ctx), error),
         },
@@ -846,7 +863,7 @@ async fn fetch_points_lot_allocations(
     }
 }
 
-async fn fetch_token_account(
+async fn fetch_token_bank_account(
     State(state): State<AppAccountWalletState>,
     request_context: Extension<WebRequestContext>,
     runtime_context: Option<Extension<IamAppContext>>,
@@ -863,7 +880,7 @@ async fn fetch_token_account(
 
     match state
         .store
-        .retrieve_wallet_account_for_asset(query, CommerceAccountAssetType::Token)
+        .retrieve_wallet_account_for_asset(query, CommerceAccountAssetType::TokenBank)
         .await
     {
         Ok(account) => success_item(Some(&ctx), map_wallet_account(account)),
@@ -903,10 +920,26 @@ async fn fetch_points_ledger_entries(
     .await
 }
 
+async fn fetch_token_bank_ledger_entries(
+    State(state): State<AppAccountWalletState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    Query(query): Query<WalletTransactionQueryParams>,
+) -> Response {
+    fetch_asset_ledger_entries(
+        state,
+        request_context,
+        runtime_context,
+        query,
+        CommerceAccountAssetType::TokenBank,
+    )
+    .await
+}
+
 #[derive(Debug, Deserialize)]
 struct PointsLotQueryParams {
     page: Option<i64>,
-    #[serde(rename = "pageSize", alias = "page_size")]
+    #[serde(rename = "page_size")]
     page_size: Option<i64>,
 }
 
@@ -942,13 +975,13 @@ async fn fetch_points_lots(
 
 #[derive(Debug, Deserialize)]
 struct AccountHoldQueryParams {
-    #[serde(rename = "accountId", alias = "account_id")]
+    #[serde(rename = "account_id")]
     account_id: Option<String>,
-    #[serde(rename = "assetType", alias = "asset_type")]
+    #[serde(rename = "asset_type")]
     asset_type: Option<String>,
     status: Option<String>,
     page: Option<i64>,
-    #[serde(rename = "pageSize", alias = "page_size")]
+    #[serde(rename = "page_size")]
     page_size: Option<i64>,
 }
 
@@ -998,16 +1031,16 @@ async fn fetch_account_holds(
         },
         None => None,
     };
-    let list_query = match AccountHoldListQuery::new(
-        &subject.tenant_id,
-        subject.organization_id.as_deref(),
-        &subject.user_id,
-        params.account_id.as_deref(),
+    let list_query = match AccountHoldListQuery::new(AccountHoldListQueryInput {
+        account_id: params.account_id.as_deref(),
         asset_type,
-        params.status.as_deref(),
-        params.page,
-        params.page_size,
-    ) {
+        organization_id: subject.organization_id.as_deref(),
+        owner_user_id: &subject.user_id,
+        page: params.page,
+        page_size: params.page_size,
+        status: params.status.as_deref(),
+        tenant_id: &subject.tenant_id,
+    }) {
         Ok(query) => query,
         Err(error) => return validation(Some(&ctx), error.message()),
     };
@@ -1018,6 +1051,22 @@ async fn fetch_account_holds(
         Ok(page) => offset_store_list_response(&ctx, page, paging, map_account_hold),
         Err(error) => crate::api_response::map_service_error(Some(&ctx), error),
     }
+}
+
+async fn fetch_token_bank_holds(
+    State(state): State<AppAccountWalletState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+    Query(mut params): Query<AccountHoldQueryParams>,
+) -> Response {
+    params.asset_type = Some("token_bank".to_owned());
+    fetch_account_holds(
+        State(state),
+        request_context,
+        runtime_context,
+        Query(params),
+    )
+    .await
 }
 
 async fn fetch_account_hold(
@@ -1051,8 +1100,8 @@ async fn fetch_account_hold(
 fn parse_asset_type_filter(value: &str) -> Result<CommerceAccountAssetType, &'static str> {
     match value.trim().to_ascii_lowercase().as_str() {
         "cash" => Ok(CommerceAccountAssetType::Cash),
-        "point" | "points" => Ok(CommerceAccountAssetType::Points),
-        "token" | "tokens" => Ok(CommerceAccountAssetType::Token),
+        "points" => Ok(CommerceAccountAssetType::Points),
+        "token_bank" => Ok(CommerceAccountAssetType::TokenBank),
         _ => Err("asset_type is invalid"),
     }
 }
@@ -1120,8 +1169,8 @@ fn parse_asset_type(
 ) -> Result<CommerceAccountAssetType, Response> {
     match value.to_ascii_lowercase().as_str() {
         "cash" => Ok(CommerceAccountAssetType::Cash),
-        "point" | "points" => Ok(CommerceAccountAssetType::Points),
-        "token" | "tokens" => Ok(CommerceAccountAssetType::Token),
+        "points" => Ok(CommerceAccountAssetType::Points),
+        "token_bank" => Ok(CommerceAccountAssetType::TokenBank),
         _ => Err(validation(context, "asset_type is invalid")),
     }
 }
@@ -1153,25 +1202,7 @@ fn wallet_transaction_list_response(
 ) -> Response {
     let paging =
         sdkwork_utils_rust::OffsetListPageParams::parse(list_query.page, list_query.page_size);
-    let numeric_cursor = list_query
-        .cursor
-        .as_deref()
-        .and_then(|raw| raw.trim().parse::<i64>().ok());
     let mapped: Vec<_> = page.items.into_iter().map(map_wallet_transaction).collect();
-
-    if numeric_cursor.is_some() {
-        let offset = numeric_cursor.unwrap_or(paging.offset);
-        let next_cursor = page
-            .has_more
-            .then(|| (offset + mapped.len() as i64).to_string());
-        return crate::api_response::success_cursor_list_page(
-            Some(ctx),
-            mapped,
-            paging.page_size,
-            next_cursor,
-            page.has_more,
-        );
-    }
 
     if list_query
         .cursor
@@ -1212,9 +1243,9 @@ fn map_account_summary(value: AccountSummarySnapshot) -> AccountSummaryResponse 
         is_verified: value.is_verified,
         tier: value.tier,
         organization: value.organization,
-        available_credits: value.available_credits,
+        available_points: value.available_points,
         est_days_remaining: value.est_days_remaining,
-        monthly_consumption: value.monthly_consumption,
+        monthly_points_consumed: value.monthly_points_consumed,
         consumption_by_service: value
             .consumption_by_service
             .into_iter()
@@ -1233,7 +1264,7 @@ fn map_account_summary(value: AccountSummarySnapshot) -> AccountSummaryResponse 
 fn map_account_consumption_item(value: AccountConsumptionItem) -> AccountConsumptionItemResponse {
     AccountConsumptionItemResponse {
         name: value.name,
-        value: value.value,
+        points_consumed: value.points_consumed,
         color: value.color,
         percentage: value.percentage,
     }
@@ -1289,18 +1320,18 @@ fn map_wallet_account(value: WalletAccountItem) -> WalletAccountItemResponse {
     }
 }
 
-fn map_token_balance(
+fn map_token_bank_balance(
     accounts: Vec<WalletAccountItem>,
-) -> Result<TokenBalanceResponse, CommerceServiceError> {
-    let mut available_tokens = 0_i128;
-    let mut frozen_tokens = 0_i128;
+) -> Result<TokenBankBalanceResponse, CommerceServiceError> {
+    let mut available_amount = 0_i128;
+    let mut frozen_amount = 0_i128;
     for account in accounts {
-        available_tokens += parse_token_amount(account.available_amount.as_str())?;
-        frozen_tokens += parse_token_amount(account.frozen_amount.as_str())?;
+        available_amount += parse_token_bank_amount(account.available_amount.as_str())?;
+        frozen_amount += parse_token_bank_amount(account.frozen_amount.as_str())?;
     }
-    Ok(TokenBalanceResponse {
-        available_tokens,
-        frozen_tokens,
+    Ok(TokenBankBalanceResponse {
+        available_amount: available_amount.to_string(),
+        frozen_amount: frozen_amount.to_string(),
     })
 }
 
@@ -1438,11 +1469,11 @@ fn map_points_lot(value: PointsLotItem) -> PointsLotItemResponse {
     }
 }
 
-fn parse_token_amount(value: &str) -> Result<i128, CommerceServiceError> {
+fn parse_token_bank_amount(value: &str) -> Result<i128, CommerceServiceError> {
     let normalized = value.trim();
     if normalized.is_empty() || normalized.starts_with('-') || normalized.starts_with('+') {
         return Err(CommerceServiceError::storage(format!(
-            "invalid commerce token amount: {value}"
+            "invalid token bank amount: {value}"
         )));
     }
     if !normalized
@@ -1450,10 +1481,10 @@ fn parse_token_amount(value: &str) -> Result<i128, CommerceServiceError> {
         .all(|character| character.is_ascii_digit())
     {
         return Err(CommerceServiceError::storage(format!(
-            "invalid commerce token amount: {value}"
+            "invalid token bank amount: {value}"
         )));
     }
-    normalized.parse::<i128>().map_err(|_| {
-        CommerceServiceError::storage(format!("invalid commerce token amount: {value}"))
-    })
+    normalized
+        .parse::<i128>()
+        .map_err(|_| CommerceServiceError::storage(format!("invalid token bank amount: {value}")))
 }

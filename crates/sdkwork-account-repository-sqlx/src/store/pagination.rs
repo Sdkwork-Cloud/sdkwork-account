@@ -17,7 +17,6 @@ pub struct ListSqlPaging {
     pub fetch_limit: i64,
     pub sql_offset: i64,
     pub keyset_before: Option<DateTime<Utc>>,
-    pub numeric_cursor: bool,
 }
 
 /// Resolves offset or cursor list paging per `PAGINATION_SPEC.md` and `sdkwork-utils-rust`.
@@ -30,22 +29,12 @@ pub fn resolve_list_sql_paging(
     let fetch_limit = fetch_limit_for_page(params.page_size);
 
     if let Some(raw) = cursor.map(str::trim).filter(|value| !value.is_empty()) {
-        if let Ok(offset) = raw.parse::<i64>() {
-            return Ok(ListSqlPaging {
-                params,
-                fetch_limit,
-                sql_offset: offset.max(0),
-                keyset_before: None,
-                numeric_cursor: true,
-            });
-        }
         if let Some(timestamp) = parse_wallet_transaction_cursor(Some(raw))? {
             return Ok(ListSqlPaging {
                 params,
                 fetch_limit,
                 sql_offset: 0,
                 keyset_before: Some(timestamp),
-                numeric_cursor: false,
             });
         }
     }
@@ -55,12 +44,15 @@ pub fn resolve_list_sql_paging(
         fetch_limit,
         sql_offset: params.offset,
         keyset_before: None,
-        numeric_cursor: false,
     })
 }
 
 /// Truncates a limit+1 result set and preserves total count from `COUNT(*) OVER()`.
-pub fn finalize_list_page<T>(mut items: Vec<T>, page_size: i64, total_items: i64) -> StoreListPage<T> {
+pub fn finalize_list_page<T>(
+    mut items: Vec<T>,
+    page_size: i64,
+    total_items: i64,
+) -> StoreListPage<T> {
     let has_more = page_size > 0 && items.len() as i64 > page_size;
     if has_more {
         items.truncate(page_size as usize);
@@ -85,10 +77,9 @@ mod tests {
     }
 
     #[test]
-    fn numeric_cursor_overrides_page_offset() {
-        let paging = resolve_list_sql_paging(Some(3), Some(20), Some("40"))
-            .expect("numeric cursor");
-        assert_eq!(paging.sql_offset, 40);
-        assert!(paging.numeric_cursor);
+    fn numeric_cursor_is_rejected_for_prelaunch_standard_pagination() {
+        let error = resolve_list_sql_paging(Some(3), Some(20), Some("40"))
+            .expect_err("numeric cursor must be rejected");
+        assert_eq!(error.code(), "validation");
     }
 }

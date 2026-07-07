@@ -55,6 +55,7 @@ const client = new SdkworkAccountBackendClient({
 ## API Modules
 
 - `client.wallet` - wallet API
+- `client.tokenBank` - token_bank API
 
 ## Usage Examples
 
@@ -63,6 +64,27 @@ const client = new SdkworkAccountBackendClient({
 ```typescript
 // GET /backend/v3/api/wallet/health
 const result = await client.wallet.health.retrieve();
+```
+
+### token_bank
+
+```typescript
+// POST /backend/v3/api/token_bank/credits
+const body = {
+  tenantId: 'tenantId',
+  organizationId: 'organizationId',
+  ownerUserId: 'ownerUserId',
+  accountId: 'accountId',
+  currencyCode: 'currencyCode',
+  amount: 'amount',
+  businessType: 'businessType',
+  transactionNo: 'transactionNo',
+  requestNo: 'requestNo',
+  idempotencyKey: 'idempotencyKey',
+  expiresAt: 'expiresAt',
+  reversedLedgerId: 'reversedLedgerId',
+};
+const result = await client.tokenBank.credits.create(body);
 ```
 
 ## Error Handling

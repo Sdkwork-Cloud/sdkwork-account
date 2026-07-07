@@ -24,6 +24,7 @@ export function createAccountAppSdkClientFromTransport(
       wallet: transport.wallet,
       billing: transport.billing,
       accounts: transport.accounts,
+      tokenBank: transport.tokenBank,
     },
   } as AccountAppSdkClient;
 }

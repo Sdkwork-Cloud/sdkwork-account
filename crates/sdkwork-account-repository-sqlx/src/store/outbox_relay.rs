@@ -194,7 +194,9 @@ fn map_sqlite_outbox_dispatch_row(
 mod tests {
     use super::*;
     use crate::account_migrated_sqlite_memory_pool;
-    use crate::store::outbox::{insert_outbox_event_sqlite, OUTBOX_EVENT_TYPE_LEDGER_APPENDED};
+    use crate::store::outbox::{
+        insert_outbox_event_sqlite, OutboxEventInsert, OUTBOX_EVENT_TYPE_LEDGER_APPENDED,
+    };
 
     #[tokio::test]
     async fn sqlite_outbox_dispatch_publishes_pending_events() {
@@ -202,13 +204,15 @@ mod tests {
         let now = Utc::now().to_rfc3339();
         insert_outbox_event_sqlite(
             &pool,
-            100_001,
-            42,
-            OUTBOX_EVENT_TYPE_LEDGER_APPENDED,
-            "100001:idem-1:account.ledger_appended",
-            r#"{"sample":true}"#,
-            "hash-1",
-            &now,
+            OutboxEventInsert {
+                aggregate_id: 42,
+                event_key: "100001:idem-1:account.ledger_appended",
+                event_type: OUTBOX_EVENT_TYPE_LEDGER_APPENDED,
+                now: &now,
+                payload: r#"{"sample":true}"#,
+                payload_hash: "hash-1",
+                tenant_id: 100_001,
+            },
         )
         .await
         .expect("insert outbox");
@@ -218,15 +222,17 @@ mod tests {
             .expect("dispatch");
         assert_eq!(outcome.dispatched_count, 1);
         assert_eq!(outcome.pending_lag, 0);
-        assert_eq!(outcome.items[0].event_type, OUTBOX_EVENT_TYPE_LEDGER_APPENDED);
+        assert_eq!(
+            outcome.items[0].event_type,
+            OUTBOX_EVENT_TYPE_LEDGER_APPENDED
+        );
 
-        let status: String = sqlx::query_scalar(
-            "SELECT status FROM commerce_outbox_event WHERE event_key = ?1",
-        )
-        .bind("100001:idem-1:account.ledger_appended")
-        .fetch_one(&pool)
-        .await
-        .expect("status");
+        let status: String =
+            sqlx::query_scalar("SELECT status FROM commerce_outbox_event WHERE event_key = ?1")
+                .bind("100001:idem-1:account.ledger_appended")
+                .fetch_one(&pool)
+                .await
+                .expect("status");
         assert_eq!(status, OUTBOX_STATUS_PUBLISHED);
     }
 }

@@ -24,14 +24,6 @@
 
 import {
 
-  getSdkworkOrderService,
-
-  type SdkworkOrderAppService,
-
-} from "@sdkwork/order-service";
-
-import {
-
   assertWalletCommerceDelegated,
 
   SdkworkWalletCommerceDelegationError,
@@ -41,6 +33,7 @@ import {
 import {
 
   createSdkworkWalletRechargeService,
+  type SdkworkWalletRechargeOrderService,
 
   type SdkworkWalletRechargeService,
 
@@ -74,7 +67,9 @@ export interface SdkworkWalletAccount {
 
   statusName?: string;
 
-  tokenBalance: number;
+  tokenBankAvailable: number;
+
+  tokenBankFrozen: number;
 
   totalEarned: number | null;
 
@@ -99,6 +94,8 @@ export interface SdkworkWalletTransaction {
   pointsBefore: number | null;
 
   pointsDelta: number;
+
+  tokenBankDelta: number;
 
   status?: string;
 
@@ -284,7 +281,7 @@ export interface CreateSdkworkWalletServiceOptions {
 
   accountAppService?: SdkworkAccountAppService;
 
-  orderAppService?: SdkworkOrderAppService;
+  orderAppService?: SdkworkWalletRechargeOrderService;
 
   rechargeService?: SdkworkWalletRechargeService;
 
@@ -360,7 +357,7 @@ interface RemotePointsSummary {
 
 
 
-interface RemoteTokenAccount {
+interface RemoteTokenBankAccount {
 
   availableAmount?: number | string;
 
@@ -430,34 +427,6 @@ const DEFAULT_HOLDS_PAGE_SIZE = 20;
 
 
 
-export function resolveSdkworkOrderAppService(
-
-  explicit?: SdkworkOrderAppService,
-
-): SdkworkOrderAppService | undefined {
-
-  if (explicit) {
-
-    return explicit;
-
-  }
-
-
-
-  try {
-
-    return getSdkworkOrderService();
-
-  } catch {
-
-    return undefined;
-
-  }
-
-}
-
-
-
 export function createEmptySdkworkWalletOverview(): SdkworkWalletOverview {
 
   return {
@@ -478,7 +447,9 @@ export function createEmptySdkworkWalletOverview(): SdkworkWalletOverview {
 
       level: null,
 
-      tokenBalance: 0,
+      tokenBankAvailable: 0,
+
+      tokenBankFrozen: 0,
 
       totalEarned: null,
 
@@ -564,7 +535,7 @@ function mapAccount(
 
   points: RemotePointsAccount | null | undefined,
 
-  token: RemoteTokenAccount | null | undefined,
+  tokenBank: RemoteTokenBankAccount | null | undefined,
 
   pointsSummary?: RemotePointsSummary | null,
 
@@ -596,7 +567,9 @@ function mapAccount(
 
     status: toSdkworkAccountOptionalString(points?.status ?? pointsSummary?.status),
 
-    tokenBalance: toSdkworkAccountNumber(token?.availableAmount),
+    tokenBankAvailable: toSdkworkAccountNumber(tokenBank?.availableAmount),
+
+    tokenBankFrozen: toSdkworkAccountNumber(tokenBank?.frozenAmount),
 
     totalEarned: pointsSummary
 
@@ -645,6 +618,8 @@ function mapTransaction(entry: RemoteLedgerEntry): SdkworkWalletTransaction {
     pointsBefore: assetType === "points" ? toNullableSdkworkAccountNumber(entry.balanceBefore) : null,
 
     pointsDelta: assetType === "points" ? delta : 0,
+
+    tokenBankDelta: assetType === "token_bank" ? delta : 0,
 
     title: toSdkworkAccountOptionalString(entry.businessType) || "Wallet transaction",
 
@@ -698,56 +673,6 @@ function mapHold(entry: RemoteHoldEntry): SdkworkWalletHold {
 
 
 
-function mergeLedgerTransactions(
-
-  pointsEntries: RemoteLedgerEntry[],
-
-  cashEntries: RemoteLedgerEntry[],
-
-): SdkworkWalletTransaction[] {
-
-  return [...pointsEntries, ...cashEntries]
-
-    .map(mapTransaction)
-
-    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
-
-}
-
-
-
-function mergeTransactionPageInfo(
-
-  pointsPageInfo: SdkworkAccountPageInfo | null,
-
-  cashPageInfo: SdkworkAccountPageInfo | null,
-
-): SdkworkAccountPageInfo | null {
-
-  if (!pointsPageInfo && !cashPageInfo) {
-
-    return null;
-
-  }
-
-
-
-  return {
-
-    ...(pointsPageInfo ?? {}),
-
-    ...(cashPageInfo ?? {}),
-
-    hasMore: Boolean(pointsPageInfo?.hasMore || cashPageInfo?.hasMore),
-
-    nextCursor: pointsPageInfo?.nextCursor ?? cashPageInfo?.nextCursor ?? null,
-
-  };
-
-}
-
-
-
 async function fetchLedgerPage(
 
   accountAppService: SdkworkAccountAppService,
@@ -756,33 +681,17 @@ async function fetchLedgerPage(
 
 ) {
 
-  const [pointsLedgerPayload, cashLedgerPayload] = await Promise.all([
+  const ledgerPayload = await accountAppService.wallet.ledgerEntries.list(query);
 
-    accountAppService.wallet.ledgerEntries.points.list(query),
-
-    accountAppService.wallet.ledgerEntries.cash.list(query),
-
-  ]);
-
-
-
-  const pointsLedgerPage = unwrapSdkworkAccountListPage<RemoteLedgerEntry>(pointsLedgerPayload);
-
-  const cashLedgerPage = unwrapSdkworkAccountListPage<RemoteLedgerEntry>(cashLedgerPayload);
+  const ledgerPage = unwrapSdkworkAccountListPage<RemoteLedgerEntry>(ledgerPayload);
 
 
 
   return {
 
-    transactionPageInfo: mergeTransactionPageInfo(
+    transactionPageInfo: ledgerPage.pageInfo,
 
-      pointsLedgerPage.pageInfo,
-
-      cashLedgerPage.pageInfo,
-
-    ),
-
-    transactions: mergeLedgerTransactions(pointsLedgerPage.items, cashLedgerPage.items),
+    transactions: ledgerPage.items.map(mapTransaction),
 
   };
 
@@ -798,15 +707,13 @@ export function createSdkworkWalletService(
 
   const getAccountAppService = () => options.accountAppService ?? getSdkworkAccountService();
 
-  const orderAppService = resolveSdkworkOrderAppService(options.orderAppService);
-
   const rechargeService =
 
     options.rechargeService
 
-    ?? (orderAppService
+    ?? (options.orderAppService
 
-      ? createSdkworkWalletRechargeService({ orderAppService })
+      ? createSdkworkWalletRechargeService({ orderAppService: options.orderAppService })
 
       : undefined);
 
@@ -844,13 +751,11 @@ export function createSdkworkWalletService(
 
         pointsPayload,
 
-        tokenPayload,
+        tokenBankPayload,
 
         pointsSummaryPayload,
 
-        pointsLedgerPayload,
-
-        cashLedgerPayload,
+        ledgerPayload,
 
         holdsPayload,
 
@@ -860,15 +765,13 @@ export function createSdkworkWalletService(
 
         accountAppService.wallet.accounts.points.retrieve(),
 
-        accountAppService.wallet.accounts.tokens.retrieve(),
+        accountAppService.tokenBank.account.retrieve(),
 
         accountAppService.wallet.points.summary.retrieve().catch(() => null),
 
-        accountAppService.wallet.ledgerEntries.points.list(ledgerQuery),
+        accountAppService.wallet.ledgerEntries.list(ledgerQuery),
 
-        accountAppService.wallet.ledgerEntries.cash.list(ledgerQuery),
-
-        accountAppService.wallet.holds.list({
+        accountAppService.tokenBank.holds.list({
 
           page: 1,
 
@@ -884,7 +787,7 @@ export function createSdkworkWalletService(
 
       const points = unwrapSdkworkAccountResource<RemotePointsAccount>(pointsPayload);
 
-      const token = unwrapSdkworkAccountResource<RemoteTokenAccount>(tokenPayload);
+      const tokenBank = unwrapSdkworkAccountResource<RemoteTokenBankAccount>(tokenBankPayload);
 
       const pointsSummary = pointsSummaryPayload
 
@@ -892,9 +795,7 @@ export function createSdkworkWalletService(
 
         : null;
 
-      const pointsLedgerPage = unwrapSdkworkAccountListPage<RemoteLedgerEntry>(pointsLedgerPayload);
-
-      const cashLedgerPage = unwrapSdkworkAccountListPage<RemoteLedgerEntry>(cashLedgerPayload);
+      const ledgerPage = unwrapSdkworkAccountListPage<RemoteLedgerEntry>(ledgerPayload);
 
       const holdsPage = unwrapSdkworkAccountListPage<RemoteHoldEntry>(holdsPayload);
 
@@ -930,7 +831,7 @@ export function createSdkworkWalletService(
 
       return {
 
-        account: mapAccount(cash, points, token, pointsSummary),
+        account: mapAccount(cash, points, tokenBank, pointsSummary),
 
         holds: holdsPage.items.map(mapHold),
 
@@ -942,15 +843,9 @@ export function createSdkworkWalletService(
 
         rechargePackages,
 
-        transactionPageInfo: mergeTransactionPageInfo(
+        transactionPageInfo: ledgerPage.pageInfo,
 
-          pointsLedgerPage.pageInfo,
-
-          cashLedgerPage.pageInfo,
-
-        ),
-
-        transactions: mergeLedgerTransactions(pointsLedgerPage.items, cashLedgerPage.items),
+        transactions: ledgerPage.items.map(mapTransaction),
 
       };
 
@@ -980,7 +875,7 @@ export function createSdkworkWalletService(
 
       requireSdkworkAccountSession("Please sign in to manage wallet balances.");
 
-      const holdsPayload = await getAccountAppService().wallet.holds.list({
+      const holdsPayload = await getAccountAppService().tokenBank.holds.list({
 
         page,
 

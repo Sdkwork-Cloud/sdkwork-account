@@ -57,6 +57,7 @@ const client = new SdkworkAccountAppClient({
 - `client.wallet` - wallet API
 - `client.billing` - billing API
 - `client.accounts` - accounts API
+- `client.tokenBank` - token_bank API
 
 ## Usage Examples
 
@@ -79,6 +80,13 @@ const result = await client.billing.history.list();
 ```typescript
 // GET /app/v3/api/accounts/current/summary
 const result = await client.accounts.current.summary.retrieve();
+```
+
+### token_bank
+
+```typescript
+// GET /app/v3/api/token_bank/account
+const result = await client.tokenBank.account.retrieve();
 ```
 
 ## Error Handling

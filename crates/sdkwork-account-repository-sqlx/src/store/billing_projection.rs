@@ -1,5 +1,7 @@
 use sdkwork_account_service::AppendLedgerEntryCommand;
-use sdkwork_contract_service::{CommerceAccountAssetType, CommerceLedgerDirection, CommerceServiceError};
+use sdkwork_contract_service::{
+    CommerceAccountAssetType, CommerceLedgerDirection, CommerceServiceError,
+};
 use sqlx::{Executor, Postgres, Sqlite};
 
 use crate::store::{asset_code_from_type, next_entity_id, next_entity_uuid, store_error};
@@ -18,11 +20,10 @@ where
     E: Executor<'e, Database = Sqlite>,
 {
     let points_delta = if command.asset_type == CommerceAccountAssetType::Points {
-        let raw = command
-            .amount
-            .as_str()
-            .parse::<i64>()
-            .map_err(|_| CommerceServiceError::validation("points amount must be an integer"))?;
+        let raw =
+            command.amount.as_str().parse::<i64>().map_err(|_| {
+                CommerceServiceError::validation("points amount must be an integer")
+            })?;
         match command.direction {
             CommerceLedgerDirection::Credit => raw,
             CommerceLedgerDirection::Debit => -raw,
@@ -83,11 +84,10 @@ where
     E: Executor<'e, Database = Postgres>,
 {
     let points_delta = if command.asset_type == CommerceAccountAssetType::Points {
-        let raw = command
-            .amount
-            .as_str()
-            .parse::<i64>()
-            .map_err(|_| CommerceServiceError::validation("points amount must be an integer"))?;
+        let raw =
+            command.amount.as_str().parse::<i64>().map_err(|_| {
+                CommerceServiceError::validation("points amount must be an integer")
+            })?;
         match command.direction {
             CommerceLedgerDirection::Credit => raw,
             CommerceLedgerDirection::Debit => -raw,

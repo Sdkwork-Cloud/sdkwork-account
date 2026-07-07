@@ -1,9 +1,7 @@
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
-use sdkwork_account_repository_sqlx::{
-    PostgresCommerceAccountStore, SqliteCommerceAccountStore,
-};
+use sdkwork_account_repository_sqlx::{PostgresCommerceAccountStore, SqliteCommerceAccountStore};
 use sdkwork_account_service_host::AccountServiceHost;
 use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_utils_rust::{SdkWorkApiResponse, SdkWorkResourceData};
@@ -18,25 +16,20 @@ use crate::{
 
 async fn wallet_health(
     axum::extract::State(host): axum::extract::State<Arc<AccountServiceHost>>,
-) -> (StatusCode, Json<SdkWorkApiResponse<SdkWorkResourceData<serde_json::Value>>>) {
+) -> (
+    StatusCode,
+    Json<SdkWorkApiResponse<SdkWorkResourceData<serde_json::Value>>>,
+) {
     let db_ok = match host.database_pool() {
-        DatabasePool::Postgres(pool, _) => sqlx::query("SELECT 1")
-            .execute(pool)
-            .await
-            .is_ok(),
-        DatabasePool::Sqlite(pool, _) => sqlx::query("SELECT 1")
-            .execute(pool)
-            .await
-            .is_ok(),
+        DatabasePool::Postgres(pool, _) => sqlx::query("SELECT 1").execute(pool).await.is_ok(),
+        DatabasePool::Sqlite(pool, _) => sqlx::query("SELECT 1").execute(pool).await.is_ok(),
     };
 
     let outbox_pending_lag = match host.database_pool() {
-        DatabasePool::Postgres(pool, _) => {
-            PostgresCommerceAccountStore::new(pool.clone())
-                .pending_outbox_lag()
-                .await
-                .unwrap_or(-1)
-        }
+        DatabasePool::Postgres(pool, _) => PostgresCommerceAccountStore::new(pool.clone())
+            .pending_outbox_lag()
+            .await
+            .unwrap_or(-1),
         DatabasePool::Sqlite(pool, _) => SqliteCommerceAccountStore::new(pool.clone())
             .pending_outbox_lag()
             .await

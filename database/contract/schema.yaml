@@ -1,7 +1,7 @@
 schema_version: 1
 kind: sdkwork.database.schema
 module_id: account
-contract_version: 2.0.0
+contract_version: 3.0.0
 owner_team: sdkwork-account
 compliance_level: L3
 engines:
@@ -12,13 +12,41 @@ id_strategy:
   type: snowflake
   provider: sdkwork-database-id
   public_id: uuid
+amount_strategy:
+  storage: int64_smallest_unit
+  postgres_type: BIGINT
+  sqlite_type: BIGINT
+  api_serialization: int64_string
+  forbidden:
+    - float
+    - double
+    - real
+    - numeric_for_account_balance
+account_taxonomy:
+  cash:
+    asset_code: cash
+    currency_code_rule: ISO fiat code such as CNY or USD
+  points:
+    asset_code: points
+    currency_code_rule: POINT
+  token_bank:
+    asset_code: token_bank
+    currency_code_rule: TOKEN_BANK
+forbidden_asset_codes:
+  - token
+  - compute_token
+  - compute_credit
+  - llm_token
+  - model_token
+  - auth_token
+  - blockchain_token
 tables:
   - name: commerce_account
     profile: tenant_entity
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
-    description: Owner-scoped wallet balances with available, frozen, and pending dimensions.
+    description: Owner-scoped balances for cash, points, and Token Bank with available, frozen, and pending dimensions.
 
   - name: commerce_account_ledger
     profile: ledger_entry
@@ -53,14 +81,14 @@ tables:
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
-    description: Atomic inter-account transfer records.
+    description: Atomic same-asset inter-account transfer records.
 
   - name: commerce_points_lot
     profile: core_entity
     compliance_level: L3
     system_of_record: true
     write_owner: sdkwork-account
-    description: FIFO points lot batches with optional expiry.
+    description: FEFO points lot batches with optional expiry.
 
   - name: commerce_points_lot_allocation
     profile: ledger_entry
@@ -68,6 +96,34 @@ tables:
     system_of_record: true
     write_owner: sdkwork-account
     description: Immutable debit allocation rows linking ledger entries to consumed points lots.
+
+  - name: commerce_token_bank_exchange_rate
+    profile: core_entity
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Governed fiat-to-Token-Bank exchange-rate configuration.
+
+  - name: commerce_token_bank_exchange_quote
+    profile: core_entity
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Short-lived Token Bank purchase quotes generated from exchange rates.
+
+  - name: commerce_token_bank_exchange_snapshot
+    profile: ledger_entry
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Immutable exchange snapshots attached to purchase fulfillment and ledger entries.
+
+  - name: commerce_token_bank_settlement_snapshot
+    profile: ledger_entry
+    compliance_level: L3
+    system_of_record: true
+    write_owner: sdkwork-account
+    description: Immutable AI spending, release, service income, and burn settlement evidence.
 
   - name: commerce_idempotency_record
     profile: event_log
@@ -88,4 +144,4 @@ tables:
     compliance_level: L2
     system_of_record: false
     write_owner: sdkwork-account
-    description: User-facing billing history projection.
+    description: User-facing billing history projection sourced from account ledger and Token Bank snapshots.

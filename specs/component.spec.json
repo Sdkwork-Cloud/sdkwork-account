@@ -11,7 +11,12 @@
     {
       "file": "COMMERCE_BOUNDARY_SPEC.md",
       "path": "specs/COMMERCE_BOUNDARY_SPEC.md",
-      "purpose": "Ledger ownership and commerce dependency rules."
+      "purpose": "Ledger ownership, forbidden scope, dependency direction, and commerce capability boundaries."
+    },
+    {
+      "file": "TOKEN_BANK_ACCOUNT_SPEC.md",
+      "path": "specs/TOKEN_BANK_ACCOUNT_SPEC.md",
+      "purpose": "Token Bank account taxonomy, exchange-rate, accounting, API naming, database, and AI settlement rules."
     },
     {
       "file": "commerce-integration.spec.json",

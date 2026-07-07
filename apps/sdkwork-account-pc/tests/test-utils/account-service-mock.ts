@@ -17,6 +17,7 @@ export function createAccountAppServiceMock(
     billing: createMissingBillingTree(),
     wallet: createMissingWalletTree(),
     accounts: createMissingAccountsTree(),
+    tokenBank: createMissingTokenBankTree(),
   };
   return mergeAccountAppService(base, overrides);
 }
@@ -35,11 +36,9 @@ function createMissingWalletTree(): SdkworkAccountAppService["wallet"] {
   const tree: Record<string, unknown> = {};
   for (const method of [
     "overview.retrieve",
-    "ledgerEntries.points.list",
-    "ledgerEntries.cash.list",
+    "ledgerEntries.list",
     "accounts.cash.retrieve",
     "accounts.points.retrieve",
-    "accounts.tokens.retrieve",
     "points.summary.retrieve",
     "points.lots.list",
     "holds.list",
@@ -54,6 +53,19 @@ function createMissingAccountsTree(): SdkworkAccountAppService["accounts"] {
   const tree: Record<string, unknown> = {};
   addMissingMethod(tree, "current.summary.retrieve");
   return tree as SdkworkAccountAppService["accounts"];
+}
+
+function createMissingTokenBankTree(): SdkworkAccountAppService["tokenBank"] {
+  const tree: Record<string, unknown> = {};
+  for (const method of [
+    "account.retrieve",
+    "overview.retrieve",
+    "ledgerEntries.list",
+    "holds.list",
+  ]) {
+    addMissingMethod(tree, method);
+  }
+  return tree as SdkworkAccountAppService["tokenBank"];
 }
 
 function createMissingBillingTree(): SdkworkAccountAppService["billing"] {

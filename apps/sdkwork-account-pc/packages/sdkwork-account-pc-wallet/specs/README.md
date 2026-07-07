@@ -1,6 +1,6 @@
 # @sdkwork/account-pc-wallet Component Specs
 
-Wallet PC React package: read models from account SDK, recharge flow from order SDK.
+Wallet PC React package: read models from account SDK; recharge uses an injected order-compatible port from the integrator.
 
 ## Component
 
@@ -11,38 +11,38 @@ Wallet PC React package: read models from account SDK, recharge flow from order 
 | Capability | `wallet` (account surface) |
 | Root | `apps/sdkwork-account-pc/packages/sdkwork-account-pc-wallet` |
 
-## Service split (required)
+## Service Split
 
-| Module | SDK | Responsibility |
+| Module | SDK or Port | Responsibility |
 | --- | --- | --- |
 | `wallet-service.ts` | `@sdkwork/account-service` | Overview: balances, holds, ledger |
-| `wallet-recharge-service.ts` (planned) | `@sdkwork/order-service` | Packages list, create recharge order, pay |
-| `wallet-controller.ts` | both via injection | UI state only |
+| `wallet-recharge-service.ts` | order-compatible port | Packages list and create recharge order |
+| `wallet-controller.ts` | account service plus injected ports | UI state only |
 
-Do not merge order methods into `wallet-service` without a separate file and explicit order service injection.
+Do not merge order methods into `wallet-service`; keep commerce creation behind explicit recharge service or order-compatible port injection.
 
-## SDK dependencies
+## SDK Dependencies
 
 | Family | Package | Required methods |
 | --- | --- | --- |
-| Account app | `@sdkwork/account-app-sdk` | `wallet.*`, `billing.*`, `accounts.*` |
-| Order app | `@sdkwork/order-app-sdk` | `recharges.*`, `orders.pay` |
+| Account app | `@sdkwork/account-app-sdk` | `wallet.*`, `billing.*`, `accounts.*`, `tokenBank.*` |
+| Order app | integrator-owned order service port | `recharges.packages.list`, `recharges.settings.retrieve`, `recharges.orders.create` |
 
-Bootstrap: `account-pc-core` must configure both token providers (same session).
+Bootstrap: `account-pc-core` configures account SDK. Integrators that enable recharge inject an order-compatible service port using the same authenticated session.
 
-## UI ownership
+## UI Ownership
 
 | Surface | Owner | Data source |
 | --- | --- | --- |
 | Balance / holds / transactions | this package | account SDK |
-| Recharge package grid / dialog | this package | order SDK |
-| Payment cashier (QR / poll) | embed or navigate | order `orders.pay` → payment |
+| Recharge package grid / dialog | this package | injected order-compatible port |
+| Payment cashier | embed or navigate | checkout route owned by order/payment |
 
 ## Forbidden
 
 - Raw `fetch` to `/app/v3/api/recharges/*`
-- Local DTO copies of order recharge types (map from generated SDK)
-- `rechargePackages` hard-coded or empty without order SDK call
+- Order SDK imports from account PC wallet package internals
+- `rechargePackages` hard-coded in account code instead of supplied by injected commerce port
 
 ## Verification
 

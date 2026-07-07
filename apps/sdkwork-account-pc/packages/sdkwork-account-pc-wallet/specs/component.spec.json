@@ -45,19 +45,18 @@
         "family": "sdkwork-account-app-sdk",
         "package": "@sdkwork/account-app-sdk",
         "surface": "app",
-        "required": true
-      },
-      {
-        "family": "sdkwork-order-app-sdk",
-        "package": "@sdkwork/order-app-sdk",
-        "surface": "app",
         "required": true,
         "methods": [
-          "recharges.packages.list",
-          "recharges.settings.retrieve",
-          "recharges.orders.create",
-          "recharges.orders.retrieve",
-          "orders.pay"
+          "wallet.accounts.cash.retrieve",
+          "wallet.accounts.points.retrieve",
+          "wallet.ledgerEntries.list",
+          "wallet.points.summary.retrieve",
+          "tokenBank.account.retrieve",
+          "tokenBank.holds.list",
+          "tokenBank.ledgerEntries.list",
+          "tokenBank.overview.retrieve",
+          "billing.history.list",
+          "accounts.current.summary.retrieve"
         ]
       }
     ],
@@ -66,8 +65,8 @@
   },
   "integration": {
     "authority": "Account repo specs/COMMERCE_BOUNDARY_SPEC.md defines ledger vs commerce UI split.",
-    "dependencyPolicy": "Wallet reads account SDK; recharge calls order SDK via wallet-recharge-service.",
-    "sdkPolicy": "No raw HTTP; no recharges on account-service facade."
+    "dependencyPolicy": "Wallet reads account SDK directly; recharge accepts an injected order-compatible port from the integrator.",
+    "sdkPolicy": "No raw HTTP; no order or recharge methods on account-service facade."
   },
   "verification": {
     "commands": [

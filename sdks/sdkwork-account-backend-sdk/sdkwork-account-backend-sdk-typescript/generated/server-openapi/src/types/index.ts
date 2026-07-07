@@ -22,4 +22,8 @@ export type { AccountHoldItem } from './account-hold-item';
 export type { AccountTransferItem } from './account-transfer-item';
 export type { WalletHoldMutationResponse } from './wallet-hold-mutation-response';
 export type { WalletTransferMutationResponse } from './wallet-transfer-mutation-response';
+export type { CreateTokenBankLedgerMutationRequest } from './create-token-bank-ledger-mutation-request';
+export type { CreateTokenBankReversalRequest } from './create-token-bank-reversal-request';
+export type { CreateTokenBankHoldRequest } from './create-token-bank-hold-request';
+export type { CreateTokenBankTransferRequest } from './create-token-bank-transfer-request';
 export type { WalletHealthRetrieveResponse } from './wallet-health-retrieve-response';

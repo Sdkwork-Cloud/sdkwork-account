@@ -1,7 +1,7 @@
-mod sqlite_hold;
-mod postgres_points_ops;
-mod sqlite_points_ops;
 mod postgres_hold;
+mod postgres_points_ops;
+mod sqlite_hold;
+mod sqlite_points_ops;
 
 pub mod postgres_account;
 pub mod postgres_billing;

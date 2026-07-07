@@ -15,7 +15,7 @@ describe("sdkwork-account-pc-wallet service", () => {
     resetAccountServiceMockSession();
   });
 
-  it("maps dedicated cash, points, and points ledger endpoints into a wallet overview", async () => {
+  it("maps dedicated cash, points, Token Bank, and unified ledger endpoints into a wallet overview", async () => {
     const accountAppService = createAccountAppServiceMock({
       wallet: {
         accounts: {
@@ -45,67 +45,38 @@ describe("sdkwork-account-pc-wallet service", () => {
               },
             }),
           },
-          tokens: {
-            retrieve: vi.fn().mockResolvedValue({
-              code: 0,
-              data: {
-                item: {
-                  availableAmount: "42",
-                  frozenAmount: "0",
-                },
-              },
-            }),
-          },
         },
         ledgerEntries: {
-          points: {
-            list: vi.fn().mockResolvedValue({
-              code: 0,
-              data: {
-                items: [
-                  {
-                    amount: "240",
-                    assetType: "points",
-                    balanceAfter: "1200",
-                    balanceBefore: "1440",
-                    businessType: "POINTS_USAGE",
-                    createdAt: "2026-04-01T12:00:00.000Z",
-                    direction: "debit",
-                    uuid: "history-2",
-                  },
-                ],
-                pageInfo: {
-                  mode: "offset",
-                  page: 1,
-                  pageSize: 20,
-                  hasMore: false,
+          list: vi.fn().mockResolvedValue({
+            code: 0,
+            data: {
+              items: [
+                {
+                  amount: "240",
+                  assetType: "points",
+                  balanceAfter: "1200",
+                  balanceBefore: "1440",
+                  businessType: "POINTS_USAGE",
+                  createdAt: "2026-04-01T12:00:00.000Z",
+                  direction: "debit",
+                  uuid: "history-2",
                 },
-              },
-            }),
-          },
-          cash: {
-            list: vi.fn().mockResolvedValue({
-              code: 0,
-              data: {
-                items: [
-                  {
-                    amount: "6.00",
-                    assetType: "cash",
-                    businessType: "CASH_WITHDRAW",
-                    createdAt: "2026-04-01T11:00:00.000Z",
-                    direction: "debit",
-                    uuid: "cash-history-1",
-                  },
-                ],
-                pageInfo: {
-                  mode: "offset",
-                  page: 1,
-                  pageSize: 20,
-                  hasMore: false,
+                {
+                  amount: "6.00",
+                  assetType: "cash",
+                  businessType: "CASH_WITHDRAW",
+                  createdAt: "2026-04-01T11:00:00.000Z",
+                  direction: "debit",
+                  uuid: "cash-history-1",
                 },
+              ],
+              pageInfo: {
+                mode: "cursor",
+                pageSize: 20,
+                hasMore: false,
               },
-            }),
-          },
+            },
+          }),
         },
         points: {
           summary: {
@@ -121,25 +92,46 @@ describe("sdkwork-account-pc-wallet service", () => {
             }),
           },
         },
+        holds: { list: vi.fn() },
+      },
+      tokenBank: {
+        account: {
+          retrieve: vi.fn().mockResolvedValue({
+            code: 0,
+            data: {
+              item: {
+                availableAmount: "4200",
+                frozenAmount: "200",
+              },
+            },
+          }),
+        },
         holds: {
           list: vi.fn().mockResolvedValue({
             code: 0,
             data: {
               items: [
                 {
-                  amount: "15.00",
-                  assetType: "cash",
-                  businessNo: "ORDER-1001",
+                  amount: "1500",
+                  assetType: "token_bank",
+                  businessNo: "AI-JOB-1001",
+                  businessType: "token_bank.hold",
                   createdAt: "2026-04-01T10:00:00.000Z",
-                  uuid: "hold-1",
+                  uuid: "token-bank-hold-1",
                   status: "held",
                 },
               ],
+              pageInfo: {
+                mode: "offset",
+                hasMore: false,
+              },
             },
           }),
         },
+        ledgerEntries: { list: vi.fn() },
+        overview: { retrieve: vi.fn() },
       },
-    });
+    } as any);
 
     const service = createSdkworkWalletService({
       accountAppService,
@@ -152,13 +144,15 @@ describe("sdkwork-account-pc-wallet service", () => {
     expect(overview.isAuthenticated).toBe(true);
     expect(overview.account.availablePoints).toBe(1200);
     expect(overview.account.cashAvailable).toBe(88.5);
-    expect(overview.account.tokenBalance).toBe(42);
+    expect(overview.account.tokenBankAvailable).toBe(4200);
+    expect(overview.account.tokenBankFrozen).toBe(200);
     expect(overview.account.totalEarned).toBe(9600);
     expect(overview.account.totalSpent).toBe(7200);
     expect(overview.transactions).toHaveLength(2);
     expect(overview.transactions[0]).toMatchObject({
       id: "history-2",
       pointsDelta: -240,
+      tokenBankDelta: 0,
       title: "POINTS_USAGE",
     });
     expect(overview.transactions[1]).toMatchObject({
@@ -168,11 +162,16 @@ describe("sdkwork-account-pc-wallet service", () => {
     });
     expect(overview.holds).toHaveLength(1);
     expect(overview.holds[0]).toMatchObject({
-      amount: 15,
-      assetType: "cash",
-      businessNo: "ORDER-1001",
-      holdId: "hold-1",
+      amount: 1500,
+      assetType: "token_bank",
+      businessNo: "AI-JOB-1001",
+      holdId: "token-bank-hold-1",
       status: "held",
+    });
+    expect(accountAppService.tokenBank.account.retrieve).toHaveBeenCalledTimes(1);
+    expect(accountAppService.tokenBank.holds.list).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 20,
     });
   });
 
@@ -216,20 +215,35 @@ describe("sdkwork-account-pc-wallet service", () => {
         accounts: {
           cash: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
           points: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
-          tokens: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
         },
         ledgerEntries: {
-          points: { list: vi.fn().mockResolvedValue({ code: 0, data: { items: [] } }) },
-          cash: { list: vi.fn().mockResolvedValue({ code: 0, data: { items: [] } }) },
+          list: vi.fn().mockResolvedValue({ code: 0, data: { items: [], pageInfo: { mode: "offset", hasMore: false } } }),
         },
         points: {
           summary: {
             retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }),
           },
         },
-        holds: { list: vi.fn().mockResolvedValue({ code: 0, data: { items: [] } }) },
+        holds: { list: vi.fn() },
       },
-    });
+      tokenBank: {
+        account: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
+        holds: {
+          list: vi.fn().mockResolvedValue({
+            code: 0,
+            data: {
+              items: [],
+              pageInfo: {
+                mode: "offset",
+                hasMore: false,
+              },
+            },
+          }),
+        },
+        ledgerEntries: { list: vi.fn() },
+        overview: { retrieve: vi.fn() },
+      },
+    } as any);
     const orderAppService = {
       recharges: {
         packages: {
@@ -245,6 +259,10 @@ describe("sdkwork-account-pc-wallet service", () => {
                   title: "Starter pack",
                 },
               ],
+              pageInfo: {
+                mode: "offset",
+                hasMore: false,
+              },
             },
           }),
         },

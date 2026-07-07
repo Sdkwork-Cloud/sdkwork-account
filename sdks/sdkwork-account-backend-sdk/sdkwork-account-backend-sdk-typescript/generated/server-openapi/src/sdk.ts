@@ -3,15 +3,19 @@ import type { SdkworkBackendConfig } from './types/common';
 import type { AuthTokenManager } from '@sdkwork/sdk-common';
 
 import { WalletApi, createWalletApi } from './api/wallet';
+import { TokenBankApi, createTokenBankApi } from './api/token-bank';
 
 export class SdkworkAccountBackendClient {
   private httpClient: HttpClient;
 
   public readonly wallet: WalletApi;
+  public readonly tokenBank: TokenBankApi;
 
   constructor(config: SdkworkBackendConfig) {
     this.httpClient = createHttpClient(config);
     this.wallet = createWalletApi(this.httpClient);
+
+    this.tokenBank = createTokenBankApi(this.httpClient);
   }
   setAuthToken(token: string): this {
     this.httpClient.setAuthToken(token);

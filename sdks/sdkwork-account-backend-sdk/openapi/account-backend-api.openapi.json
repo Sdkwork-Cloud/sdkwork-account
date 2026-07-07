@@ -2,7 +2,7 @@
   "openapi": "3.1.2",
   "info": {
     "title": "SDKWork Account Backend API",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "description": "Backend wallet write commands and operational health for integrators.",
     "x-sdkwork-owner": "sdkwork-account",
     "x-sdkwork-api-authority": "sdkwork-account.backend"
@@ -16,6 +16,10 @@
     {
       "name": "wallet",
       "description": "Wallet backend commands."
+    },
+    {
+      "name": "tokenBank",
+      "description": "Token Bank backend commands."
     }
   ],
   "paths": {
@@ -159,7 +163,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "OK",
             "content": {
               "application/json": {
@@ -206,7 +210,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "OK",
             "content": {
               "application/json": {
@@ -253,7 +257,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "OK",
             "content": {
               "application/json": {
@@ -376,53 +380,6 @@
         ]
       }
     },
-    "/backend/v3/api/wallet/adjustments/tokens": {
-      "post": {
-        "tags": [
-          "wallet"
-        ],
-        "operationId": "wallet.adjustments.tokens.create",
-        "description": "Creates a token ledger adjustment. `assetType` is forced to `token`.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateWalletAdjustmentRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletAdjustmentResponse"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ]
-      }
-    },
     "/backend/v3/api/wallet/holds": {
       "post": {
         "tags": [
@@ -441,7 +398,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "OK",
             "content": {
               "application/json": {
@@ -647,7 +604,403 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletTransferMutationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/token_bank/credits": {
+      "post": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.credits.create",
+        "description": "Credits Token Bank balance after governed purchase, issuance, or service income.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenBankLedgerMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/token_bank/debits": {
+      "post": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.debits.create",
+        "description": "Debits Token Bank balance for direct AI consumption or burn.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenBankLedgerMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/token_bank/grants": {
+      "post": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.grants.create",
+        "description": "Credits Token Bank balance for platform, subscription, compensation, or campaign grants.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenBankLedgerMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/token_bank/reversals": {
+      "post": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.reversals.create",
+        "description": "Appends a Token Bank reversal ledger entry for a previous movement.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenBankReversalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/token_bank/holds": {
+      "post": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.holds.create",
+        "description": "Creates a Token Bank hold moving balance from available to frozen.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenBankHoldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletHoldMutationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ]
+      }
+    },
+    "/backend/v3/api/token_bank/holds/{holdId}/settle": {
+      "post": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.holds.settle",
+        "parameters": [
+          {
+            "name": "holdId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettleAccountHoldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
           "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletHoldMutationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "description": "Settles a Token Bank hold after final metered usage."
+      }
+    },
+    "/backend/v3/api/token_bank/holds/{holdId}/release": {
+      "post": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.holds.release",
+        "parameters": [
+          {
+            "name": "holdId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseAccountHoldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletHoldMutationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "description": "Releases unused or failed-task Token Bank hold balance."
+      }
+    },
+    "/backend/v3/api/token_bank/transfers": {
+      "post": {
+        "tags": [
+          "tokenBank"
+        ],
+        "operationId": "tokenBank.transfers.create",
+        "description": "Transfers Token Bank balance between accounts of the same asset type.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenBankTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": "OK",
             "content": {
               "application/json": {
@@ -757,7 +1110,7 @@
             "enum": [
               "cash",
               "points",
-              "token"
+              "token_bank"
             ]
           },
           "currencyCode": {
@@ -1339,7 +1692,7 @@
             "enum": [
               "cash",
               "points",
-              "token"
+              "token_bank"
             ]
           },
           "amount": {
@@ -1450,7 +1803,7 @@
             "enum": [
               "cash",
               "points",
-              "token"
+              "token_bank"
             ]
           },
           "amount": {
@@ -1746,6 +2099,231 @@
             }
           }
         ]
+      },
+      "CreateTokenBankLedgerMutationRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "ownerUserId",
+          "amount",
+          "businessType",
+          "transactionNo",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string",
+            "description": "Lowercase snake_case ledger business type (validated by CommerceLedgerBusinessType)."
+          },
+          "transactionNo": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional points lot expiry for credit adjustments."
+          },
+          "reversedLedgerId": {
+            "type": "string",
+            "description": "Optional original ledger entry id when posting a compensating adjustment."
+          }
+        }
+      },
+      "CreateTokenBankReversalRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "ownerUserId",
+          "assetType",
+          "direction",
+          "amount",
+          "businessType",
+          "transactionNo",
+          "requestNo",
+          "idempotencyKey",
+          "reversedLedgerId"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "points",
+              "token_bank"
+            ]
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "credit",
+              "debit"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string",
+            "description": "Lowercase snake_case ledger business type (validated by CommerceLedgerBusinessType)."
+          },
+          "transactionNo": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional points lot expiry for credit adjustments."
+          },
+          "reversedLedgerId": {
+            "type": "string",
+            "description": "Optional original ledger entry id when posting a compensating adjustment."
+          }
+        }
+      },
+      "CreateTokenBankHoldRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "ownerUserId",
+          "amount",
+          "businessType",
+          "businessNo",
+          "sourceType",
+          "sourceId",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "businessNo": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateTokenBankTransferRequest": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "fromAccountId",
+          "toAccountId",
+          "ownerUserId",
+          "amount",
+          "businessType",
+          "businessNo",
+          "requestNo",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "fromAccountId": {
+            "type": "string"
+          },
+          "toAccountId": {
+            "type": "string"
+          },
+          "ownerUserId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "businessNo": {
+            "type": "string"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
       }
     },
     "securitySchemes": {

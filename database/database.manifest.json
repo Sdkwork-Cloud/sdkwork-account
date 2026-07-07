@@ -8,7 +8,7 @@
   "engines": ["postgres", "sqlite"],
   "defaultEngine": "postgres",
   "tablePrefix": "commerce_",
-  "contractVersion": "1.0.0",
+  "contractVersion": "3.0.0",
   "baselineStrategy": "baseline-plus-migrations",
   "modules": [],
   "lifecycle": {

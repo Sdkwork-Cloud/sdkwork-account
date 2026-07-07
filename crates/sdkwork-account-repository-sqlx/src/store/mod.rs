@@ -7,13 +7,23 @@ pub mod outbox;
 pub mod outbox_relay;
 pub mod pagination;
 
-pub use idempotency::{IdempotencyRecordAction, resolve_idempotency_record_action};
+pub use idempotency::{
+    idempotency_lock_expires_at, idempotency_lock_expires_at_rfc3339, map_idempotency_insert_error,
+    resolve_idempotency_from_row_fields, resolve_idempotency_record_action,
+    IdempotencyRecordAction, IDEMPOTENCY_LOCK_TTL_SECS,
+};
 pub use pagination::{
     fetch_limit_for_page, finalize_list_page, resolve_list_sql_paging, ListSqlPaging,
 };
 
 /// Maximum rows processed per expire-sweep batch to avoid unbounded memory use.
 pub const EXPIRE_SWEEP_BATCH_SIZE: i64 = 500;
+
+/// Maximum points lots loaded per FIFO debit batch inside a ledger transaction.
+pub const POINTS_LOT_DEBIT_BATCH_SIZE: i64 = 100;
+
+/// Maximum points accounts scanned per reconciliation batch.
+pub const POINTS_RECONCILE_BATCH_SIZE: i64 = 100;
 
 /// Default rows returned per outbox dispatch batch for backend relay jobs.
 pub const OUTBOX_DISPATCH_BATCH_DEFAULT: i64 = 100;
@@ -69,8 +79,8 @@ pub fn asset_code_from_type(asset_type: &CommerceAccountAssetType) -> &'static s
 pub fn asset_type_from_code(value: &str) -> Result<CommerceAccountAssetType, CommerceServiceError> {
     match value.trim().to_ascii_lowercase().as_str() {
         "cash" => Ok(CommerceAccountAssetType::Cash),
-        "point" | "points" => Ok(CommerceAccountAssetType::Points),
-        "token" | "tokens" => Ok(CommerceAccountAssetType::Token),
+        "points" => Ok(CommerceAccountAssetType::Points),
+        "token_bank" => Ok(CommerceAccountAssetType::TokenBank),
         _ => Err(CommerceServiceError::validation("asset_code is invalid")),
     }
 }
@@ -88,7 +98,7 @@ pub fn default_currency_code(asset_type: &CommerceAccountAssetType) -> &'static 
     match asset_type {
         CommerceAccountAssetType::Cash => "",
         CommerceAccountAssetType::Points => "POINT",
-        CommerceAccountAssetType::Token => "TOKEN",
+        CommerceAccountAssetType::TokenBank => "TOKEN_BANK",
     }
 }
 
@@ -133,15 +143,8 @@ pub fn parse_wallet_transaction_cursor(
     if let Some(parsed) = parse_datetime(raw, None) {
         return Ok(Some(parsed));
     }
-    if let Ok(millis) = raw.parse::<i64>() {
-        return DateTime::from_timestamp_millis(millis)
-            .ok_or_else(|| {
-                CommerceServiceError::validation("cursor must be an RFC3339 timestamp or unix millis")
-            })
-            .map(Some);
-    }
     Err(CommerceServiceError::validation(
-        "cursor must be an RFC3339 timestamp or unix millis",
+        "cursor must be an RFC3339 timestamp",
     ))
 }
 
@@ -151,7 +154,8 @@ pub struct AccountIdGenerator {
 
 impl AccountIdGenerator {
     pub fn new() -> Result<Self, CommerceServiceError> {
-        SnowflakeIdGenerator::new(0)
+        let worker_id = resolve_snowflake_worker_id_from_env();
+        SnowflakeIdGenerator::new(worker_id)
             .map(|snowflake| Self { snowflake })
             .map_err(|error| CommerceServiceError::storage(error.to_string()))
     }
@@ -186,6 +190,32 @@ pub fn next_entity_uuid() -> String {
     ID_GENERATOR.with(|generator| generator.lock().expect("id generator lock").next_uuid())
 }
 
+fn resolve_snowflake_worker_id_from_env() -> u16 {
+    const WORKER_ENV: &str = "ACCOUNT_SNOWFLAKE_WORKER_ID";
+    match std::env::var(WORKER_ENV) {
+        Ok(raw) => match raw.trim().parse::<u16>() {
+            Ok(worker_id) => worker_id,
+            Err(error) => {
+                tracing::warn!(
+                    target = "account.id",
+                    env = WORKER_ENV,
+                    error = %error,
+                    "invalid snowflake worker id; falling back to 0"
+                );
+                0
+            }
+        },
+        Err(_) => {
+            tracing::warn!(
+                target = "account.id",
+                env = WORKER_ENV,
+                "snowflake worker id not configured; defaulting to 0 — set unique ids per instance in production"
+            );
+            0
+        }
+    }
+}
+
 pub fn format_i64(value: i64) -> String {
     value.to_string()
 }
@@ -195,5 +225,29 @@ pub fn optional_org_string(value: i64) -> Option<String> {
         None
     } else {
         Some(value.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{asset_code_from_type, asset_type_from_code, default_currency_code};
+    use sdkwork_contract_service::CommerceAccountAssetType;
+
+    #[test]
+    fn maps_token_bank_asset_without_forbidden_token_aliases() {
+        assert_eq!(
+            asset_code_from_type(&CommerceAccountAssetType::TokenBank),
+            "token_bank"
+        );
+        assert_eq!(
+            asset_type_from_code("token_bank").expect("token bank asset"),
+            CommerceAccountAssetType::TokenBank
+        );
+        assert_eq!(
+            default_currency_code(&CommerceAccountAssetType::TokenBank),
+            "TOKEN_BANK"
+        );
+        assert!(asset_type_from_code("token").is_err());
+        assert!(asset_type_from_code("tokens").is_err());
     }
 }

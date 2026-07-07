@@ -15,7 +15,7 @@ pub struct AccountSummary {
     pub owner_user_id: String,
     pub points: AccountBalance<CommercePoints>,
     pub tenant_id: String,
-    pub token: AccountBalance<CommercePoints>,
+    pub token_bank: AccountBalance<CommerceMoney>,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -33,9 +33,9 @@ pub struct AccountSummarySnapshot {
     pub is_verified: bool,
     pub tier: String,
     pub organization: String,
-    pub available_credits: f64,
+    pub available_points: String,
     pub est_days_remaining: i64,
-    pub monthly_consumption: f64,
+    pub monthly_points_consumed: String,
     pub consumption_by_service: Vec<AccountConsumptionItem>,
     pub invoice_settings: AccountInvoiceSettings,
     pub security: AccountSecuritySummary,
@@ -45,7 +45,7 @@ pub struct AccountSummarySnapshot {
 #[derive(Clone, Debug, PartialEq)]
 pub struct AccountConsumptionItem {
     pub name: String,
-    pub value: f64,
+    pub points_consumed: String,
     pub color: String,
     pub percentage: f64,
 }
@@ -369,9 +369,9 @@ impl AccountSummary {
             )
             .expect("zero balance is valid"),
             tenant_id: tenant_id.to_string(),
-            token: AccountBalance::new(
-                CommercePoints::new("0").expect("zero tokens are valid"),
-                CommercePoints::new("0").expect("zero tokens are valid"),
+            token_bank: AccountBalance::new(
+                CommerceMoney::new("0").expect("zero token bank amount is valid"),
+                CommerceMoney::new("0").expect("zero token bank amount is valid"),
             )
             .expect("zero balance is valid"),
         }
@@ -387,9 +387,9 @@ impl Default for AccountSummarySnapshot {
             is_verified: false,
             tier: "Standard".to_owned(),
             organization: String::new(),
-            available_credits: 0.0,
+            available_points: "0".to_owned(),
             est_days_remaining: 0,
-            monthly_consumption: 0.0,
+            monthly_points_consumed: "0".to_owned(),
             consumption_by_service: Vec::new(),
             invoice_settings: AccountInvoiceSettings::default(),
             security: AccountSecuritySummary::default(),

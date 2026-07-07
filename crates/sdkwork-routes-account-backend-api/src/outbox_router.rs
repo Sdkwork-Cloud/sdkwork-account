@@ -6,9 +6,7 @@ use axum::extract::{Extension, State};
 use axum::response::Response;
 use axum::routing::post;
 use axum::Router;
-use sdkwork_account_repository_sqlx::{
-    PostgresCommerceAccountStore, SqliteCommerceAccountStore,
-};
+use sdkwork_account_repository_sqlx::{PostgresCommerceAccountStore, SqliteCommerceAccountStore};
 use sdkwork_account_service::OutboxDispatchOutcome;
 use sdkwork_contract_service::CommerceServiceError;
 use sdkwork_iam_context_service::IamAppContext;
@@ -93,7 +91,10 @@ pub fn backend_outbox_router_with_postgres_pool(pool: PgPool) -> Router {
 
 pub fn build_backend_outbox_router(store: Arc<dyn CommerceOutboxRelayStore>) -> Router {
     Router::new()
-        .route("/backend/v3/api/wallet/outbox/dispatch", post(dispatch_outbox_batch))
+        .route(
+            "/backend/v3/api/wallet/outbox/dispatch",
+            post(dispatch_outbox_batch),
+        )
         .with_state(BackendOutboxRelayState { store })
 }
 

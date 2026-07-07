@@ -4,7 +4,7 @@ export interface CreateAccountTransferRequest {
   fromAccountId: string;
   toAccountId: string;
   ownerUserId: string;
-  assetType: 'cash' | 'points' | 'token';
+  assetType: 'cash' | 'points' | 'token_bank';
   amount: string;
   businessType: string;
   businessNo: string;

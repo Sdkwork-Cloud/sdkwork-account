@@ -5,6 +5,7 @@ import type { AuthTokenManager } from '@sdkwork/sdk-common';
 import { WalletApi, createWalletApi } from './api/wallet';
 import { BillingApi, createBillingApi } from './api/billing';
 import { AccountsApi, createAccountsApi } from './api/accounts';
+import { TokenBankApi, createTokenBankApi } from './api/token-bank';
 
 export class SdkworkAccountAppClient {
   private httpClient: HttpClient;
@@ -12,6 +13,7 @@ export class SdkworkAccountAppClient {
   public readonly wallet: WalletApi;
   public readonly billing: BillingApi;
   public readonly accounts: AccountsApi;
+  public readonly tokenBank: TokenBankApi;
 
   constructor(config: SdkworkAppConfig) {
     this.httpClient = createHttpClient(config);
@@ -20,6 +22,8 @@ export class SdkworkAccountAppClient {
     this.billing = createBillingApi(this.httpClient);
 
     this.accounts = createAccountsApi(this.httpClient);
+
+    this.tokenBank = createTokenBankApi(this.httpClient);
   }
   setAuthToken(token: string): this {
     this.httpClient.setAuthToken(token);
