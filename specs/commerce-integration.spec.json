@@ -4,6 +4,12 @@
   "capability": "account",
   "domain": "commerce",
   "role": "ledger-and-token-bank-foundation",
+  "database": {
+    "ownedTablePrefix": "acct_",
+    "capabilityIdentity": "commerce.account",
+    "externalOwnedTables": ["commerce_order"],
+    "directSqlToExternalTablesAllowed": false
+  },
   "accountTaxonomy": {
     "cash": {
       "assetCode": "cash",

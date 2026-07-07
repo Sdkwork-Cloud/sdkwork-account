@@ -131,6 +131,19 @@ test("commerce boundary spec separates acct physical tables from commerce order 
   assert.match(source, /Account must never read `commerce_order`/);
 });
 
+test("commerce integration spec exposes account storage boundary", () => {
+  const integrationSpec = JSON.parse(
+    readFileSync(join(repoRoot, "specs/commerce-integration.spec.json"), "utf8"),
+  );
+
+  assert.equal(integrationSpec.database.ownedTablePrefix, "acct_");
+  assert.equal(integrationSpec.database.capabilityIdentity, "commerce.account");
+  assert.deepEqual(integrationSpec.database.externalOwnedTables, ["commerce_order"]);
+  assert.equal(integrationSpec.database.directSqlToExternalTablesAllowed, false);
+  assert.deepEqual(new Set(integrationSpec.ownedTables), new Set(accountOwnedTableNames));
+  assert.ok(integrationSpec.ownedTables.every((tableName) => tableName.startsWith("acct_")));
+});
+
 test("database DDL and repository SQL use acct account-owned table names", () => {
   const baselineFiles = [
     "database/ddl/baseline/postgres/0001_account_baseline.sql",
