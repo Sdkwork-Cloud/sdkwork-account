@@ -119,6 +119,18 @@ test("database contract registers acct prefix and account-owned tables", () => {
   }
 });
 
+test("commerce boundary spec separates acct physical tables from commerce order ownership", () => {
+  const source = readFileSync(
+    join(repoRoot, "specs/COMMERCE_BOUNDARY_SPEC.md"),
+    "utf8",
+  );
+
+  assert.match(source, /Account-owned physical tables must use `acct_`/);
+  assert.match(source, /capability remains `commerce\.account`/);
+  assert.match(source, /`commerce_order` remains order-owned/);
+  assert.match(source, /Account must never read `commerce_order`/);
+});
+
 test("database DDL and repository SQL use acct account-owned table names", () => {
   const baselineFiles = [
     "database/ddl/baseline/postgres/0001_account_baseline.sql",

@@ -3,7 +3,7 @@
 Status: active
 Owner: SDKWork maintainers
 Capability: `commerce.account`
-Updated: 2026-07-07
+Updated: 2026-07-08
 
 Authority: `sdkwork-specs/MODULE_SPEC.md`, `sdkwork-specs/DOMAIN_SPEC.md`, `sdkwork-specs/API_SPEC.md`
 
@@ -33,6 +33,13 @@ Account is the ledger truth source for:
 | Token Bank | `token_bank` | AI account balance, exchange snapshots, holds, AI spending, service income, burn, transfer, reversal, reconciliation. | Model pricing formulas, raw AI metering, AI execution, provider cost policy. |
 
 `token_bank` is the only valid AI account asset. Alternate AI account asset identifiers are not valid account assets.
+
+Database naming boundary:
+
+- Account-owned physical tables must use `acct_`.
+- `acct_` is the physical bounded-context prefix for account/accounting tables; the capability remains `commerce.account`.
+- `commerce_order` remains order-owned and outside account storage.
+- Account integrations must use approved APIs and events, not direct SQL against order, payment, pricing, metering, or AI runtime tables.
 
 ## 4. Non-Goals
 
