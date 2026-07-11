@@ -7,8 +7,8 @@ How to consume the account, wallet, and Token Bank capability from app clients a
 | Repository | Role |
 | --- | --- |
 | `sdkwork-account` | Ledger truth source: cash, points, Token Bank balances, ledger, holds, transfers, billing projection, exchange snapshots, settlement snapshots. |
-| `sdkwork-order` | Unified order center, purchase order lifecycle, checkout orchestration, `orders.pay`. |
-| `sdkwork-payment` | Payment intent, provider webhooks, refunds, payout on an existing `orderId`. |
+| `sdkwork-order` | Unified order center, purchase order lifecycle, account-value recharge/refund/withdrawal orchestration, `orders.payments.create`, and `withdrawals.requests.*`. |
+| `sdkwork-payment` | Payment intent, provider webhooks, provider collection, provider refunds, and the future provider payout executor boundary. |
 | Pricing/metering capability | Raw usage snapshots and conversion from raw AI usage to Token Bank amount. |
 | AI runtime capability | LLM, image, video, Agent, workflow, plugin, and model-service execution. |
 
@@ -35,7 +35,7 @@ Raw LLM tokens, image count, video seconds, GPU seconds, tool calls, workflow st
 | Backend wallet commands | `/backend/v3/api/wallet` | `apis/backend-api/account/account-backend-api.openapi.json` |
 | Backend Token Bank commands | `/backend/v3/api/token_bank` | `apis/backend-api/account/account-backend-api.openapi.json` |
 
-Account does not own recharge or payment execution routes. Integrations call order checkout surfaces directly, and Account PC purchase and withdraw buttons delegate to checkout routes through `onNavigate`.
+Account does not own recharge, payment execution, refund orchestration, or withdrawal orchestration routes. Integrations call order checkout/account-value surfaces directly. Account PC recharge buttons delegate to order checkout/payment collection routes through `onNavigate`, and withdraw buttons delegate to order-owned withdrawal request routes through `onNavigate`.
 
 ## Response Envelope
 
@@ -177,19 +177,19 @@ bootstrapSdkworkAccountPcBackendSdk({
 });
 ```
 
-PC wallet purchase/withdraw must not call account APIs for checkout. Pass `onNavigate` plus checkout paths to delegate to payment/order surfaces:
+PC wallet recharge/withdraw must not call account APIs for order creation or checkout. Pass `onNavigate` plus order-compatible paths to delegate recharge to checkout/payment collection and withdrawal to order-owned withdrawal requests:
 
 ```typescript
 <SdkworkWalletPage
   checkoutBasePath="/checkout"
-  payoutBasePath="/payments/payout"
   onNavigate={(route) => router.push(route)}
   rechargeFlow="checkout"
-  payoutFlow="checkout"
+  withdrawalFlow="checkout"
+  withdrawalRequestBasePath="/withdrawals/requests"
 />
 ```
 
-After checkout completes, redirect back to the wallet route with `commerceRefresh=1`. `SdkworkWalletPage` strips the query param and refreshes balances when the user returns.
+After checkout or order-owned withdrawal request creation completes, redirect back to the wallet route with `commerceRefresh=1`. `SdkworkWalletPage` strips the query param and refreshes balances when the user returns.
 
 ## Verification
 

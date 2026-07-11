@@ -43,8 +43,8 @@ Order
   calls account for ledger holds, credits, debits, settlement, and reversals
 
 Payment
-  owns payment intents, attempts, provider refund execution, provider payout execution,
-  provider channel config, and webhook ingest persistence
+  owns payment intents, attempts, provider refund execution, future provider payout
+  executor contracts, provider channel config, and webhook ingest persistence
   never writes account ledger directly
 
 Pricing
@@ -390,7 +390,7 @@ Order fulfillment
   -> Token Bank credit after fiat payment success
 
 Order refund and withdrawal orchestration
-  -> payment executor for provider refund or payout
+  -> payment executor for provider refund today and future provider payout
   -> account backend-api for ledger hold, release, settlement, and reversal
 
 AI runtime
@@ -401,7 +401,7 @@ AI runtime
 Runtime configuration separates:
 
 - Account API base URL.
-- Payment checkout/payout base URL.
+- Payment checkout base URL and order withdrawal request base URL.
 - Pricing/metering service base URL.
 - Token Bank default fiat currencies.
 - Exchange-rate admin feature flags.

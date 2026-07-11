@@ -56,13 +56,13 @@ Rules:
 - Support AI job lifecycle accounting: budget quote, pre-hold, actual usage settlement, service income split, remainder release, failure release, and reversal.
 - Keep all account amounts integer based. Cash uses fiat minor units, points use point units, and Token Bank uses Token Bank units.
 - Use append-only journal and ledger semantics for every balance movement.
-- Preserve capability boundaries: account records ledger truth; order orchestrates recharge, coupon redemption, refund, withdrawal, and fulfillment lifecycles; payment executes collection, refund, and payout provider channels; pricing converts raw usage to Token Bank amounts; metering records raw usage; AI runtimes execute workloads.
+- Preserve capability boundaries: account records ledger truth; order orchestrates recharge, coupon redemption, refund, withdrawal, and fulfillment lifecycles; payment executes provider collection and refund channels today and owns the future provider payout executor boundary; pricing converts raw usage to Token Bank amounts; metering records raw usage; AI runtimes execute workloads.
 - Expose app-api read models and backend-api command surfaces through SDKWork v3 response envelopes and generated SDKs.
 
 ### Non-Goals
 
 - Order lifecycle, cart, checkout, cancellation, recharge package or plan purchase, coupon redemption, refund request, withdrawal request, and fulfillment orchestration. Owner: `sdkwork-order`.
-- Payment intent, provider refund execution, provider payout execution, provider webhook ingest, and acquiring channel configuration. Owner: `sdkwork-payment`.
+- Payment intent, provider refund execution, provider webhook ingest, acquiring channel configuration, and future provider payout executor contracts. Owner: `sdkwork-payment`.
 - LLM, image, video, Agent, plugin, model-service, or workflow execution. Owner: the relevant AI runtime capability.
 - Raw usage collection and model-specific pricing formulas. Owners: metering and pricing capabilities.
 - Provider cost calculation, margin policy, subscription catalog, recharge package publishing, and sales campaign policy. Owners: pricing, billing, order, promotion, or subscription capabilities.
@@ -164,8 +164,9 @@ Exchange rates are first-class account contracts:
 10. **Withdraw cash balance**
     - Order creates a `cash_withdrawal` request and runs approval, risk, and state transitions.
     - Account freezes the requested `cash` balance.
-    - Payment executes provider payout after order approval.
-    - Order settles the account hold on payout success or releases it on payout failure.
+    - Order attempts the configured provider payout executor port after order approval.
+    - The current default runtime is fail-closed until `sdkwork-payment` publishes a concrete provider payout executor.
+    - Order settles the account hold on future payout success or releases it on current fail-closed/provider failure.
 
 ## 7. Success Metrics
 
@@ -234,4 +235,4 @@ Exchange rates are first-class account contracts:
 - Exchange-rate publishing: account owns Token Bank exchange-rate storage and audit. Global backend-admin operators may publish global rates, and tenant backend-admin operators may publish tenant-scoped rates when permissions allow it. Every publish action is idempotent, versioned, and audited.
 - Purchase reversal: the default account behavior is append-only Token Bank reversal or account compensation. Fiat refunds and provider settlement refunds are orchestrated by order/payment; account only records the ledger effect after the owning capability calls the backend API.
 - Marketplace settlement scope: the first Token Bank marketplace release includes service settlement accounts, service income ledger entries, settlement snapshots, and burn routing. Revenue share policy, tax, payout execution, and fiat withdrawal remain outside this repository.
-- Account value order ownership: `sdkwork-order` is the only business orchestrator for recharge packages, Token Bank plan purchase or renewal, coupon redemption, refund requests, and withdrawal requests. `sdkwork-payment` executes provider collection, refund, and payout only; it must not call account ledger APIs directly. `sdkwork-account` exposes idempotent ledger, hold, settlement, and reversal commands consumed by order.
+- Account value order ownership: `sdkwork-order` is the only business orchestrator for recharge packages, Token Bank plan purchase or renewal, coupon redemption, refund requests, and withdrawal requests. `sdkwork-payment` executes provider collection and refund today, owns any future provider payout executor contract, and must not call account ledger APIs directly. `sdkwork-account` exposes idempotent ledger, hold, settlement, and reversal commands consumed by order.

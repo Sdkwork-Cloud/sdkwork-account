@@ -25,10 +25,10 @@ import {
   type SdkworkWalletRechargeFlow,
 } from "../wallet-checkout-navigation";
 import {
-  navigateWalletWithdrawPayout,
-  resolveWalletPayoutFlow,
-  type SdkworkWalletPayoutFlow,
-} from "../wallet-payout-navigation";
+  navigateWalletWithdrawalRequest,
+  resolveWalletWithdrawalFlow,
+  type SdkworkWalletWithdrawalFlow,
+} from "../wallet-withdrawal-navigation";
 import {
   Button,
   StatusNotice,
@@ -40,11 +40,11 @@ export interface SdkworkWalletHeaderEntryProps {
   controller?: SdkworkWalletController;
   onNavigate?: (route: string) => void;
   onOpenPage?: () => void;
-  payoutBasePath?: string;
-  payoutFlow?: SdkworkWalletPayoutFlow;
   quickPanelClassName?: string;
   QuickPanel?: ComponentType<SdkworkWalletQuickPanelProps>;
   rechargeFlow?: SdkworkWalletRechargeFlow;
+  withdrawalFlow?: SdkworkWalletWithdrawalFlow;
+  withdrawalRequestBasePath?: string;
 }
 
 export function SdkworkWalletHeaderEntry({
@@ -53,11 +53,11 @@ export function SdkworkWalletHeaderEntry({
   controller: controllerProp,
   onNavigate,
   onOpenPage,
-  payoutBasePath,
-  payoutFlow,
   quickPanelClassName,
   QuickPanel: QuickPanelComponent,
   rechargeFlow,
+  withdrawalFlow,
+  withdrawalRequestBasePath,
 }: SdkworkWalletHeaderEntryProps) {
   const controller = useSdkworkWalletController(controllerProp);
   const state = useSdkworkWalletControllerState(controller);
@@ -70,7 +70,7 @@ export function SdkworkWalletHeaderEntry({
     formatPoints,
   } = useSdkworkWalletIntl();
   const resolvedRechargeFlow = resolveWalletRechargeFlow(rechargeFlow, onNavigate);
-  const resolvedPayoutFlow = resolveWalletPayoutFlow(payoutFlow, onNavigate);
+  const resolvedWithdrawalFlow = resolveWalletWithdrawalFlow(withdrawalFlow, onNavigate);
   const featuredRechargePackage =
     state.overview.rechargePackages.find((rechargePackage) => rechargePackage.recommended)
     ?? state.overview.rechargePackages[0]
@@ -95,11 +95,11 @@ export function SdkworkWalletHeaderEntry({
 
   function openWalletWithdraw() {
     if (
-      resolvedPayoutFlow === "checkout"
+      resolvedWithdrawalFlow === "checkout"
       && onNavigate
-      && navigateWalletWithdrawPayout({
+      && navigateWalletWithdrawalRequest({
         onNavigate,
-        payoutBasePath,
+        withdrawalRequestBasePath,
       })
     ) {
       return;
@@ -241,8 +241,8 @@ export function SdkworkWalletHeaderEntry({
           }
         }}
         open={state.isWithdrawOpen}
-        payoutBasePath={payoutBasePath}
-        payoutFlow={resolvedPayoutFlow}
+        withdrawalFlow={resolvedWithdrawalFlow}
+        withdrawalRequestBasePath={withdrawalRequestBasePath}
       />
     </div>
   );

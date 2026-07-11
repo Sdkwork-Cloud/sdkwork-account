@@ -188,6 +188,50 @@ test("account boundary assigns value-order orchestration to order and channel ex
   });
 });
 
+test("account pc withdraw delegates to order withdrawal request flow", () => {
+  const integrationSpec = JSON.parse(
+    readFileSync(join(repoRoot, "specs/commerce-integration.spec.json"), "utf8"),
+  );
+  const shellSource = readFileSync(
+    join(repoRoot, "apps/sdkwork-account-pc/packages/sdkwork-account-pc-shell/src/index.tsx"),
+    "utf8",
+  );
+  const walletIndexSource = readFileSync(
+    join(repoRoot, "apps/sdkwork-account-pc/packages/sdkwork-account-pc-wallet/src/index.ts"),
+    "utf8",
+  );
+  const withdrawalNavigationSource = readFileSync(
+    join(
+      repoRoot,
+      "apps/sdkwork-account-pc/packages/sdkwork-account-pc-wallet/src/wallet-withdrawal-navigation.ts",
+    ),
+    "utf8",
+  );
+  const integratorGuide = readFileSync(
+    join(repoRoot, "docs/guides/integrator/README.md"),
+    "utf8",
+  );
+
+  const walletSpec = integrationSpec.pcPackages["account-pc-wallet"];
+  const withdrawalPort = walletSpec.requiredIntegratorPorts.find((entry) =>
+    entry.methods.includes("withdrawals.requests.create")
+  );
+  assert.ok(withdrawalPort);
+  assert.equal(withdrawalPort.capability, "sdkwork-order");
+  assert.equal(withdrawalPort.defaultRoute, "/withdrawals/requests");
+  assert.ok(walletSpec.forbiddenSdkUsage.includes("direct navigation to provider payout routes"));
+  assert.ok(walletSpec.forbiddenSdkUsage.includes("withdrawals.* on account-service"));
+
+  assert.match(shellSource, /VITE_SDKWORK_ORDER_WITHDRAWAL_REQUEST_BASE/);
+  assert.doesNotMatch(shellSource, /VITE_SDKWORK_PAYMENT_PAYOUT_BASE|payments\/payout|payoutBasePath|payoutFlow/);
+  assert.match(walletIndexSource, /wallet-withdrawal-navigation/);
+  assert.doesNotMatch(walletIndexSource, /wallet-payout-navigation/);
+  assert.match(withdrawalNavigationSource, /DEFAULT_WITHDRAWAL_REQUEST_BASE_PATH = "\/withdrawals\/requests"/);
+  assert.doesNotMatch(withdrawalNavigationSource, /payments\/payout|payoutBasePath|payoutFlow/);
+  assert.match(integratorGuide, /withdrawalRequestBasePath="\/withdrawals\/requests"/);
+  assert.doesNotMatch(integratorGuide, /payments\/payout|payoutBasePath|payoutFlow|orders\.pay\b/);
+});
+
 test("database DDL and repository SQL use acct account-owned table names", () => {
   const baselineFiles = [
     "database/ddl/baseline/postgres/0001_account_baseline.sql",

@@ -1,4 +1,4 @@
-export type SdkworkWalletCommerceCapability = "order" | "payment";
+export type SdkworkWalletCommerceCapability = "order";
 
 export type SdkworkWalletCommerceOperation = "recharge" | "withdraw";
 
@@ -9,7 +9,7 @@ export class SdkworkWalletCommerceDelegationError extends Error {
 
   constructor(
     operation: SdkworkWalletCommerceOperation,
-    capability: SdkworkWalletCommerceCapability = "payment",
+    capability: SdkworkWalletCommerceCapability = "order",
   ) {
     super(createWalletCommerceDelegationMessage(operation, capability));
     this.name = "SdkworkWalletCommerceDelegationError";
@@ -20,32 +20,27 @@ export class SdkworkWalletCommerceDelegationError extends Error {
 
 export function createWalletCommerceDelegationMessage(
   operation: SdkworkWalletCommerceOperation,
-  capability: SdkworkWalletCommerceCapability = "payment",
+  capability: SdkworkWalletCommerceCapability = "order",
 ): string {
+  void capability;
+
   if (operation === "recharge") {
     return (
-      "Point recharge is owned by sdkwork-order (creates a commerce_order with subject=points_recharge). "
-      + "Inject an order-compatible recharge service and call recharges.orders.create via wallet-recharge-service; "
-      + "account backend-api adjustments apply after payment succeeds."
-    );
-  }
-
-  if (capability === "order") {
-    return (
-      "Cash withdrawal is owned by sdkwork-order/sdkwork-payment payout settlement. "
-      + "Use payment payout checkout; account backend-api debits after payout completes."
+      "Account recharge is owned by sdkwork-order account-value flows. "
+      + "Inject an order-compatible recharge service and call recharges.orders.create or Token Bank/package/plan/coupon order APIs; "
+      + "account backend-api ledger commands apply only after order-owned fulfillment evidence is ready."
     );
   }
 
   return (
-    "Cash withdrawal is owned by sdkwork-payment payout settlement. "
-    + "Use payment payout checkout; account backend-api debits after payout completes."
+    "Cash withdrawal is owned by sdkwork-order withdrawal request flows. "
+    + "Create withdrawals.requests through sdkwork-order; account backend-api holds, settles, or releases cash only when order orchestrates the lifecycle."
   );
 }
 
 export function assertWalletCommerceDelegated(
   operation: SdkworkWalletCommerceOperation,
-  capability: SdkworkWalletCommerceCapability = "payment",
+  capability: SdkworkWalletCommerceCapability = "order",
 ): never {
   throw new SdkworkWalletCommerceDelegationError(operation, capability);
 }

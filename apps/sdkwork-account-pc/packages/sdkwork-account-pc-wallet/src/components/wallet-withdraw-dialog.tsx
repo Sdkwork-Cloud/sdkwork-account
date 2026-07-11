@@ -20,17 +20,17 @@ import { useSdkworkWalletControllerState } from "../wallet-controller";
 import { createDefaultSdkworkWalletWithdrawDestinations } from "../wallet";
 import { useSdkworkWalletIntl } from "../wallet-intl";
 import {
-  navigateWalletWithdrawPayout,
-  type SdkworkWalletPayoutFlow,
-} from "../wallet-payout-navigation";
+  navigateWalletWithdrawalRequest,
+  type SdkworkWalletWithdrawalFlow,
+} from "../wallet-withdrawal-navigation";
 
 export interface SdkworkWalletWithdrawDialogProps {
   controller: SdkworkWalletController;
   onNavigate?: (route: string) => void;
   onOpenChange?: (open: boolean) => void;
   open: boolean;
-  payoutBasePath?: string;
-  payoutFlow?: SdkworkWalletPayoutFlow;
+  withdrawalFlow?: SdkworkWalletWithdrawalFlow;
+  withdrawalRequestBasePath?: string;
 }
 
 function sanitizeAmount(value: string): string {
@@ -45,11 +45,11 @@ export function SdkworkWalletWithdrawDialog({
   onNavigate,
   onOpenChange,
   open,
-  payoutBasePath,
-  payoutFlow = "direct",
+  withdrawalFlow = "direct",
+  withdrawalRequestBasePath,
 }: SdkworkWalletWithdrawDialogProps) {
   const state = useSdkworkWalletControllerState(controller);
-  const usesCheckoutFlow = payoutFlow === "checkout" && Boolean(onNavigate);
+  const usesCheckoutFlow = withdrawalFlow === "checkout" && Boolean(onNavigate);
   const destinations = useMemo(() => createDefaultSdkworkWalletWithdrawDestinations(), []);
   const [amountInput, setAmountInput] = useState("");
   const [accountName, setAccountName] = useState("");
@@ -266,7 +266,7 @@ export function SdkworkWalletWithdrawDialog({
 
           {selectedDestination ? (
             <div className="rounded-[1rem] border border-[var(--sdk-color-border-subtle)] bg-[var(--sdk-color-surface-panel)] px-4 py-3 text-sm text-[var(--sdk-color-text-secondary)]">
-              {copy.withdrawDialog.payoutRailLabel}:{" "}
+              {copy.withdrawDialog.withdrawalRailLabel}:{" "}
               <span className="font-semibold text-[var(--sdk-color-text-primary)]">
                 {formatWithdrawDestinationLabel(selectedDestination.code)}
               </span>
@@ -275,7 +275,7 @@ export function SdkworkWalletWithdrawDialog({
 
           {usesCheckoutFlow ? (
             <div className="rounded-[1.25rem] border border-dashed border-[var(--sdk-color-border-default)] px-4 py-4 text-sm text-[var(--sdk-color-text-secondary)]">
-              {copy.withdrawDialog.payoutFlowDescription}
+              {copy.withdrawDialog.withdrawalFlowDescription}
             </div>
           ) : null}
         </div>
@@ -294,9 +294,9 @@ export function SdkworkWalletWithdrawDialog({
 
               if (usesCheckoutFlow && onNavigate) {
                 if (
-                  navigateWalletWithdrawPayout({
+                  navigateWalletWithdrawalRequest({
                     onNavigate,
-                    payoutBasePath,
+                    withdrawalRequestBasePath,
                   })
                 ) {
                   onOpenChange?.(false);

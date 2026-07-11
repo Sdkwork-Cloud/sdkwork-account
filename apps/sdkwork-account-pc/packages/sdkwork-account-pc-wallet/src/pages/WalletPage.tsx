@@ -30,10 +30,10 @@ import {
   stripWalletCommerceReturnParams,
 } from "../wallet-commerce-return";
 import {
-  navigateWalletWithdrawPayout,
-  type SdkworkWalletPayoutFlow,
-  resolveWalletPayoutFlow,
-} from "../wallet-payout-navigation";
+  navigateWalletWithdrawalRequest,
+  type SdkworkWalletWithdrawalFlow,
+  resolveWalletWithdrawalFlow,
+} from "../wallet-withdrawal-navigation";
 
 export interface SdkworkWalletPageProps {
   checkoutBasePath?: string;
@@ -41,21 +41,21 @@ export interface SdkworkWalletPageProps {
   locale?: string | null;
   messages?: SdkworkWalletMessagesOverrides;
   onNavigate?: (route: string) => void;
-  payoutBasePath?: string;
-  payoutFlow?: SdkworkWalletPayoutFlow;
   rechargeFlow?: SdkworkWalletRechargeFlow;
   /** Post-checkout redirect target; defaults to current pathname or `/wallet`. */
   walletReturnPath?: string;
+  withdrawalFlow?: SdkworkWalletWithdrawalFlow;
+  withdrawalRequestBasePath?: string;
 }
 
 interface SdkworkWalletPageContentProps {
   checkoutBasePath?: string;
   controller?: SdkworkWalletController;
   onNavigate?: (route: string) => void;
-  payoutBasePath?: string;
-  payoutFlow?: SdkworkWalletPayoutFlow;
   rechargeFlow?: SdkworkWalletRechargeFlow;
   walletReturnPath?: string;
+  withdrawalFlow?: SdkworkWalletWithdrawalFlow;
+  withdrawalRequestBasePath?: string;
 }
 
 function resolveWalletReturnPath(walletReturnPath: string | undefined): string | undefined {
@@ -73,16 +73,16 @@ function SdkworkWalletPageContent({
   checkoutBasePath,
   controller: controllerProp,
   onNavigate,
-  payoutBasePath,
-  payoutFlow,
   rechargeFlow,
   walletReturnPath,
+  withdrawalFlow,
+  withdrawalRequestBasePath,
 }: SdkworkWalletPageContentProps) {
   const controller = useSdkworkWalletController(controllerProp);
   const state = useSdkworkWalletControllerState(controller);
   const { copy } = useSdkworkWalletIntl();
   const resolvedRechargeFlow = resolveWalletRechargeFlow(rechargeFlow, onNavigate);
-  const resolvedPayoutFlow = resolveWalletPayoutFlow(payoutFlow, onNavigate);
+  const resolvedWithdrawalFlow = resolveWalletWithdrawalFlow(withdrawalFlow, onNavigate);
   const resolvedWalletReturnPath = onNavigate ? resolveWalletReturnPath(walletReturnPath) : undefined;
   const featuredRechargePackage =
     state.overview.rechargePackages.find((rechargePackage) => rechargePackage.recommended)
@@ -151,11 +151,11 @@ function SdkworkWalletPageContent({
 
   function openWalletWithdraw() {
     if (
-      resolvedPayoutFlow === "checkout"
+      resolvedWithdrawalFlow === "checkout"
       && onNavigate
-      && navigateWalletWithdrawPayout({
+      && navigateWalletWithdrawalRequest({
         onNavigate,
-        payoutBasePath,
+        withdrawalRequestBasePath,
       })
     ) {
       return;
@@ -238,8 +238,8 @@ function SdkworkWalletPageContent({
             }
           }}
           open={state.isWithdrawOpen}
-          payoutBasePath={payoutBasePath}
-          payoutFlow={resolvedPayoutFlow}
+          withdrawalFlow={resolvedWithdrawalFlow}
+          withdrawalRequestBasePath={withdrawalRequestBasePath}
         />
       </div>
     </div>

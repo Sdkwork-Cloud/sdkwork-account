@@ -919,7 +919,7 @@ export function createSdkworkWalletService(
 
       requireSdkworkAccountSession("Please sign in to manage wallet balances.");
 
-      assertWalletCommerceDelegated("withdraw", "payment");
+      assertWalletCommerceDelegated("withdraw", "order");
 
     },
 

@@ -224,19 +224,19 @@ export function createDefaultSdkworkWalletWithdrawDestinations(): SdkworkWalletW
   return [
     {
       code: "bank_account",
-      description: "Route the payout through the linked settlement bank account.",
+      description: "Use the linked settlement bank account for this withdrawal.",
       id: "withdraw-bank-account",
       label: "Bank account",
     },
     {
       code: "ALIPAY",
-      description: "Submit the payout to the linked Alipay settlement rail.",
+      description: "Use the linked Alipay settlement rail for this withdrawal.",
       id: "withdraw-alipay",
       label: "Alipay",
     },
     {
       code: "WECHAT_PAY",
-      description: "Submit the payout to the linked WeChat Pay settlement rail.",
+      description: "Use the linked WeChat Pay settlement rail for this withdrawal.",
       id: "withdraw-wechat-pay",
       label: "WeChat Pay",
     },

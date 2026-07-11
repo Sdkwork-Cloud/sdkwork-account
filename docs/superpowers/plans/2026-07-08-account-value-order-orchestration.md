@@ -4,7 +4,7 @@
 
 **Goal:** Build production-ready recharge, Token Bank plan purchase, coupon redemption, refund, and withdrawal orchestration with `sdkwork-order` as the business owner, `sdkwork-payment` as the provider executor, and `sdkwork-account` as the ledger truth source.
 
-**Architecture:** Account never creates orders or executes payment channels. Order creates and settles all account-value orders, calls payment for collection/refund/payout execution, and calls account for ledger hold, credit, debit, settlement, release, and reversal. Payment may validate existing orders but must not call account or write account ledger side effects.
+**Architecture:** Account never creates orders or executes payment channels. Order creates and settles all account-value orders, calls payment for provider collection and refund execution today, keeps provider payout behind a future executor boundary, and calls account for ledger hold, credit, debit, settlement, release, and reversal. Payment may validate existing orders but must not call account or write account ledger side effects.
 
 **Tech Stack:** Rust services and `sqlx` repositories, SDKWork v3 OpenAPI envelopes, generated TypeScript SDK facades, SDKWork database contracts, SDKWork pagination and SDK import validators.
 
@@ -16,7 +16,7 @@ This is a cross-repository plan. Execute from each writable repository root:
 
 - `E:\sdkwork-space\sdkwork-account`: account boundary, ledger command contracts, docs.
 - `E:\sdkwork-space\sdkwork-order`: PRD, architecture, order subjects, package/plan/coupon/refund/withdrawal APIs, sagas, database, SDKs.
-- `E:\sdkwork-space\sdkwork-payment`: refund and payout executor surfaces only; no account dependency.
+- `E:\sdkwork-space\sdkwork-payment`: provider refund executor surfaces today and future provider payout executor boundary only; no account dependency.
 
 Current sandbox allows writes only in `sdkwork-account`. Tasks touching `sdkwork-order` or `sdkwork-payment` require a writable run rooted at those repositories.
 
@@ -93,7 +93,7 @@ Expected: FAIL because the boundary spec and machine contract do not yet expose 
 Patch account PRD, architecture, commerce boundary spec, and machine contract so:
 
 - `sdkwork-order` owns recharge, coupon redemption, refund request, and withdrawal request orchestration.
-- `sdkwork-payment` executes payment, provider refund, and provider payout channels only.
+- `sdkwork-payment` executes provider collection and refund today, and owns the future provider payout executor boundary.
 - `sdkwork-account` exposes idempotent ledger, hold, credit, debit, settlement, release, and reversal commands.
 - Payment direct dependency on account is forbidden.
 
@@ -190,7 +190,7 @@ PRD must state:
 - every recharge, coupon redemption, refund, and withdrawal has an order record
 - packages and plans are order-owned product/order facts
 - account only handles ledger effects
-- payment only executes provider channels
+- payment executes provider collection and refund today; provider payout remains fail-closed until a concrete executor exists
 
 Architecture must state:
 
@@ -349,9 +349,10 @@ Cover:
 - Refund pre-holds or reverses account balance before provider refund.
 - Refund success commits account reversal.
 - Refund failure releases account hold.
-- Withdrawal freezes cash before payout.
-- Withdrawal success settles hold and debits cash.
-- Withdrawal failure releases hold.
+- Withdrawal freezes cash before provider payout execution is attempted.
+- Current default provider payout runtime is fail-closed and releases the hold.
+- Future provider payout success settles hold and debits cash.
+- Provider payout failure releases hold.
 
 - [ ] **Step 2: Implement ports**
 
@@ -382,7 +383,7 @@ Run targeted cargo tests, then `cargo test --workspace`.
 
 Expected: PASS.
 
-## Task 6: Payment Refund And Payout Executor Boundary
+## Task 6: Payment Refund Executor And Future Payout Boundary
 
 **Writable root:** `E:\sdkwork-space\sdkwork-payment`
 
@@ -403,17 +404,12 @@ Assert:
 - payment has no crate/package dependency on account
 - payment has no crate/package dependency on order service
 - payment has no recharge routes
-- payment refund and payout commands require existing `orderId`
+- payment refund commands require existing `orderId`
+- provider payout stays as a future executor boundary until a concrete payment implementation exists
 
-- [ ] **Step 2: Add payout executor if absent**
+- [ ] **Step 2: Keep payout fail-closed until a concrete executor exists**
 
-Add provider payout abstractions parallel to refund:
-
-- `payouts.create`
-- `payouts.retrieve`
-- `payouts.list`
-- provider submission retry
-- provider status query
+Do not add fake payout success or placeholder provider APIs. Document the future provider payout executor boundary and keep the current order runtime fail-closed until payment publishes a concrete executor contract.
 
 - [ ] **Step 3: Keep account side effects out**
 

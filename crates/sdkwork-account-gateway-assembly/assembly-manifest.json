@@ -4,7 +4,7 @@
   "applicationCode": "account",
   "packageName": "sdkwork-account-gateway-assembly",
   "crateDir": "crates/sdkwork-account-gateway-assembly",
-  "generatedAt": "2026-06-25T13:14:32.553Z",
+  "generatedAt": "2026-07-08T01:33:36.032Z",
   "routeCrates": [
     {
       "packageName": "sdkwork-routes-account-app-api",

@@ -181,11 +181,23 @@
             "recharges.orders.create"
           ],
           "purpose": "Token Bank and points purchase order lifecycle stays outside account domain."
+        },
+        {
+          "capability": "sdkwork-order",
+          "port": "order-compatible withdrawal request service or host navigation route",
+          "methods": [
+            "withdrawals.requests.create",
+            "withdrawals.requests.retrieve"
+          ],
+          "defaultRoute": "/withdrawals/requests",
+          "purpose": "Cash withdrawal request lifecycle stays outside account domain and is orchestrated by order before account hold settlement or release."
         }
       ],
       "forbiddenSdkUsage": [
         "raw HTTP to /recharges/*",
+        "direct navigation to provider payout routes",
         "orders.* or recharges.* on account-service",
+        "withdrawals.* on account-service",
         "raw AI runtime calls from account wallet UI"
       ]
     }

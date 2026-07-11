@@ -8,7 +8,7 @@ export * from "./wallet-recharge-service.ts";
 export * from "./wallet-service.ts";
 export * from "./wallet-checkout-navigation.ts";
 export * from "./wallet-commerce-return.ts";
-export * from "./wallet-payout-navigation.ts";
+export * from "./wallet-withdrawal-navigation.ts";
 export * from "./components/wallet-balance-panel.tsx";
 export * from "./components/wallet-header-entry.tsx";
 export * from "./components/wallet-holds-list.tsx";

@@ -29,7 +29,7 @@ Do not introduce alternate account asset identifiers outside `cash`, `points`, a
 | Repository | Spec entry |
 | --- | --- |
 | `sdkwork-order` | Unified orders, checkout, and Token Bank purchase order lifecycle. |
-| `sdkwork-payment` | Payment intent, refund, payout, and provider execution. |
+| `sdkwork-payment` | Payment intent, provider refund execution, provider webhook handling, and future provider payout executor boundary. |
 | Pricing/metering capability | Raw AI usage and Token Bank conversion snapshots. |
 
 ## Verification

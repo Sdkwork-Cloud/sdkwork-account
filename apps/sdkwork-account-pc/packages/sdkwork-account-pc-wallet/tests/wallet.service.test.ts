@@ -187,7 +187,7 @@ describe("sdkwork-account-pc-wallet service", () => {
     expect(overview.holds).toEqual([]);
   });
 
-  it("rejects recharge without order SDK and withdraw until payout flows are implemented", async () => {
+  it("rejects recharge and withdraw without the order SDK account-value flow", async () => {
     const service = createSdkworkWalletService({
       accountAppService: createAccountAppServiceMock(),
     });
@@ -206,7 +206,7 @@ describe("sdkwork-account-pc-wallet service", () => {
         amountCny: 12.5,
         destinationCode: "bank_account",
       }),
-    ).rejects.toThrow(/sdkwork-payment/i);
+    ).rejects.toThrow(/sdkwork-order/i);
   });
 
   it("maps recharge packages from order SDK into wallet overview", async () => {

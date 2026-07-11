@@ -6,7 +6,8 @@ const env = (import.meta as ImportMeta & { env?: Record<string, string | undefin
 
 const DEFAULT_ACCOUNT_API_BASE = env?.VITE_SDKWORK_ACCOUNT_API_BASE ?? "http://127.0.0.1:18095";
 const DEFAULT_PAYMENT_CHECKOUT_BASE = env?.VITE_SDKWORK_PAYMENT_CHECKOUT_BASE ?? "/checkout";
-const DEFAULT_PAYMENT_PAYOUT_BASE = env?.VITE_SDKWORK_PAYMENT_PAYOUT_BASE ?? "/payments/payout";
+const DEFAULT_ORDER_WITHDRAWAL_REQUEST_BASE =
+  env?.VITE_SDKWORK_ORDER_WITHDRAWAL_REQUEST_BASE ?? "/withdrawals/requests";
 
 const SdkworkWalletPage = lazy(async () => {
   const module = await import("@sdkwork/account-pc-wallet");
@@ -35,9 +36,9 @@ export function AccountAppShell() {
         <SdkworkWalletPage
           checkoutBasePath={DEFAULT_PAYMENT_CHECKOUT_BASE}
           onNavigate={navigateCommerceRoute}
-          payoutBasePath={DEFAULT_PAYMENT_PAYOUT_BASE}
-          payoutFlow="checkout"
           rechargeFlow="checkout"
+          withdrawalFlow="checkout"
+          withdrawalRequestBasePath={DEFAULT_ORDER_WITHDRAWAL_REQUEST_BASE}
         />
       </Suspense>
     </SdkworkThemeProvider>

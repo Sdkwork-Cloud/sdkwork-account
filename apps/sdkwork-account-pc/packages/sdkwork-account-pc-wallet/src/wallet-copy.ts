@@ -170,13 +170,13 @@ export interface SdkworkWalletMessages {
     insufficientTitle: string;
     invalidRequestNoDescription: string;
     invalidRequestNoTitle: string;
-    payoutFlowDescription: string;
-    payoutRailLabel: string;
     requestNoLabel: string;
     requestNoPlaceholder: string;
     signInRequiredDescription: string;
     signInRequiredTitle: string;
     title: string;
+    withdrawalFlowDescription: string;
+    withdrawalRailLabel: string;
     withdrawDestinationLabel: string;
   };
 }
@@ -261,7 +261,7 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     daysRemainingValue: "{value} days remaining",
     pointsForPriceValue: "{points} for {price}",
     pointsIncludedValue: "{points} points included",
-    projectedBalanceValue: "Projected balance after payout: {value}",
+    projectedBalanceValue: "Projected balance after withdrawal: {value}",
     remarksValue: "Withdrawal via {value}",
     totalPointsValue: "{value} total points",
   },
@@ -357,15 +357,15 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
   },
   withdrawDestination: {
     ALIPAY: {
-      description: "Submit the payout to the linked Alipay settlement rail.",
+      description: "Use the linked Alipay settlement rail for this withdrawal.",
       label: "Alipay",
     },
     WECHAT_PAY: {
-      description: "Submit the payout to the linked WeChat Pay settlement rail.",
+      description: "Use the linked WeChat Pay settlement rail for this withdrawal.",
       label: "WeChat Pay",
     },
     bank_account: {
-      description: "Route the payout through the linked settlement bank account.",
+      description: "Use the linked settlement bank account for this withdrawal.",
       label: "Bank account",
     },
   },
@@ -379,18 +379,18 @@ const EN_US_MESSAGES: SdkworkWalletMessages = {
     availableCashEyebrow: "Available cash",
     bankNameLabel: "Bank name",
     bankNamePlaceholder: "Enter bank name",
-    description: "Submit a payout request through the shared wallet operations lane and keep desktop commerce apps aligned on one withdraw workflow.",
+    description: "Submit a withdrawal request through the order-owned account-value flow and keep desktop commerce apps aligned on one workflow.",
     insufficientDescription: "Reduce the withdrawal amount so it does not exceed the current withdrawable balance.",
     insufficientTitle: "Insufficient available cash",
     invalidRequestNoDescription: "Request no must use 6-64 letters, numbers, underscores, or hyphens.",
     invalidRequestNoTitle: "Invalid request number",
-    payoutFlowDescription: "Payout settlement continues in sdkwork-payment; account debits after payout completes.",
-    payoutRailLabel: "Payout rail",
     requestNoLabel: "Request no",
     requestNoPlaceholder: "Optional idempotency key",
     signInRequiredDescription: "Withdrawal actions require an authenticated wallet session.",
     signInRequiredTitle: "Sign in required",
     title: "Withdraw balance",
+    withdrawalFlowDescription: "Withdrawal requests are created in sdkwork-order. Account holds, settles, or releases cash only through order-owned lifecycle evidence.",
+    withdrawalRailLabel: "Withdrawal rail",
     withdrawDestinationLabel: "Withdraw destination",
   },
 };
@@ -563,13 +563,13 @@ const ZH_CN_MESSAGES: SdkworkWalletMessages = {
     insufficientTitle: "\u53ef\u63d0\u73b0\u4f59\u989d\u4e0d\u8db3",
     invalidRequestNoDescription: "\u8bf7\u6c42\u53f7\u5fc5\u987b\u4f7f\u7528 6-64 \u4f4d\u5b57\u6bcd\u3001\u6570\u5b57\u3001\u4e0b\u5212\u7ebf\u6216\u8fde\u5b57\u7b26\u3002",
     invalidRequestNoTitle: "\u8bf7\u6c42\u53f7\u683c\u5f0f\u65e0\u6548",
-    payoutFlowDescription: "\u63d0\u73b0\u6253\u6b3e\u5728 sdkwork-payment \u7ee7\u7eed\u5904\u7406\uff1b\u8d26\u6237\u51fa\u8d26\u5728\u6253\u6b3e\u6210\u529f\u540e\u7531 account \u5165\u8d26\u3002",
-    payoutRailLabel: "\u63d0\u73b0\u901a\u9053",
     requestNoLabel: "\u8bf7\u6c42\u53f7",
     requestNoPlaceholder: "\u53ef\u9009\u7684\u5e42\u7b49\u8bf7\u6c42\u6807\u8bc6",
     signInRequiredDescription: "\u63d0\u73b0\u64cd\u4f5c\u9700\u8981\u5df2\u767b\u5f55\u7684\u94b1\u5305\u4f1a\u8bdd\u3002",
     signInRequiredTitle: "\u9700\u8981\u767b\u5f55",
     title: "\u63d0\u73b0\u4f59\u989d",
+    withdrawalFlowDescription: "\u63d0\u73b0\u7533\u8bf7\u7531 sdkwork-order \u521b\u5efa\u5e76\u7f16\u6392\uff1b\u8d26\u6237\u53ea\u6839\u636e\u8ba2\u5355\u751f\u547d\u5468\u671f\u8bc1\u636e\u9884\u6263\u3001\u7ed3\u7b97\u6216\u91ca\u653e\u73b0\u91d1\u3002",
+    withdrawalRailLabel: "\u63d0\u73b0\u901a\u9053",
     withdrawDestinationLabel: "\u63d0\u73b0\u65b9\u5f0f",
   },
 };

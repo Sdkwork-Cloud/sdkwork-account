@@ -144,10 +144,10 @@ Account is the **ledger truth source** only. Do not implement order creation, pa
 | Capability | Owns | Calls account for |
 | --- | --- | --- |
 | `sdkwork-order` | `commerce_order` lifecycle (product, virtual goods, checkout) | hold create/settle/release before/after pay |
-| `sdkwork-payment` | payment intent, attempt, refund, webhook on existing `orderId` | must not create `commerce_order` or credit account ledger directly |
-| `sdkwork-order` | unified `commerce_order` (`subject=points_recharge`), recharge packages, `/recharges/*`, pay orchestration | must not write account ledger SQL; fulfillment saga calls account backend `wallet.adjustments.points` |
+| `sdkwork-payment` | payment intent, attempt, provider refund, webhook on existing `orderId`, future provider payout executor boundary | must not create `commerce_order` or credit account ledger directly |
+| `sdkwork-order` | account-value orders and requests: recharge packages, Token Bank plans, coupon redemption, refund requests, withdrawal requests, `/recharges/*`, `orders.payments.create`, `withdrawals.requests.*` | must not write account ledger SQL; fulfillment saga calls account backend wallet/token_bank commands |
 
-PC wallet recharge/withdraw buttons **delegate** to payment checkout routes via `onNavigate`; see `docs/guides/integrator/README.md`.
+PC wallet recharge buttons delegate to order checkout/payment collection routes, and withdraw buttons delegate to order withdrawal request routes via `onNavigate`; see `docs/guides/integrator/README.md`. Wallet UI must not navigate directly to provider payout routes.
 
 Module specs (authoritative for commerce boundaries): `specs/README.md`, `specs/COMMERCE_BOUNDARY_SPEC.md`, `specs/commerce-integration.spec.json`. Cross-repo: `sdkwork-order/specs/RECHARGE_ORDER_SPEC.md`, `sdkwork-payment/specs/PAYMENT_EXECUTOR_SPEC.md`.
 

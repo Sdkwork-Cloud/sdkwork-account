@@ -28,7 +28,7 @@ Account is the ledger truth source for:
 
 | Account | Code | Owned by account | Not owned by account |
 | --- | --- | --- | --- |
-| Cash | `cash` | Balance, ledger, holds, transfers, display history. | Payment provider execution, payout settlement, acquiring channel config. |
+| Cash | `cash` | Balance, ledger, holds, transfers, display history. | Payment provider execution, provider payout execution or settlement, acquiring channel config. |
 | Points | `points` | Traditional points balance, lots, expiry, allocation audit. | Promotion campaign rules and product package publishing. |
 | Token Bank | `token_bank` | AI account balance, exchange snapshots, holds, AI spending, service income, burn, transfer, reversal, reconciliation. | Model pricing formulas, raw AI metering, AI execution, provider cost policy. |
 
@@ -48,7 +48,7 @@ Database naming boundary:
 | `commerce_order` create/list/cancel lifecycle | `sdkwork-order` |
 | Recharge or purchase package CRUD / publish | `sdkwork-order` or catalog/subscription capability |
 | Recharge, coupon redemption, refund, and withdrawal orchestration | `sdkwork-order` |
-| Payment intent, provider refund, provider payout, provider webhook ingest, and channel config | `sdkwork-payment` |
+| Payment intent, provider refund execution, provider webhook ingest, channel config, and future provider payout executor contracts | `sdkwork-payment` |
 | Model execution for LLM/image/video/Agent/workflow/plugin | AI runtime capability |
 | Raw usage collection | metering capability |
 | Model-specific price tables and conversion formulas | pricing capability |
@@ -59,7 +59,7 @@ Database naming boundary:
 
 ```text
 `sdkwork-order`    -> `sdkwork-account` backend-api   (value-order fulfillment, holds, reversals)
-`sdkwork-order`    -> `sdkwork-payment` executor      (payment, refund, payout channel execution)
+`sdkwork-order`    -> `sdkwork-payment` executor      (provider collection/refund today, future payout boundary)
 `sdkwork-payment`  -> `commerce_order` read-only SQL  (existing order validation only)
 pricing/metering   -> `sdkwork-account` backend-api   (Token Bank settlement inputs)
 AI runtime         -> `sdkwork-account` backend-api   (hold/settle/release through governed service)
@@ -71,7 +71,8 @@ Rules:
 - Recharge, coupon redemption, refund, and withdrawal orchestration belong to `sdkwork-order`.
 - Account must never import order, payment, pricing, metering, or AI runtime crates at repository layer.
 - Account must never read `commerce_order`, payment provider, pricing table, or raw AI usage tables.
-- Fulfillment after payment, coupon redemption, refund reversal, and withdrawal settlement must be triggered by order fulfillment calling account backend-api.
+- Fulfillment after payment, coupon redemption, refund reversal, and withdrawal hold settlement or release must be triggered by order fulfillment calling account backend-api.
+- Withdrawal provider payout remains fail-closed until `sdkwork-payment` exposes a concrete provider payout executor; account must not model payout success directly.
 - `sdkwork-payment` may only reference `commerce_order` for read-only validation; it must not call account backend-api, import account crates, or write account ledger side effects.
 - AI consumption must pass pricing and metering snapshot references into account; account must not calculate model prices.
 
@@ -98,6 +99,7 @@ Envelope: `SdkWorkApiResponse` + `ProblemDetail` per `API_SPEC.md`.
 Rules:
 
 - Wallet purchase/recharge UI may live in account PC, but order creation and payment checkout must call order/payment SDK surfaces through approved service packages.
+- Wallet withdrawal UI may live in account PC, but withdrawal requests must be created through order-owned `withdrawals.requests.*` surfaces. Account PC must not navigate directly to provider payout routes.
 - Account service must not add `recharges.*`, `orders.*`, payment provider execution, pricing formula, metering collection, or raw AI execution calls.
 - Token Bank UI must label the account as Token Bank and must not introduce compute token, compute credit, or naked token account wording.
 
