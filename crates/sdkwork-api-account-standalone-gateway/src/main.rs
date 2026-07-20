@@ -8,7 +8,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use sdkwork_account_gateway_assembly::assemble_application_router;
+use sdkwork_api_account_assembly::assemble_api_router;
 use sdkwork_account_service_host::AccountServiceHost;
 use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_web_bootstrap::{service_router, ReadinessCheck, ReadinessFuture, ServiceRouterConfig};
@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let business = assemble_application_router(host.clone())
+    let business = assemble_api_router(host.clone())
         .await
         .router
         .layer(TraceLayer::new_for_http())

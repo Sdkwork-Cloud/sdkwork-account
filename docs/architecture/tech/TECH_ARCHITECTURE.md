@@ -28,7 +28,7 @@ Account does not create orders, orchestrate recharge, orchestrate refund, orches
 | Domain core | Rust domain and ports in `crates/sdkwork-account-service/`. |
 | Repository | `sqlx` repositories in `crates/sdkwork-account-repository-sqlx/`. |
 | HTTP routes | Rust app-api and backend-api route crates under `crates/sdkwork-routes-account-*-api/`. |
-| Gateway | `crates/sdkwork-account-gateway-assembly/` and `crates/sdkwork-account-standalone-gateway/`. |
+| Gateway | `crates/sdkwork-api-account-assembly/` and `crates/sdkwork-api-account-standalone-gateway/`. |
 | SDKs | Generated TypeScript SDK families under `sdks/sdkwork-account-app-sdk/` and `sdks/sdkwork-account-backend-sdk/`. |
 | PC client | `apps/sdkwork-account-pc/` consuming composed SDK facades through account service packages. |
 | API profile | SDKWork v3 envelopes, `ProblemDetail`, standard pagination, and generated SDK resource methods. |
@@ -90,7 +90,7 @@ Payment must not call account backend-api or import account crates. Recharge, co
 | Domain and ports | `crates/sdkwork-account-service/` |
 | Repository | `crates/sdkwork-account-repository-sqlx/` |
 | Route crates | `crates/sdkwork-routes-account-app-api/`, `crates/sdkwork-routes-account-backend-api/` |
-| Gateway | `crates/sdkwork-account-gateway-assembly/`, `crates/sdkwork-account-standalone-gateway/` |
+| Gateway | `crates/sdkwork-api-account-assembly/`, `crates/sdkwork-api-account-standalone-gateway/` |
 | SDK families | `sdks/sdkwork-account-app-sdk/`, `sdks/sdkwork-account-backend-sdk/` |
 | PC app | `apps/sdkwork-account-pc/` |
 | Shared account service facade | `apps/sdkwork-account-common/packages/sdkwork-account-service/` |

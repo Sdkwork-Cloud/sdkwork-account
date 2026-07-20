@@ -52,7 +52,7 @@ test("standalone gateway start script uses the declared binary name", () => {
   const packageJson = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
   assert.match(
     packageJson.scripts.start,
-    /--bin sdkwork-account-standalone-gateway/,
+    /--bin sdkwork-api-account-standalone-gateway/,
   );
 });
 

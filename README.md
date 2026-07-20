@@ -7,7 +7,7 @@ SDKWork commerce **account / wallet** capability repository (domain `commerce`, 
 - Domain service: `crates/sdkwork-account-service/`
 - Repository (sqlx): `crates/sdkwork-account-repository-sqlx/`
 - HTTP routers: `crates/sdkwork-routes-account-app-api/`, `crates/sdkwork-routes-account-backend-api/`
-- Gateway: `crates/sdkwork-account-standalone-gateway/`
+- Gateway: `crates/sdkwork-api-account-standalone-gateway/`
 - PC surface: `apps/sdkwork-account-pc/`
 - API authorities: `apis/app-api/account/`, `apis/backend-api/account/`
 
