@@ -1,0 +1,16 @@
+[package]
+name = "sdkwork-api-account-assembly"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+description = "Generated API assembly for sdkwork-account application HTTP plane."
+
+[lib]
+name = "sdkwork_api_account_assembly"
+path = "src/lib.rs"
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+sdkwork-routes-account-app-api = { path = "../sdkwork-routes-account-app-api" }
+sdkwork-routes-account-backend-api = { path = "../sdkwork-routes-account-backend-api" }
