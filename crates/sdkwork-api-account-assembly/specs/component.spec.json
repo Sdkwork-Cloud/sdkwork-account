@@ -45,7 +45,10 @@
     "publicExports": [
       "."
     ],
-    "runtimeEntrypoints": [],
+    "runtimeEntrypoints": [
+      "sdkwork_api_account_assembly::assemble_api_router",
+      "sdkwork_api_account_assembly::assemble_api_router_from_env"
+    ],
     "routeManifest": "assembly-manifest.json",
     "sdkClients": [],
     "sdkDependencies": [],

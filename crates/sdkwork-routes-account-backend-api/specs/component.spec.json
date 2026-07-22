@@ -82,7 +82,7 @@
       "gateway_mount",
       "wrap_router_with_web_framework_from_env"
     ],
-    "routeManifest": "sdks/_route-manifests/backend-api/sdkwork-routes-account-backend-api.route-manifest.json",
+    "routeManifest": "../../apis/backend-api/account/account-backend-api.openapi.json",
     "sdkClients": [],
     "sdkDependencies": [],
     "dependencyApiExports": [],
