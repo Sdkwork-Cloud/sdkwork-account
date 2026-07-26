@@ -8,8 +8,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use sdkwork_api_account_assembly::assemble_api_router;
 use sdkwork_account_service_host::AccountServiceHost;
+use sdkwork_api_account_assembly::assemble_api_router;
 use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_web_bootstrap::{service_router, ReadinessCheck, ReadinessFuture, ServiceRouterConfig};
 use tower_http::trace::TraceLayer;
