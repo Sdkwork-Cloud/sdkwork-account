@@ -20,7 +20,9 @@
   },
   "dependencies": {
     "@sdkwork/appbase-pc-react": "workspace:*",
-    "@sdkwork/account-service": "workspace:*"
+    "@sdkwork/account-pc-core": "workspace:*",
+    "@sdkwork/account-service": "workspace:*",
+    "lucide-react": "catalog:"
   },
   "devDependencies": {
     "@sdkwork/ui-pc-react": "workspace:*",

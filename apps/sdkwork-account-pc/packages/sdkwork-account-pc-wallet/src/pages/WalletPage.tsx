@@ -97,7 +97,7 @@ function SdkworkWalletPageContent({
 
   useEffect(() => {
     if (typeof window === "undefined") {
-      return;
+      return undefined;
     }
 
     function refreshAfterCommerceReturn(): void {
