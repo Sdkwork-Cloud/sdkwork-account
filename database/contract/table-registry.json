@@ -1,19 +1,96 @@
 {
   "tables": [
-    "acct_account",
-    "acct_ledger_entry",
-    "acct_journal",
-    "acct_journal_line",
-    "acct_hold",
-    "acct_transfer",
-    "acct_points_lot",
-    "acct_points_lot_allocation",
-    "acct_token_bank_exchange_rate",
-    "acct_token_bank_exchange_quote",
-    "acct_token_bank_exchange_snapshot",
-    "acct_token_bank_settlement_snapshot",
-    "acct_idempotency_record",
-    "acct_outbox_event",
-    "acct_billing_history"
-  ]
+    {
+      "table_name": "acct_account",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_ledger_entry",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_journal",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_journal_line",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_hold",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_transfer",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_points_lot",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_points_lot_allocation",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_token_bank_exchange_rate",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_token_bank_exchange_quote",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_token_bank_exchange_snapshot",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_token_bank_settlement_snapshot",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_idempotency_record",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_outbox_event",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "acct_billing_history",
+      "owner": "sdkwork-account",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    }
+  ],
+  "schemaVersion": 1,
+  "kind": "sdkwork.database.table-registry"
 }

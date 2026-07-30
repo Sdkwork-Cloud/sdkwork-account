@@ -211,7 +211,7 @@ Expected: PASS.
 
 **Files:**
 - Modify: `database/ddl/baseline/postgres/0001_order_baseline.sql`
-- Modify: `database/ddl/baseline/sqlite/0001_order_baseline.sql`
+- Modify: `tests/fixtures/database/sqlite/ddl/baseline/0001_order_baseline.sql`
 - Modify: `database/contract/table-registry.json`
 - Modify: `crates/sdkwork-order-service/src/domain/**`
 - Modify: `crates/sdkwork-order-service/src/commands/**`

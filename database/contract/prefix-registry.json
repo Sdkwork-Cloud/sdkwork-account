@@ -1,3 +1,11 @@
 {
-  "prefixes": ["acct_"]
+  "prefixes": [
+    {
+      "prefix": "acct_",
+      "domain": "account",
+      "owner": "sdkwork-account"
+    }
+  ],
+  "schemaVersion": 1,
+  "kind": "sdkwork.database.prefix-registry"
 }

@@ -1,12 +1,12 @@
 schema_version: 1
 kind: sdkwork.database.schema
+database_role: authoritative-server
 module_id: account
 contract_version: 3.0.0
 owner_team: sdkwork-account
 compliance_level: L3
 engines:
   - postgres
-  - sqlite
 table_prefix: acct_
 id_strategy:
   type: snowflake

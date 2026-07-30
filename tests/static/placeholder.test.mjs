@@ -235,7 +235,7 @@ test("account pc withdraw delegates to order withdrawal request flow", () => {
 test("database DDL and repository SQL use acct account-owned table names", () => {
   const baselineFiles = [
     "database/ddl/baseline/postgres/0001_account_baseline.sql",
-    "database/ddl/baseline/sqlite/0001_account_baseline.sql",
+    "tests/fixtures/database/sqlite/ddl/baseline/0001_account_baseline.sql",
   ];
   const repositorySchemaFiles = [
     "crates/sdkwork-account-repository-sqlx/test_migrations/0001_account_repository_test.sql",

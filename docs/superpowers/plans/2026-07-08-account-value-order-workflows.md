@@ -38,7 +38,7 @@
 **Files:**
 - Modify: `crates/sdkwork-order-repository-sqlx/src/sqlite_account_value.rs`
 - Modify: `crates/sdkwork-order-repository-sqlx/src/postgres_account_value.rs`
-- Modify: `database/ddl/baseline/sqlite/0001_order_baseline.sql`
+- Modify: `tests/fixtures/database/sqlite/ddl/baseline/0001_order_baseline.sql`
 - Modify: `database/ddl/baseline/postgres/0001_order_baseline.sql`
 
 - [ ] **Step 1: Add tests if state fields or provider references are missing.**

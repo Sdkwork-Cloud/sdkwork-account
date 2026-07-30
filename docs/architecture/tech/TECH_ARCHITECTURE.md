@@ -86,7 +86,7 @@ Payment must not call account backend-api or import account crates. Recharge, co
 | Local specs | `specs/` |
 | API contracts | `apis/app-api/account/`, `apis/backend-api/account/` |
 | Database contract | `database/contract/schema.yaml` |
-| Database baselines | `database/ddl/baseline/postgres/`, `database/ddl/baseline/sqlite/` |
+| Database baselines | `database/ddl/baseline/postgres/`, `tests/fixtures/database/sqlite/ddl/baseline/` |
 | Domain and ports | `crates/sdkwork-account-service/` |
 | Repository | `crates/sdkwork-account-repository-sqlx/` |
 | Route crates | `crates/sdkwork-routes-account-app-api/`, `crates/sdkwork-routes-account-backend-api/` |
@@ -149,7 +149,7 @@ The database is in greenfield initialization state, so the baseline DDL is the s
 - `database/contract/schema.yaml`
 - `database/contract/table-registry.json`
 - `database/ddl/baseline/postgres/0001_account_baseline.sql`
-- `database/ddl/baseline/sqlite/0001_account_baseline.sql`
+- `tests/fixtures/database/sqlite/ddl/baseline/0001_account_baseline.sql`
 
 Physical table names use the registered `acct_` prefix for account/accounting-owned tables. The repository still belongs to the `commerce.account` capability; `acct_` is only the database bounded-context prefix. Cross-capability tables such as order-owned `commerce_order` keep their owning capability prefix and must not be read or written by this repository.
 
