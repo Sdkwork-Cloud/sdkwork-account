@@ -29,7 +29,7 @@ impl PostgresCommerceBillingHistoryStore {
         let paging = resolve_list_sql_paging(query.page, query.page_size, query.cursor.as_deref())?;
 
         let rows = if let Some(cursor) = paging.keyset_before {
-            sqlx::query(&format!(
+            sqlx::query(sqlx::AssertSqlSafe(format!(
                 r#"
                 SELECT id, tenant_id, organization_id, owner_id, history_no, history_type,
                        direction, asset_code,
@@ -48,7 +48,7 @@ impl PostgresCommerceBillingHistoryStore {
                 ORDER BY occurred_at DESC, id DESC
                 LIMIT $7
                 "#
-            ))
+            )))
             .bind(tenant_id)
             .bind(organization_id)
             .bind(owner_id)
@@ -59,7 +59,7 @@ impl PostgresCommerceBillingHistoryStore {
             .fetch_all(&self.pool)
             .await
         } else {
-            sqlx::query(&format!(
+            sqlx::query(sqlx::AssertSqlSafe(format!(
                 r#"
                 SELECT id, tenant_id, organization_id, owner_id, history_no, history_type,
                        direction, asset_code,
@@ -77,7 +77,7 @@ impl PostgresCommerceBillingHistoryStore {
                 ORDER BY occurred_at DESC, id DESC
                 LIMIT $6 OFFSET $7
                 "#
-            ))
+            )))
             .bind(tenant_id)
             .bind(organization_id)
             .bind(owner_id)

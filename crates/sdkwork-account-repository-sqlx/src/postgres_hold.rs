@@ -480,7 +480,7 @@ impl PostgresCommerceAccountStore {
         let status = query.status.as_deref().map(hold_status_to_code);
         let paging = resolve_list_sql_paging(query.page, query.page_size, None)?;
 
-        let rows = sqlx::query(&format!(
+        let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
             r#"
             SELECT hold.id, hold.uuid, hold.tenant_id, hold.organization_id, hold.account_id,
                    hold.owner_id, hold.asset_code, hold.amount, hold.settled_amount,
@@ -500,7 +500,7 @@ impl PostgresCommerceAccountStore {
             ORDER BY hold.created_at DESC
             LIMIT $11 OFFSET $12
             "#
-        ))
+        )))
         .bind(tenant_id)
         .bind(organization_id)
         .bind(OWNER_TYPE_USER)

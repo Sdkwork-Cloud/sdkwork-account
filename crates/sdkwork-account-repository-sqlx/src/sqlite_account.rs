@@ -208,7 +208,7 @@ impl SqliteCommerceAccountStore {
         let keyset_created_at = paging.keyset_before;
 
         let rows = if let Some(cursor) = keyset_created_at {
-            sqlx::query(&format!(
+            sqlx::query(sqlx::AssertSqlSafe(format!(
                 r#"
                 SELECT id, uuid, account_id, tenant_id, organization_id, owner_id, asset_code,
                        direction, amount, balance_before, balance_after, business_type, business_no,
@@ -224,7 +224,7 @@ impl SqliteCommerceAccountStore {
                 ORDER BY created_at DESC, id DESC
                 LIMIT ?
                 "#
-            ))
+            )))
             .bind(tenant_id)
             .bind(organization_id)
             .bind(owner_id)
@@ -237,7 +237,7 @@ impl SqliteCommerceAccountStore {
             .fetch_all(&self.pool)
             .await
         } else {
-            sqlx::query(&format!(
+            sqlx::query(sqlx::AssertSqlSafe(format!(
                 r#"
                 SELECT id, uuid, account_id, tenant_id, organization_id, owner_id, asset_code,
                        direction, amount, balance_before, balance_after, business_type, business_no,
@@ -252,7 +252,7 @@ impl SqliteCommerceAccountStore {
                 ORDER BY created_at DESC, id DESC
                 LIMIT ? OFFSET ?
                 "#
-            ))
+            )))
             .bind(tenant_id)
             .bind(organization_id)
             .bind(owner_id)
@@ -434,7 +434,7 @@ impl SqliteCommerceAccountStore {
         let owner_id = parse_subject_i64("owner_user_id", &query.owner_user_id)?;
         let paging = resolve_list_sql_paging(query.page, query.page_size, None)?;
 
-        let rows = sqlx::query(&format!(
+        let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
             r#"
             SELECT lot.id, lot.uuid, lot.account_id, lot.granted_amount, lot.remaining_amount,
                    lot.source_type, lot.source_id, lot.expires_at, lot.status,
@@ -455,7 +455,7 @@ impl SqliteCommerceAccountStore {
                 lot.created_at ASC
             LIMIT ? OFFSET ?
             "#
-        ))
+        )))
         .bind(tenant_id)
         .bind(organization_id)
         .bind(OWNER_TYPE_USER)
