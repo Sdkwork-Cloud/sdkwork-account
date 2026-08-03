@@ -29,11 +29,6 @@ const securitySchemes = {
 };
 
 const authenticatedSecurity = [{ AuthToken: [], AccessToken: [] }];
-const publicSecurity = [];
-
-function isPublicHealthOperation(method, rawPath) {
-  return method === "get" && rawPath.endsWith("/wallet/health");
-}
 
 function patchSpec(spec) {
   spec.components ??= {};
@@ -46,9 +41,9 @@ function patchSpec(spec) {
       if (!operation || typeof operation !== "object") {
         continue;
       }
-      operation.security = isPublicHealthOperation(method, rawPath)
-        ? publicSecurity
-        : authenticatedSecurity;
+      // Business-surface operations always require dual-token auth; infrastructure
+      // probes live outside business API contracts on framework-level probe paths.
+      operation.security = authenticatedSecurity;
     }
   }
 

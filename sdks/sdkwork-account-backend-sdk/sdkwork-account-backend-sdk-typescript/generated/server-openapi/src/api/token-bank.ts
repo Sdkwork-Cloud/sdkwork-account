@@ -1,5 +1,5 @@
 import { backendApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { CreateTokenBankHoldRequest, CreateTokenBankLedgerMutationRequest, CreateTokenBankReversalRequest, CreateTokenBankTransferRequest, ReleaseAccountHoldRequest, SettleAccountHoldRequest, WalletAdjustmentResult, WalletHoldMutationResult, WalletTransferMutationResult } from '../types';
 
@@ -12,8 +12,8 @@ export class TokenBankTransfersApi {
   }
 
 
-async create(body: CreateTokenBankTransferRequest): Promise<WalletTransferMutationResult> {
-    return this.client.post<WalletTransferMutationResult>(backendApiPath(`/token_bank/transfers`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankTransferRequest, requestOptions?: ApiRequestOptions): Promise<WalletTransferMutationResult> {
+    return this.client.request<WalletTransferMutationResult>(backendApiPath(`/token_bank/transfers`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -25,16 +25,16 @@ export class TokenBankHoldsApi {
   }
 
 
-async create(body: CreateTokenBankHoldRequest): Promise<WalletHoldMutationResult> {
-    return this.client.post<WalletHoldMutationResult>(backendApiPath(`/token_bank/holds`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankHoldRequest, requestOptions?: ApiRequestOptions): Promise<WalletHoldMutationResult> {
+    return this.client.request<WalletHoldMutationResult>(backendApiPath(`/token_bank/holds`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
-async settle(holdId: string, body: SettleAccountHoldRequest): Promise<WalletHoldMutationResult> {
-    return this.client.post<WalletHoldMutationResult>(backendApiPath(`/token_bank/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/settle`), body, undefined, undefined, 'application/json');
+async settle(holdId: string, body: SettleAccountHoldRequest, requestOptions?: ApiRequestOptions): Promise<WalletHoldMutationResult> {
+    return this.client.request<WalletHoldMutationResult>(backendApiPath(`/token_bank/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/settle`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
-async release(holdId: string, body: ReleaseAccountHoldRequest): Promise<WalletHoldMutationResult> {
-    return this.client.post<WalletHoldMutationResult>(backendApiPath(`/token_bank/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/release`), body, undefined, undefined, 'application/json');
+async release(holdId: string, body: ReleaseAccountHoldRequest, requestOptions?: ApiRequestOptions): Promise<WalletHoldMutationResult> {
+    return this.client.request<WalletHoldMutationResult>(backendApiPath(`/token_bank/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/release`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -46,8 +46,8 @@ export class TokenBankReversalsApi {
   }
 
 
-async create(body: CreateTokenBankReversalRequest): Promise<WalletAdjustmentResult> {
-    return this.client.post<WalletAdjustmentResult>(backendApiPath(`/token_bank/reversals`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankReversalRequest, requestOptions?: ApiRequestOptions): Promise<WalletAdjustmentResult> {
+    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/token_bank/reversals`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -59,8 +59,8 @@ export class TokenBankGrantsApi {
   }
 
 
-async create(body: CreateTokenBankLedgerMutationRequest): Promise<WalletAdjustmentResult> {
-    return this.client.post<WalletAdjustmentResult>(backendApiPath(`/token_bank/grants`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankLedgerMutationRequest, requestOptions?: ApiRequestOptions): Promise<WalletAdjustmentResult> {
+    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/token_bank/grants`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -72,8 +72,8 @@ export class TokenBankDebitsApi {
   }
 
 
-async create(body: CreateTokenBankLedgerMutationRequest): Promise<WalletAdjustmentResult> {
-    return this.client.post<WalletAdjustmentResult>(backendApiPath(`/token_bank/debits`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankLedgerMutationRequest, requestOptions?: ApiRequestOptions): Promise<WalletAdjustmentResult> {
+    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/token_bank/debits`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -85,8 +85,8 @@ export class TokenBankCreditsApi {
   }
 
 
-async create(body: CreateTokenBankLedgerMutationRequest): Promise<WalletAdjustmentResult> {
-    return this.client.post<WalletAdjustmentResult>(backendApiPath(`/token_bank/credits`), body, undefined, undefined, 'application/json');
+async create(body: CreateTokenBankLedgerMutationRequest, requestOptions?: ApiRequestOptions): Promise<WalletAdjustmentResult> {
+    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/token_bank/credits`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
