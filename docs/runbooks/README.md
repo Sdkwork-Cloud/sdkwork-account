@@ -6,8 +6,8 @@ Operational procedures for `sdkwork-account` in production.
 
 ```bash
 # Required
-export ACCOUNT_DATABASE_ENGINE=postgres
-export ACCOUNT_DATABASE_URL=postgres://...
+export SDKWORK_DATABASE_ENGINE=postgres
+export SDKWORK_DATABASE_URL=postgres://sdkwork_ai_dev:sdkworkdev123@127.0.0.1:5432/sdkwork_ai_dev
 export ACCOUNT_SNOWFLAKE_WORKER_ID=1   # unique per instance (0-1023)
 
 # Recommended
