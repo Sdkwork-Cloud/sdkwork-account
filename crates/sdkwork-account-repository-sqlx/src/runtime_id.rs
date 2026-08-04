@@ -43,7 +43,7 @@ pub async fn bootstrap_and_install_account_id_generator(
 }
 
 fn account_is_production_like() -> bool {
-    let lifecycle = ["SDKWORK_ACCOUNT_ENVIRONMENT", "SDKWORK_CLAW_ENVIRONMENT"]
+    let lifecycle = ["SDKWORK_ACCOUNT_ENVIRONMENT", "SDKWORK_CLOUDROUTER_ENVIRONMENT"]
         .into_iter()
         .find_map(|key| {
             std::env::var(key)
@@ -52,9 +52,9 @@ fn account_is_production_like() -> bool {
         });
     let deployment_is_explicit = [
         "SDKWORK_ACCOUNT_DEPLOYMENT_PROFILE",
-        "SDKWORK_CLAW_DEPLOYMENT_PROFILE",
+        "SDKWORK_CLOUDROUTER_DEPLOYMENT_PROFILE",
         "SDKWORK_ACCOUNT_RUNTIME_TARGET",
-        "SDKWORK_CLAW_RUNTIME_TARGET",
+        "SDKWORK_CLOUDROUTER_RUNTIME_TARGET",
     ]
     .into_iter()
     .any(|key| std::env::var(key).is_ok());

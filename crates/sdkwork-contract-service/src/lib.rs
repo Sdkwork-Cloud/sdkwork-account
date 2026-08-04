@@ -831,7 +831,7 @@ impl CommerceLedgerBusinessType {
     pub const POINTS_BURN: &str = "points_burn";
     pub const POINTS_EXPIRE: &str = "points_expire";
     pub const POINTS_REFUND: &str = "points_refund";
-    pub const POINTS_CLAWBACK: &str = "points_clawback";
+    pub const POINTS_CLAWBACK: &str = "points_cloudback";
     pub const POINTS_TRANSFER: &str = "points_transfer";
     pub const HOLD_SETTLE: &str = "hold_settle";
     pub const CASH_ADJUSTMENT: &str = "cash_adjustment";
