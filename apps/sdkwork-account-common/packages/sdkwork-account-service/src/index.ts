@@ -7,7 +7,7 @@ import {
   type ClientFromMethodTree,
 } from "@sdkwork/account-sdk-ports";
 import type { SdkworkAccountMutationStatus } from "@sdkwork/account-contracts";
-import { formatCurrency as formatSdkworkCurrency } from "@sdkwork/utils";
+import { formatMoney } from "@sdkwork/utils/money";
 import {
   createAccountBackendSdkClientFromTransport,
   createAccountBackendTransportClient,
@@ -290,10 +290,7 @@ export function toSdkworkAccountMutationStatus(status: unknown): SdkworkAccountM
 }
 
 export function formatSdkworkAccountCurrencyCny(value: number | null | undefined, language = "en-US"): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return "--";
-  }
-  return formatSdkworkCurrency(value, "CNY", language) ?? "--";
+  return formatMoney(value, { currency: "CNY", locale: language, mode: "symbol" }) ?? "--";
 }
 
 export function formatSdkworkAccountPoints(value: number, language = "en-US"): string {
