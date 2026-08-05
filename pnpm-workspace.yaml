@@ -27,6 +27,7 @@ packages:
   - "../sdkwork-sdk-commons/sdkwork-sdk-common-typescript"
   - "../sdkwork-utils/packages/sdkwork-utils-typescript"
 
+  - "../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-user-center-core-pc-react"
 catalog:
   react: ^19.2.4
   react-dom: ^19.2.4
@@ -135,3 +136,4 @@ catalog:
   vite-plugin-dts: ^4.5.4
   vitest: ^4.1.2
   zustand: ^5.0.12
+

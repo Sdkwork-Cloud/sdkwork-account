@@ -1,39 +1,24 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "baseUrl": ".",
-    "paths": {
-      "@sdkwork/appbase-pc-react": ["../sdkwork-appbase/packages/pc-react/foundation/sdkwork-appbase-pc-react/src/index.ts"],
-      "@sdkwork/ui-pc-react": ["../sdkwork-ui/sdkwork-ui-pc-react/src/index.ts"],
-      "@sdkwork/ui-pc-react/theme": ["../sdkwork-ui/sdkwork-ui-pc-react/src/theme/index.ts"],
-      "@sdkwork/utils": ["../sdkwork-utils/packages/sdkwork-utils-typescript/src/index.ts"],
-      "@sdkwork/utils/money": ["../sdkwork-utils/packages/sdkwork-utils-typescript/src/money.ts"],
-      "@sdkwork/sdk-common": ["../sdkwork-sdk-commons/sdkwork-sdk-common-typescript/src/index.ts"],
-      "@sdkwork/account-app-sdk": ["sdks/sdkwork-account-app-sdk/sdkwork-account-app-sdk-typescript/src/index.ts"],
-      "@sdkwork/account-backend-sdk": ["sdks/sdkwork-account-backend-sdk/sdkwork-account-backend-sdk-typescript/src/index.ts"],
-      "@sdkwork/account-contracts": ["apps/sdkwork-account-common/packages/sdkwork-account-contracts/src/index.ts"],
-      "@sdkwork/account-service": ["apps/sdkwork-account-common/packages/sdkwork-account-service/src/index.ts"],
-      "@sdkwork/account-sdk-ports": ["apps/sdkwork-account-common/packages/sdkwork-account-sdk-ports/src/index.ts"],
-      "@sdkwork/account-pc-core": ["apps/sdkwork-account-pc/packages/sdkwork-account-pc-core/src/index.ts"],
-      "@sdkwork/account-pc-shell": ["apps/sdkwork-account-pc/packages/sdkwork-account-pc-shell/src/index.tsx"],
-      "@sdkwork/account-pc-wallet": ["apps/sdkwork-account-pc/packages/sdkwork-account-pc-wallet/src/index.ts"],
-      "@sdkwork/order-service": ["../sdkwork-order/apps/sdkwork-order-common/packages/sdkwork-order-service/src/index.ts"],
-      "@sdkwork/order-sdk-ports": ["../sdkwork-order/apps/sdkwork-order-common/packages/sdkwork-order-sdk-ports/src/index.ts"],
-      "@sdkwork/order-app-sdk": ["../sdkwork-order/sdks/sdkwork-order-app-sdk/sdkwork-order-app-sdk-typescript/src/index.ts"],
-      "@sdkwork/order-backend-sdk": ["../sdkwork-order/sdks/sdkwork-order-backend-sdk/sdkwork-order-backend-sdk-typescript/src/index.ts"]
-    },
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "ignoreDeprecations": "6.0",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["node", "@testing-library/jest-dom"]
+    "types": [
+      "node",
+      "@testing-library/jest-dom"
+    ]
   }
 }
