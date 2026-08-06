@@ -1376,7 +1376,7 @@ async fn insert_transfer_ledger(
     .bind(next_entity_id()?)
     .bind(journal_id)
     .bind(account.id)
-    .bind(direction.to_uppercase())
+    .bind(direction.as_str().to_ascii_uppercase())
     .bind(format_amount_minor(amount))
     .bind(ledger_id)
     .bind(now)

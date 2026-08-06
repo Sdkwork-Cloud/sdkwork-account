@@ -43,7 +43,7 @@ where
             (id, uuid, tenant_id, organization_id, owner_type, owner_id, history_no, history_type,
              direction, asset_code, amount, currency_code, points_delta, status, title,
              reference_no, source_type, source_id, occurred_at, created_at)
-        VALUES ($1, $2, $3, $4, 'USER', $5, $6, $7, $8, $9, $10, $11, $12, 1, $13, $14, 'ledger', $15, $16::timestamptz, $16::timestamptz)
+        VALUES ($1, $2, $3, $4, 'USER', $5, $6, $7, $8, $9, $10::bigint, $11, $12::bigint, 1, $13, $14, 'ledger', $15, $16::timestamptz, $16::timestamptz)
         "#,
     )
     .bind(next_entity_id()?)

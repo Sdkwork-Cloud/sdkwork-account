@@ -916,7 +916,7 @@ async fn complete_idempotency(
         UPDATE acct_idempotency_record
         SET status = 'COMPLETED',
             target_id = $1,
-            response_snapshot = $2,
+            response_snapshot = $2::jsonb,
             locked_until = NULL,
             updated_at = $3::timestamptz
         WHERE tenant_id = $4 AND scope = $5 AND idempotency_key = $6
@@ -1280,7 +1280,7 @@ pub(crate) async fn apply_points_lot_movement(
                 INSERT INTO acct_points_lot
                     (id, uuid, tenant_id, account_id, granted_amount, remaining_amount,
                      source_type, source_id, expires_at, status, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10, $11::timestamptz, $12::timestamptz)
                 "#,
             )
             .bind(lot_id)
@@ -1376,7 +1376,7 @@ pub(crate) async fn apply_points_lot_movement(
                     sqlx::query(
                         r#"
                         UPDATE acct_points_lot
-                        SET remaining_amount = $1, status = $2, updated_at = $3
+                        SET remaining_amount = $1, status = $2, updated_at = $3::timestamptz
                         WHERE id = $4 AND tenant_id = $5
                         "#,
                     )
@@ -1393,7 +1393,7 @@ pub(crate) async fn apply_points_lot_movement(
                         r#"
                         INSERT INTO acct_points_lot_allocation
                             (id, uuid, tenant_id, account_id, ledger_id, lot_id, amount, created_at)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz)
                         "#,
                     )
                     .bind(next_entity_id()?)
@@ -1417,7 +1417,7 @@ pub(crate) async fn apply_points_lot_movement(
             ensure_points_lot_debit_complete(remaining)?;
             let lot_sum: i64 = sqlx::query_scalar(
                 r#"
-                SELECT COALESCE(SUM(remaining_amount), 0)
+                SELECT CAST(COALESCE(SUM(remaining_amount), 0) AS BIGINT)
                 FROM acct_points_lot
                 WHERE tenant_id = $1 AND account_id = $2
                 "#,
@@ -1428,7 +1428,7 @@ pub(crate) async fn apply_points_lot_movement(
             .await
             .map_err(|error| store_error("failed to sum points lot remaining", error))?;
             let available: String = sqlx::query_scalar(
-                "SELECT available_amount FROM acct_account WHERE tenant_id = $1 AND id = $2",
+                "SELECT CAST(available_amount AS TEXT) FROM acct_account WHERE tenant_id = $1 AND id = $2",
             )
             .bind(tenant_id)
             .bind(account_id)
