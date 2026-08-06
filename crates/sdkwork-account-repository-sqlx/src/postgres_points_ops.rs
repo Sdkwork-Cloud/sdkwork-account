@@ -91,7 +91,7 @@ impl crate::postgres_account::PostgresCommerceAccountStore {
                   AND lot.status = $3
                   AND lot.remaining_amount > 0
                   AND lot.expires_at IS NOT NULL
-                  AND lot.expires_at <= $4
+                  AND lot.expires_at <= $4::timestamptz
                   AND ($5::bigint IS NULL OR account.owner_id = $5)
                   AND ($6::bigint IS NULL OR lot.account_id = $6)
                 ORDER BY lot.expires_at ASC, lot.id ASC
@@ -246,7 +246,7 @@ impl crate::postgres_account::PostgresCommerceAccountStore {
                 r#"
                 SELECT
                     COALESCE(SUM(CASE
-                        WHEN expires_at IS NOT NULL AND expires_at <= $1
+                        WHEN expires_at IS NOT NULL AND expires_at <= $1::timestamptz
                         THEN remaining_amount ELSE 0
                     END), 0) AS unswept_expired_points
                 FROM acct_points_lot
@@ -349,7 +349,7 @@ impl crate::postgres_account::PostgresCommerceAccountStore {
 
             for row in &account_rows {
                 let account_id = integer_cell(row, "id");
-                let available = string_cell(row, "available_amount");
+                let available = format_i64(integer_cell(row, "available_amount"));
                 let lot_sum: i64 = sqlx::query_scalar(
                     r#"
                     SELECT COALESCE(SUM(remaining_amount), 0)
@@ -417,7 +417,7 @@ async fn expire_one_points_lot(
     let update = sqlx::query(
         r#"
         UPDATE acct_account
-        SET available_amount = $1, version = $2, updated_at = $3
+        SET available_amount = $1::bigint, version = $2, updated_at = $3::timestamptz
         WHERE id = $4 AND version = $5
         "#,
     )
@@ -448,7 +448,7 @@ async fn expire_one_points_lot(
         INSERT INTO acct_journal
             (id, uuid, tenant_id, business_type, business_no, request_no, idempotency_key,
              status, trace_id, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::timestamptz)
         "#,
     )
     .bind(journal_id)
@@ -472,7 +472,7 @@ async fn expire_one_points_lot(
              asset_code, currency_code, ledger_type, entry_type, direction, amount,
              balance_before, balance_after, business_type, business_no, request_no,
              idempotency_key, reversed_ledger_id, trace_id, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', $11, $12, $13::bigint, $14::bigint, $15::bigint, $16, $17, $18, $19, $20, $21, $22::timestamptz)
         "#,
     )
     .bind(ledger_id)
@@ -486,7 +486,7 @@ async fn expire_one_points_lot(
     .bind(asset_code_from_type(&CommerceAccountAssetType::Points))
     .bind("POINT")
     .bind("DEBIT")
-    .bind(CommerceLedgerDirection::Debit.as_str())
+    .bind("DEBIT")
     .bind(format_amount_minor(amount_i128))
     .bind(&balance_before)
     .bind(&balance_after)
@@ -504,7 +504,7 @@ async fn expire_one_points_lot(
     sqlx::query(
         r#"
         UPDATE acct_points_lot
-        SET remaining_amount = 0, status = $1, updated_at = $2
+        SET remaining_amount = 0, status = $1, updated_at = $2::timestamptz
         WHERE id = $3 AND tenant_id = $4 AND status = $5
         "#,
     )
@@ -521,7 +521,7 @@ async fn expire_one_points_lot(
         r#"
         INSERT INTO acct_points_lot_allocation
             (id, uuid, tenant_id, account_id, ledger_id, lot_id, amount, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz)
         "#,
     )
     .bind(next_entity_id()?)
@@ -678,7 +678,7 @@ async fn complete_points_expire_idempotency(
     sqlx::query(
         r#"
         UPDATE acct_idempotency_record
-        SET status = 'COMPLETED', response_snapshot = $1, locked_until = NULL, updated_at = $2
+        SET status = 'COMPLETED', response_snapshot = $1, locked_until = NULL, updated_at = $2::timestamptz
         WHERE tenant_id = $3 AND scope = $4 AND idempotency_key = $5
         "#,
     )

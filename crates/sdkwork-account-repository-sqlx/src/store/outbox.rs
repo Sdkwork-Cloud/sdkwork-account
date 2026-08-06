@@ -135,7 +135,7 @@ where
         INSERT INTO acct_outbox_event
             (id, uuid, tenant_id, aggregate_type, aggregate_id, event_type, event_version,
              event_key, payload, payload_hash, status, retry_count, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12, $13)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12::timestamptz, $13::timestamptz)
         "#,
     )
     .bind(next_entity_id()?)

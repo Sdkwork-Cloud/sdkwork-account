@@ -127,7 +127,7 @@ impl PostgresCommerceAccountStore {
                  amount, settled_amount, released_amount, status, business_type, business_no,
                  source_type, source_id, idempotency_key, request_no, expires_at, version,
                  created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '0', '0', $10, $11, $12, $13, $14, $15, $16, $17, 0, $18, $19)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::bigint, '0', '0', $10, $11, $12, $13, $14, $15, $16, $17::timestamptz, 0, $18::timestamptz, $19::timestamptz)
             "#,
         )
         .bind(hold_id)
@@ -265,7 +265,7 @@ impl PostgresCommerceAccountStore {
         sqlx::query(
             r#"
             UPDATE acct_hold
-            SET status = $1, released_amount = amount, released_at = $2, updated_at = $3, version = version + 1
+            SET status = $1, released_amount = amount, released_at = $2::timestamptz, updated_at = $3::timestamptz, version = version + 1
             WHERE tenant_id = $4 AND uuid = $5 AND status = $6
             "#,
         )
@@ -405,7 +405,7 @@ impl PostgresCommerceAccountStore {
         sqlx::query(
             r#"
             UPDATE acct_hold
-            SET status = $1, settled_amount = amount, settled_at = $2, updated_at = $3, version = version + 1
+            SET status = $1, settled_amount = amount, settled_at = $2::timestamptz, updated_at = $3::timestamptz, version = version + 1
             WHERE tenant_id = $4 AND uuid = $5 AND status = $6
             "#,
         )
@@ -689,7 +689,7 @@ impl PostgresCommerceAccountStore {
             INSERT INTO acct_journal
                 (id, uuid, tenant_id, business_type, business_no, request_no, idempotency_key,
                  status, trace_id, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::timestamptz)
             "#,
         )
         .bind(journal_id)
@@ -781,7 +781,7 @@ impl PostgresCommerceAccountStore {
                 (id, uuid, tenant_id, organization_id, from_account_id, to_account_id, asset_code,
                  amount, status, business_type, business_no, idempotency_key, request_no,
                  journal_id, trace_id, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::timestamptz)
             "#,
         )
         .bind(transfer_id)
@@ -925,7 +925,7 @@ impl PostgresCommerceAccountStore {
                   AND account.organization_id = $2
                   AND hold.status = $3
                   AND hold.expires_at IS NOT NULL
-                  AND hold.expires_at <= $4
+                  AND hold.expires_at <= $4::timestamptz
                   AND ($5::bigint IS NULL OR account.owner_id = $5)
                   AND ($6::bigint IS NULL OR hold.account_id = $6)
                 ORDER BY hold.expires_at ASC, hold.id ASC
@@ -1040,7 +1040,7 @@ async fn expire_one_expired_hold_postgres(
     sqlx::query(
         r#"
         UPDATE acct_hold
-        SET status = $1, released_amount = amount, released_at = $2, updated_at = $3, version = version + 1
+        SET status = $1, released_amount = amount, released_at = $2::timestamptz, updated_at = $3::timestamptz, version = version + 1
         WHERE tenant_id = $4 AND uuid = $5 AND status = $6
         "#,
     )
@@ -1138,7 +1138,7 @@ async fn complete_hold_expire_idempotency_postgres(
     sqlx::query(
         r#"
         UPDATE acct_idempotency_record
-        SET status = 'COMPLETED', target_id = 0, response_snapshot = $1, locked_until = NULL, updated_at = $2
+        SET status = 'COMPLETED', target_id = 0, response_snapshot = $1, locked_until = NULL, updated_at = $2::timestamptz
         WHERE tenant_id = $3 AND scope = $4 AND idempotency_key = $5
         "#,
     )
@@ -1189,7 +1189,7 @@ async fn append_settlement_ledger(
         INSERT INTO acct_journal
             (id, uuid, tenant_id, business_type, business_no, request_no, idempotency_key,
              status, trace_id, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::timestamptz)
         "#,
     )
     .bind(journal_id)
@@ -1213,7 +1213,7 @@ async fn append_settlement_ledger(
              asset_code, currency_code, ledger_type, entry_type, direction, amount,
              balance_before, balance_after, business_type, business_no, request_no,
              idempotency_key, hold_id, trace_id, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', 'DEBIT', 'debit', $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', 'DEBIT', 'DEBIT', $11::bigint, $12::bigint, $13::bigint, $14::bigint, $15, $16, $17, $18, $19, $20::timestamptz)
         "#,
     )
     .bind(ledger_id)
@@ -1338,7 +1338,7 @@ async fn insert_transfer_ledger(
              asset_code, currency_code, ledger_type, entry_type, direction, amount,
              balance_before, balance_after, business_type, business_no, request_no,
              idempotency_key, trace_id, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', $11::bigint, $12::bigint, $13::bigint, $14::bigint, $15, $16, $17, $18, $19, $20, $21::timestamptz)
         "#,
     )
     .bind(ledger_id)
@@ -1370,13 +1370,13 @@ async fn insert_transfer_ledger(
         r#"
         INSERT INTO acct_journal_line
             (id, journal_id, account_id, direction, amount, ledger_id, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5::bigint, $6, $7::timestamptz)
         "#,
     )
     .bind(next_entity_id()?)
     .bind(journal_id)
     .bind(account.id)
-    .bind(direction.as_str())
+    .bind(direction.to_uppercase())
     .bind(format_amount_minor(amount))
     .bind(ledger_id)
     .bind(now)
@@ -1485,7 +1485,7 @@ async fn load_account_by_owner_asset(
         INSERT INTO acct_account
             (id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
              available_amount, frozen_amount, pending_amount, status, version, account_purpose, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '0', '0', '0', $9, 0, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '0', '0', '0', $9, 0, $10, $11::timestamptz, $12::timestamptz)
         "#,
     )
     .bind(account_id)
@@ -1557,7 +1557,7 @@ async fn update_account_balances(
     let update = sqlx::query(
         r#"
         UPDATE acct_account
-        SET available_amount = $1, frozen_amount = $2, version = $3, updated_at = $4
+        SET available_amount = $1::bigint, frozen_amount = $2::bigint, version = $3, updated_at = $4::timestamptz
         WHERE id = $5 AND version = $6
         "#,
     )
@@ -1619,9 +1619,9 @@ fn map_hold_row(row: &sqlx::postgres::PgRow) -> Result<AccountHoldItem, Commerce
         asset_type: asset_type_from_code(&string_cell(row, "asset_code"))?
             .as_str()
             .to_owned(),
-        amount: string_cell(row, "amount"),
-        settled_amount: string_cell(row, "settled_amount"),
-        released_amount: string_cell(row, "released_amount"),
+        amount: format_i64(integer_cell(row, "amount")),
+        settled_amount: format_i64(integer_cell(row, "settled_amount")),
+        released_amount: format_i64(integer_cell(row, "released_amount")),
         status: hold_status_label(integer_cell(row, "status") as i32).to_owned(),
         business_type: string_cell(row, "business_type"),
         business_no: string_cell(row, "business_no"),
@@ -1906,9 +1906,9 @@ pub(crate) async fn reclaim_idempotency_scoped_public(
     let updated = sqlx::query(
         r#"
         UPDATE acct_idempotency_record
-        SET status = 'LOCKED', request_hash = $1, locked_until = $2, updated_at = $3
+        SET status = 'LOCKED', request_hash = $1, locked_until = $2::timestamptz, updated_at = $3::timestamptz
         WHERE tenant_id = $4 AND scope = $5 AND idempotency_key = $6
-          AND (status = 'FAILED' OR (status = 'LOCKED' AND locked_until <= $3))
+          AND (status = 'FAILED' OR (status = 'LOCKED' AND locked_until <= $3::timestamptz))
         "#,
     )
     .bind(request_hash)
@@ -1975,7 +1975,7 @@ async fn insert_idempotency_scoped(
         INSERT INTO acct_idempotency_record
             (id, uuid, tenant_id, scope, idempotency_key, request_hash, target_type, status,
              locked_until, expire_at, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'LOCKED', $8, $9, $10, $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'LOCKED', $8::timestamptz, $9::timestamptz, $10::timestamptz, $11::timestamptz)
         "#,
     )
     .bind(next_entity_id()?)
@@ -2009,7 +2009,7 @@ async fn complete_idempotency_scoped(
     sqlx::query(
         r#"
         UPDATE acct_idempotency_record
-        SET status = 'COMPLETED', target_id = $1, response_snapshot = $2, locked_until = NULL, updated_at = $3
+        SET status = 'COMPLETED', target_id = $1, response_snapshot = $2, locked_until = NULL, updated_at = $3::timestamptz
         WHERE tenant_id = $4 AND scope = $5 AND idempotency_key = $6
         "#,
     )

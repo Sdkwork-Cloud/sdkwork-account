@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use sdkwork_account_service::{
     AccountBalance, AccountSummary, AccountSummaryQuery, AccountSummarySnapshot,
     AppendLedgerEntryCommand, AppendLedgerEntryOutcome, OutboxDispatchOutcome,
@@ -576,7 +576,7 @@ impl PostgresCommerceAccountStore {
         let update = sqlx::query(
             r#"
             UPDATE acct_account
-            SET available_amount = $1, version = $2, updated_at = $3
+            SET available_amount = $1::bigint, version = $2, updated_at = $3::timestamptz
             WHERE id = $4 AND version = $5
             "#,
         )
@@ -608,7 +608,7 @@ impl PostgresCommerceAccountStore {
             INSERT INTO acct_journal
                 (id, uuid, tenant_id, business_type, business_no, request_no, idempotency_key,
                  status, trace_id, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::timestamptz)
             "#,
         )
         .bind(journal_id)
@@ -643,7 +643,7 @@ impl PostgresCommerceAccountStore {
                  asset_code, currency_code, ledger_type, entry_type, direction, amount,
                  balance_before, balance_after, business_type, business_no, request_no,
                  idempotency_key, reversed_ledger_id, trace_id, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', $11, $12, $13::bigint, $14::bigint, $15::bigint, $16, $17, $18, $19, $20, $21, $22::timestamptz)
             "#,
         )
         .bind(ledger_id)
@@ -657,7 +657,8 @@ impl PostgresCommerceAccountStore {
         .bind(asset_code_from_type(&command.asset_type))
         .bind(currency_code_for_command(&command))
         .bind(entry_type)
-        .bind(command.direction.as_str())
+        // `acct_ledger_entry.direction` is constrained to uppercase labels.
+        .bind(entry_type)
         .bind(command.amount.as_str())
         .bind(&balance_before)
         .bind(&balance_after)
@@ -676,13 +677,13 @@ impl PostgresCommerceAccountStore {
             r#"
             INSERT INTO acct_journal_line
                 (id, journal_id, account_id, direction, amount, ledger_id, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            VALUES ($1, $2, $3, $4, $5::bigint, $6, $7::timestamptz)
             "#,
         )
         .bind(next_entity_id()?)
         .bind(journal_id)
         .bind(account.id)
-        .bind(command.direction.as_str())
+        .bind(entry_type)
         .bind(command.amount.as_str())
         .bind(ledger_id)
         .bind(&now)
@@ -848,7 +849,7 @@ async fn load_idempotency_row(
 ) -> Result<Option<sqlx::postgres::PgRow>, CommerceServiceError> {
     sqlx::query(
         r#"
-        SELECT request_hash, status
+        SELECT request_hash, status, CAST(locked_until AS TEXT) AS locked_until
         FROM acct_idempotency_record
         WHERE tenant_id = $1 AND scope = $2 AND idempotency_key = $3
         LIMIT 1
@@ -875,7 +876,7 @@ async fn insert_idempotency_lock(
         INSERT INTO acct_idempotency_record
             (id, uuid, tenant_id, scope, idempotency_key, request_hash, target_type, status,
              locked_until, expire_at, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, 'ledger', 'LOCKED', $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, 'ledger', 'LOCKED', $7::timestamptz, $8::timestamptz, $9::timestamptz, $10::timestamptz)
         "#,
     )
     .bind(next_entity_id()?)
@@ -917,7 +918,7 @@ async fn complete_idempotency(
             target_id = $1,
             response_snapshot = $2,
             locked_until = NULL,
-            updated_at = $3
+            updated_at = $3::timestamptz
         WHERE tenant_id = $4 AND scope = $5 AND idempotency_key = $6
         "#,
     )
@@ -971,7 +972,7 @@ async fn load_or_create_account_for_append(
             (id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
              account_purpose, available_amount, frozen_amount, pending_amount, status, version,
              created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '0', '0', '0', $10, 0, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '0', '0', '0', $10, 0, $11::timestamptz, $12::timestamptz)
         "#,
     )
     .bind(account_id)
@@ -1135,9 +1136,9 @@ pub(crate) fn map_stored_account(
         owner_id: integer_cell(row, "owner_id"),
         asset_type: asset_type_from_code(&string_cell(row, "asset_code"))?,
         currency_code: string_cell(row, "currency_code"),
-        available_amount: string_cell(row, "available_amount"),
-        frozen_amount: string_cell(row, "frozen_amount"),
-        pending_amount: string_cell(row, "pending_amount"),
+        available_amount: format_i64(integer_cell(row, "available_amount")),
+        frozen_amount: format_i64(integer_cell(row, "frozen_amount")),
+        pending_amount: format_i64(integer_cell(row, "pending_amount")),
         status: integer_cell(row, "status") as i32,
         version: integer_cell(row, "version"),
     })
@@ -1161,21 +1162,19 @@ fn map_wallet_transaction(
         &format_i64(integer_cell(row, "owner_id")),
         asset_type_from_code(&string_cell(row, "asset_code"))?,
         parse_direction(&string_cell(row, "direction"))?,
-        &string_cell(row, "amount"),
-        &string_cell(row, "balance_before"),
-        &string_cell(row, "balance_after"),
+        &format_i64(integer_cell(row, "amount")),
+        &format_i64(integer_cell(row, "balance_before")),
+        &format_i64(integer_cell(row, "balance_after")),
         &string_cell(row, "business_type"),
         &string_cell(row, "business_no"),
         &string_cell(row, "request_no"),
         &string_cell(row, "idempotency_key"),
-        &string_cell(row, "created_at"),
+        &timestamp_cell(row, "created_at"),
     )
 }
 
 fn map_points_lot(row: &sqlx::postgres::PgRow) -> Result<PointsLotItem, CommerceServiceError> {
-    let expires_at = row
-        .try_get::<Option<String>, _>("expires_at")
-        .unwrap_or(None)
+    let expires_at = optional_timestamp_cell(row, "expires_at")
         .filter(|value| !value.trim().is_empty());
     Ok(PointsLotItem {
         id: format_i64(integer_cell(row, "id")),
@@ -1187,8 +1186,8 @@ fn map_points_lot(row: &sqlx::postgres::PgRow) -> Result<PointsLotItem, Commerce
         source_id: format_i64(integer_cell(row, "source_id")),
         expires_at,
         status: points_lot_status_label(integer_cell(row, "status") as i32).to_string(),
-        created_at: string_cell(row, "created_at"),
-        updated_at: string_cell(row, "updated_at"),
+        created_at: timestamp_cell(row, "created_at"),
+        updated_at: timestamp_cell(row, "updated_at"),
     })
 }
 
@@ -1204,6 +1203,23 @@ fn parse_direction(value: &str) -> Result<CommerceLedgerDirection, CommerceServi
 
 pub(crate) fn string_cell(row: &sqlx::postgres::PgRow, name: &str) -> String {
     row.try_get::<String, _>(name).unwrap_or_default()
+}
+
+/// Reads a logical `instant` column as canonical RFC3339 text. The physical
+/// column is `TIMESTAMPTZ` (DATABASE_SPEC §8.1), so the value is decoded as
+/// `DateTime<Utc>` and formatted; TEXT-stored legacy columns are read as-is.
+fn timestamp_cell(row: &sqlx::postgres::PgRow, column: &str) -> String {
+    optional_timestamp_cell(row, column).unwrap_or_default()
+}
+
+fn optional_timestamp_cell(row: &sqlx::postgres::PgRow, column: &str) -> Option<String> {
+    if let Ok(Some(value)) = row.try_get::<Option<String>, _>(column) {
+        return Some(value);
+    }
+    row.try_get::<Option<DateTime<Utc>>, _>(column)
+        .ok()
+        .flatten()
+        .map(|value| value.to_rfc3339())
 }
 
 pub(crate) fn integer_cell(row: &sqlx::postgres::PgRow, name: &str) -> i64 {

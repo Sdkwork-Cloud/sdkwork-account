@@ -116,7 +116,7 @@ fn map_billing_history_item(
         &string_cell(row, "history_type"),
         &string_cell(row, "direction"),
         &string_cell(row, "asset_code"),
-        &string_cell(row, "amount"),
+        &format_i64(row.try_get::<i64, _>("amount").unwrap_or_default()),
         optional_string_cell(row, "currency_code").as_deref(),
         row.try_get::<i64, _>("points_delta").unwrap_or_default(),
         &format_i64(row.try_get::<i64, _>("status").unwrap_or_default()),
