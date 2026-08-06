@@ -71,18 +71,13 @@ struct AccountReadiness {
 impl ReadinessCheck for AccountReadiness {
     fn check(&self) -> ReadinessFuture<'_> {
         Box::pin(async move {
-            let result = match self.host.database_pool() {
-                DatabasePool::Postgres(pool, _) => {
-                    sqlx::query_scalar::<_, i64>("SELECT 1")
-                        .fetch_one(pool)
-                        .await
-                }
-                DatabasePool::Sqlite(pool, _) => {
-                    sqlx::query_scalar::<_, i64>("SELECT 1")
-                        .fetch_one(pool)
-                        .await
-                }
+            // 服务端权威持久化仅支持 PostgreSQL（DATABASE_SPEC：authoritative-server）
+            let DatabasePool::Postgres(pool, _) = self.host.database_pool() else {
+                return Err("database is not ready (PostgreSQL pool required)".to_owned());
             };
+            let result = sqlx::query_scalar::<_, i64>("SELECT 1")
+                .fetch_one(pool)
+                .await;
             match result {
                 Ok(_) => Ok(()),
                 Err(error) => {

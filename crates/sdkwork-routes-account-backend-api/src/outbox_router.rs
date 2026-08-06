@@ -6,13 +6,13 @@ use axum::extract::{Extension, State};
 use axum::response::Response;
 use axum::routing::post;
 use axum::Router;
-use sdkwork_account_repository_sqlx::{PostgresCommerceAccountStore, SqliteCommerceAccountStore};
+use sdkwork_account_repository_sqlx::PostgresCommerceAccountStore;
 use sdkwork_account_service::OutboxDispatchOutcome;
 use sdkwork_contract_service::CommerceServiceError;
 use sdkwork_iam_context_service::IamAppContext;
 use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, SqlitePool};
+use sqlx::PgPool;
 
 use crate::api_response::{map_service_error, success_item, unauthorized};
 use crate::subject::backend_runtime_subject_from_extension;
@@ -65,15 +65,6 @@ struct OutboxDispatchResponse {
     items: Vec<OutboxDispatchItemResponse>,
 }
 
-impl CommerceOutboxRelayStore for SqliteCommerceAccountStore {
-    fn dispatch_outbox_batch<'a>(
-        &'a self,
-        batch_size: Option<i64>,
-    ) -> CommerceOutboxRelayFuture<'a, OutboxDispatchOutcome> {
-        Box::pin(async move { self.dispatch_outbox_batch(batch_size).await })
-    }
-}
-
 impl CommerceOutboxRelayStore for PostgresCommerceAccountStore {
     fn dispatch_outbox_batch<'a>(
         &'a self,
@@ -81,10 +72,6 @@ impl CommerceOutboxRelayStore for PostgresCommerceAccountStore {
     ) -> CommerceOutboxRelayFuture<'a, OutboxDispatchOutcome> {
         Box::pin(async move { self.dispatch_outbox_batch(batch_size).await })
     }
-}
-
-pub fn backend_outbox_router_with_sqlite_pool(pool: SqlitePool) -> Router {
-    build_backend_outbox_router(Arc::new(SqliteCommerceAccountStore::new(pool)))
 }
 
 pub fn backend_outbox_router_with_postgres_pool(pool: PgPool) -> Router {

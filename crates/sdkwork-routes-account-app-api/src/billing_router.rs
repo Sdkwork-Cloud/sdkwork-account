@@ -6,16 +6,14 @@ use axum::extract::{Extension, Query, State};
 use axum::response::Response;
 use axum::routing::get;
 use axum::Router;
-use sdkwork_account_repository_sqlx::{
-    PostgresCommerceBillingHistoryStore, SqliteCommerceBillingHistoryStore,
-};
+use sdkwork_account_repository_sqlx::PostgresCommerceBillingHistoryStore;
 use sdkwork_account_service::{BillingHistoryItem, BillingHistoryListQuery, StoreListPage};
 use sdkwork_contract_service::CommerceServiceError;
 use sdkwork_iam_context_service::IamAppContext;
 use sdkwork_utils_rust::OffsetListPageParams;
 use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, SqlitePool};
+use sqlx::PgPool;
 
 use crate::api_response::{
     success_cursor_list_page, success_offset_list_page, unauthorized, validation,
@@ -71,15 +69,6 @@ struct BillingHistoryItemResponse {
     occurred_at: String,
 }
 
-impl CommerceBillingHistoryStore for SqliteCommerceBillingHistoryStore {
-    fn list_billing_history<'a>(
-        &'a self,
-        query: BillingHistoryListQuery,
-    ) -> CommerceBillingHistoryFuture<'a, StoreListPage<BillingHistoryItem>> {
-        Box::pin(async move { self.list_billing_history(query).await })
-    }
-}
-
 impl CommerceBillingHistoryStore for PostgresCommerceBillingHistoryStore {
     fn list_billing_history<'a>(
         &'a self,
@@ -87,10 +76,6 @@ impl CommerceBillingHistoryStore for PostgresCommerceBillingHistoryStore {
     ) -> CommerceBillingHistoryFuture<'a, StoreListPage<BillingHistoryItem>> {
         Box::pin(async move { self.list_billing_history(query).await })
     }
-}
-
-pub fn app_billing_history_router_with_sqlite_pool(pool: SqlitePool) -> Router {
-    build_app_billing_history_router(Arc::new(SqliteCommerceBillingHistoryStore::new(pool)))
 }
 
 pub fn app_billing_history_router_with_postgres_pool(pool: PgPool) -> Router {

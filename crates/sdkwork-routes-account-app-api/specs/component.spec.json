@@ -69,9 +69,7 @@
     "requiredPorts": [],
     "runtimeEntrypoints": [
       "app_account_wallet_router_with_postgres_pool",
-      "app_account_wallet_router_with_sqlite_pool",
       "app_billing_history_router_with_postgres_pool",
-      "app_billing_history_router_with_sqlite_pool",
       "build_account_app_router",
       "build_account_app_router_with_framework",
       "build_app_account_wallet_router",

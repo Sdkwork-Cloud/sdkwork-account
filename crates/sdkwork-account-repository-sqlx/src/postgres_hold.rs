@@ -81,6 +81,8 @@ impl PostgresCommerceAccountStore {
             owner_id,
             &command.account_id,
             &command.asset_type,
+            command.owner_type.as_deref(),
+            command.account_purpose.as_deref(),
             &now,
         )
         .await?;
@@ -133,7 +135,7 @@ impl PostgresCommerceAccountStore {
         .bind(tenant_id)
         .bind(organization_id)
         .bind(account.id)
-        .bind(OWNER_TYPE_USER)
+        .bind(command.owner_type.as_deref().unwrap_or(OWNER_TYPE_USER))
         .bind(account.owner_id)
         .bind(asset_code_from_type(&command.asset_type))
         .bind(command.amount.as_str())
@@ -1220,7 +1222,7 @@ async fn append_settlement_ledger(
     .bind(account.organization_id)
     .bind(account.id)
     .bind(journal_id)
-    .bind(OWNER_TYPE_USER)
+    .bind(account.owner_type.as_str())
     .bind(account.owner_id)
     .bind(asset_code_from_type(&asset_type))
     .bind(&account.currency_code)
@@ -1410,6 +1412,8 @@ async fn load_account_for_hold(
     owner_id: i64,
     account_id: &str,
     asset_type: &CommerceAccountAssetType,
+    owner_type: Option<&str>,
+    account_purpose: Option<&str>,
     now: &str,
 ) -> Result<StoredAccount, CommerceServiceError> {
     let trimmed = account_id.trim();
@@ -1424,7 +1428,17 @@ async fn load_account_for_hold(
         )?;
         return Ok(account);
     }
-    load_account_by_owner_asset(tx, tenant_id, organization_id, owner_id, asset_type, now).await
+    load_account_by_owner_asset(
+        tx,
+        tenant_id,
+        organization_id,
+        owner_id,
+        asset_type,
+        owner_type,
+        account_purpose,
+        now,
+    )
+    .await
 }
 
 async fn load_account_by_owner_asset(
@@ -1433,22 +1447,25 @@ async fn load_account_by_owner_asset(
     organization_id: i64,
     owner_id: i64,
     asset_type: &CommerceAccountAssetType,
+    owner_type: Option<&str>,
+    account_purpose: Option<&str>,
     now: &str,
 ) -> Result<StoredAccount, CommerceServiceError> {
     if let Some(account) = sqlx::query(
         r#"
-        SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
+        SELECT id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
         FROM acct_account
-        WHERE tenant_id = $1 AND organization_id = $2 AND owner_type = $3 AND owner_id = $4 AND asset_code = $5
+        WHERE tenant_id = $1 AND organization_id = $2 AND owner_type = $3 AND owner_id = $4 AND asset_code = $5 AND account_purpose = $6
         LIMIT 1
         "#,
     )
     .bind(tenant_id)
     .bind(organization_id)
-    .bind(OWNER_TYPE_USER)
+    .bind(owner_type.unwrap_or(OWNER_TYPE_USER))
     .bind(owner_id)
     .bind(asset_code_from_type(asset_type))
+    .bind(account_purpose.unwrap_or(crate::store::ACCOUNT_PURPOSE_GENERAL))
     .fetch_optional(&mut **tx)
     .await
     .map_err(|error| store_error("failed to load account for hold", error))?
@@ -1475,12 +1492,12 @@ async fn load_account_by_owner_asset(
     .bind(&account_uuid)
     .bind(tenant_id)
     .bind(organization_id)
-    .bind(OWNER_TYPE_USER)
+    .bind(owner_type.unwrap_or(OWNER_TYPE_USER))
     .bind(owner_id)
     .bind(asset_code_from_type(asset_type))
     .bind(currency_code)
     .bind(ACCOUNT_STATUS_ACTIVE)
-    .bind(crate::store::ACCOUNT_PURPOSE_GENERAL)
+    .bind(account_purpose.unwrap_or(crate::store::ACCOUNT_PURPOSE_GENERAL))
     .bind(now)
     .bind(now)
     .execute(&mut **tx)
@@ -1492,6 +1509,7 @@ async fn load_account_by_owner_asset(
         uuid: account_uuid,
         tenant_id,
         organization_id,
+        owner_type: owner_type.unwrap_or(OWNER_TYPE_USER).to_string(),
         owner_id,
         asset_type: asset_type.clone(),
         currency_code: currency_code.to_owned(),

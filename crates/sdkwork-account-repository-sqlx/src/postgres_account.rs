@@ -37,6 +37,7 @@ pub(crate) struct StoredAccount {
     pub(crate) uuid: String,
     pub(crate) tenant_id: i64,
     pub(crate) organization_id: i64,
+    pub(crate) owner_type: String,
     pub(crate) owner_id: i64,
     pub(crate) asset_type: CommerceAccountAssetType,
     pub(crate) currency_code: String,
@@ -159,7 +160,7 @@ impl PostgresCommerceAccountStore {
 
         let rows = sqlx::query(
             r#"
-            SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
+            SELECT id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
                    available_amount, frozen_amount, pending_amount, status, version
             FROM acct_account
             WHERE tenant_id = $1
@@ -173,7 +174,7 @@ impl PostgresCommerceAccountStore {
         )
         .bind(tenant_id)
         .bind(organization_id)
-        .bind(OWNER_TYPE_USER)
+        .bind(query.owner_type.as_deref().unwrap_or(OWNER_TYPE_USER))
         .bind(owner_id)
         .bind(asset_code)
         .bind(asset_code)
@@ -219,16 +220,18 @@ impl PostgresCommerceAccountStore {
                 FROM acct_ledger_entry
                 WHERE tenant_id = $1
                   AND organization_id = $2
-                  AND owner_id = $3
-                  AND ($4 IS NULL OR account_id = $5)
-                  AND ($6 IS NULL OR asset_code = $7)
-                  AND created_at < $8
+                  AND owner_type = $3
+                  AND owner_id = $4
+                  AND ($5 IS NULL OR account_id = $6)
+                  AND ($7 IS NULL OR asset_code = $8)
+                  AND created_at < $9
                 ORDER BY created_at DESC, id DESC
-                LIMIT $9
+                LIMIT $10
                 "#
             )))
             .bind(tenant_id)
             .bind(organization_id)
+            .bind(query.owner_type.as_deref().unwrap_or(OWNER_TYPE_USER))
             .bind(owner_id)
             .bind(account_id)
             .bind(account_id)
@@ -248,15 +251,17 @@ impl PostgresCommerceAccountStore {
                 FROM acct_ledger_entry
                 WHERE tenant_id = $1
                   AND organization_id = $2
-                  AND owner_id = $3
-                  AND ($4 IS NULL OR account_id = $5)
-                  AND ($6 IS NULL OR asset_code = $7)
+                  AND owner_type = $3
+                  AND owner_id = $4
+                  AND ($5 IS NULL OR account_id = $6)
+                  AND ($7 IS NULL OR asset_code = $8)
                 ORDER BY created_at DESC, id DESC
-                LIMIT $8 OFFSET $9
+                LIMIT $9 OFFSET $10
                 "#
             )))
             .bind(tenant_id)
             .bind(organization_id)
+            .bind(query.owner_type.as_deref().unwrap_or(OWNER_TYPE_USER))
             .bind(owner_id)
             .bind(account_id)
             .bind(account_id)
@@ -647,7 +652,7 @@ impl PostgresCommerceAccountStore {
         .bind(organization_id)
         .bind(account.id)
         .bind(journal_id)
-        .bind(OWNER_TYPE_USER)
+        .bind(command.owner_type.as_deref().unwrap_or(OWNER_TYPE_USER))
         .bind(owner_id)
         .bind(asset_code_from_type(&command.asset_type))
         .bind(currency_code_for_command(&command))
@@ -973,11 +978,11 @@ async fn load_or_create_account_for_append(
     .bind(&account_uuid)
     .bind(tenant_id)
     .bind(organization_id)
-    .bind(OWNER_TYPE_USER)
+    .bind(command.owner_type.as_deref().unwrap_or(OWNER_TYPE_USER))
     .bind(owner_id)
     .bind(asset_code_from_type(&command.asset_type))
     .bind(&currency_code)
-    .bind(ACCOUNT_PURPOSE_GENERAL)
+    .bind(command.account_purpose.as_deref().unwrap_or(ACCOUNT_PURPOSE_GENERAL))
     .bind(ACCOUNT_STATUS_ACTIVE)
     .bind(now)
     .bind(now)
@@ -1009,7 +1014,7 @@ async fn load_account_by_id(
 ) -> Result<Option<StoredAccount>, CommerceServiceError> {
     let row = sqlx::query(
         r#"
-        SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
+        SELECT id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
         FROM acct_account
         WHERE id = $1 AND tenant_id = $2 AND organization_id = $3 AND owner_id = $4
@@ -1037,7 +1042,7 @@ async fn load_account_by_owner_asset(
     let currency_code = currency_code_for_command(command);
     let row = sqlx::query(
         r#"
-        SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
+        SELECT id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
         FROM acct_account
         WHERE tenant_id = $1
@@ -1053,11 +1058,11 @@ async fn load_account_by_owner_asset(
     )
     .bind(tenant_id)
     .bind(organization_id)
-    .bind(OWNER_TYPE_USER)
+    .bind(command.owner_type.as_deref().unwrap_or(OWNER_TYPE_USER))
     .bind(owner_id)
     .bind(asset_code_from_type(&command.asset_type))
     .bind(currency_code)
-    .bind(ACCOUNT_PURPOSE_GENERAL)
+    .bind(command.account_purpose.as_deref().unwrap_or(ACCOUNT_PURPOSE_GENERAL))
     .fetch_optional(&mut **tx)
     .await
     .map_err(|error| store_error("failed to load commerce account by owner asset", error))?;
@@ -1102,7 +1107,7 @@ async fn load_account_item_for_replay(
 ) -> Result<WalletAccountItem, CommerceServiceError> {
     let row = sqlx::query(
         r#"
-        SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
+        SELECT id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
         FROM acct_account
         WHERE id = $1
@@ -1126,6 +1131,7 @@ pub(crate) fn map_stored_account(
         uuid: string_cell(row, "uuid"),
         tenant_id: integer_cell(row, "tenant_id"),
         organization_id: integer_cell(row, "organization_id"),
+        owner_type: string_cell(row, "owner_type"),
         owner_id: integer_cell(row, "owner_id"),
         asset_type: asset_type_from_code(&string_cell(row, "asset_code"))?,
         currency_code: string_cell(row, "currency_code"),

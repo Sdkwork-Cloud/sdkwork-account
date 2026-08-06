@@ -6,7 +6,7 @@ use axum::extract::{Extension, State};
 use axum::response::Response;
 use axum::routing::post;
 use axum::Router;
-use sdkwork_account_repository_sqlx::{PostgresCommerceAccountStore, SqliteCommerceAccountStore};
+use sdkwork_account_repository_sqlx::PostgresCommerceAccountStore;
 use sdkwork_account_service::{
     AppendLedgerEntryCommand, AppendLedgerEntryOutcome, ExpirePointsLotsCommand,
     ExpirePointsLotsOutcome, PointsLotMismatchItem, PointsReconciliationQuery,
@@ -20,7 +20,7 @@ use sdkwork_iam_context_service::IamAppContext;
 use sdkwork_utils_rust::sha256_hash;
 use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, SqlitePool};
+use sqlx::PgPool;
 
 use crate::api_response::{
     map_service_error, success_created_item, success_item, unauthorized, validation,
@@ -78,6 +78,12 @@ struct CreateWalletAdjustmentRequest {
     expires_at: Option<String>,
     #[serde(default)]
     reversed_ledger_id: Option<String>,
+    /// Owner subject kind (defaults to USER). PARTNER opens settlement accounts.
+    #[serde(default)]
+    owner_type: Option<String>,
+    /// Account purpose (defaults to GENERAL). SETTLEMENT for partner revenue.
+    #[serde(default)]
+    account_purpose: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -184,31 +190,6 @@ struct WalletTransactionItemResponse {
     created_at: String,
 }
 
-impl CommerceAccountLedgerWriteStore for SqliteCommerceAccountStore {
-    fn append_ledger_entry<'a>(
-        &'a self,
-        command: AppendLedgerEntryCommand,
-        request_hash: CommerceRequestHash,
-    ) -> CommerceLedgerWriteFuture<'a, AppendLedgerEntryOutcome> {
-        Box::pin(async move { self.append_ledger_entry(command, request_hash).await })
-    }
-
-    fn expire_points_lots<'a>(
-        &'a self,
-        command: ExpirePointsLotsCommand,
-        request_hash: CommerceRequestHash,
-    ) -> CommerceLedgerWriteFuture<'a, ExpirePointsLotsOutcome> {
-        Box::pin(async move { self.expire_points_lots(command, request_hash).await })
-    }
-
-    fn reconcile_points_lots<'a>(
-        &'a self,
-        query: PointsReconciliationQuery,
-    ) -> CommerceLedgerWriteFuture<'a, PointsReconciliationSnapshot> {
-        Box::pin(async move { self.reconcile_points_lots(query).await })
-    }
-}
-
 impl CommerceAccountLedgerWriteStore for PostgresCommerceAccountStore {
     fn append_ledger_entry<'a>(
         &'a self,
@@ -232,10 +213,6 @@ impl CommerceAccountLedgerWriteStore for PostgresCommerceAccountStore {
     ) -> CommerceLedgerWriteFuture<'a, PointsReconciliationSnapshot> {
         Box::pin(async move { self.reconcile_points_lots(query).await })
     }
-}
-
-pub fn backend_wallet_router_with_sqlite_pool(pool: SqlitePool) -> Router {
-    build_backend_wallet_router(Arc::new(SqliteCommerceAccountStore::new(pool)))
 }
 
 pub fn backend_wallet_router_with_postgres_pool(pool: PgPool) -> Router {
@@ -435,7 +412,7 @@ async fn create_wallet_adjustment_with_asset(
         Err(error) => return map_service_error(Some(&ctx), error),
     };
 
-    let command = match AppendLedgerEntryCommand::with_options(
+    let mut command = match AppendLedgerEntryCommand::with_options(
         body.tenant_id.trim(),
         body.organization_id.as_deref(),
         body.account_id.as_deref().unwrap_or(""),
@@ -454,6 +431,9 @@ async fn create_wallet_adjustment_with_asset(
         Ok(command) => command,
         Err(error) => return map_service_error(Some(&ctx), error),
     };
+    if let (Some(owner_type), Some(account_purpose)) = (body.owner_type.as_deref(), body.account_purpose.as_deref()) {
+        command = command.with_account_subject(owner_type, account_purpose);
+    }
 
     let request_hash = match request_hash_from_body(&body) {
         Ok(request_hash) => request_hash,

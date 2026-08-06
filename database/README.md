@@ -41,6 +41,14 @@ Floating-point account arithmetic is forbidden.
 
 These tables support fiat exchange, immutable purchase evidence, AI spending, service income, burn routing, and reconciliation.
 
+## Initialization state
+
+This module is in **initialization state** for greenfield deployments:
+
+1. **Baseline** — `database/ddl/baseline/{engine}/0001_account_baseline.sql` contains the full DDL snapshot.
+2. **Migrations** — `database/migrations/{engine}/` is reserved for post-GA incremental schema changes only. It is intentionally empty at initialization.
+3. **Drift** — run `pnpm db:drift:check` before release.
+
 ## Commands
 
 ```bash

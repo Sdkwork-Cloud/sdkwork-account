@@ -18,6 +18,20 @@ pub struct AppendLedgerEntryCommand {
     pub reversed_ledger_id: Option<String>,
     pub tenant_id: String,
     pub transaction_no: String,
+    /// Owner subject kind (defaults to USER when None).
+    pub owner_type: Option<String>,
+    /// Account purpose (defaults to GENERAL when None).
+    pub account_purpose: Option<String>,
+}
+
+impl AppendLedgerEntryCommand {
+    /// Set the account subject (owner type + account purpose) for non-user
+    /// accounts (e.g. PARTNER settlement accounts). None keeps USER/GENERAL.
+    pub fn with_account_subject(mut self, owner_type: &str, account_purpose: &str) -> Self {
+        self.owner_type = Some(owner_type.to_string());
+        self.account_purpose = Some(account_purpose.to_string());
+        self
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -35,6 +49,20 @@ pub struct CreateAccountHoldCommand {
     pub request_no: String,
     pub idempotency_key: String,
     pub expires_at: Option<String>,
+    /// Owner subject kind (defaults to USER when None).
+    pub owner_type: Option<String>,
+    /// Account purpose (defaults to GENERAL when None).
+    pub account_purpose: Option<String>,
+}
+
+impl CreateAccountHoldCommand {
+    /// Set the account subject (owner type + account purpose) for non-user
+    /// accounts (e.g. PARTNER settlement accounts). None keeps USER/GENERAL.
+    pub fn with_account_subject(mut self, owner_type: &str, account_purpose: &str) -> Self {
+        self.owner_type = Some(owner_type.to_string());
+        self.account_purpose = Some(account_purpose.to_string());
+        self
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -101,6 +129,8 @@ impl CreateAccountHoldCommand {
             request_no: required_text("request_no", request_no)?,
             idempotency_key: required_text("idempotency_key", idempotency_key)?,
             expires_at: optional_text(expires_at),
+            owner_type: None,
+            account_purpose: None,
         })
     }
 }
@@ -309,6 +339,8 @@ impl AppendLedgerEntryCommand {
             reversed_ledger_id: optional_text(reversed_ledger_id),
             tenant_id: required_text("tenant_id", tenant_id)?,
             transaction_no: required_text("transaction_no", transaction_no)?,
+            owner_type: None,
+            account_purpose: None,
         })
     }
 }

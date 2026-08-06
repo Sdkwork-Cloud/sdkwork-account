@@ -846,6 +846,13 @@ impl CommerceLedgerBusinessType {
     pub const TOKEN_BANK_SERVICE_INCOME: &str = "token_bank_service_income";
     pub const TOKEN_BANK_BURN: &str = "token_bank_burn";
     pub const TOKEN_BANK_REVERSAL: &str = "token_bank_reversal";
+    pub const JOIN_FEE_COMMISSION: &str = "join_fee_commission";
+    pub const COMMISSION_EARN: &str = "commission_earn";
+    pub const COMMISSION_WITHDRAW_HOLD: &str = "commission_withdraw_hold";
+    pub const COMMISSION_WITHDRAW_RELEASE: &str = "commission_withdraw_release";
+    pub const COMMISSION_WITHDRAW_PAID: &str = "commission_withdraw_paid";
+    pub const COMMISSION_ADJUSTMENT: &str = "commission_adjustment";
+    pub const USAGE_SETTLEMENT: &str = "usage_settlement";
     pub const MANUAL_ADJUSTMENT: &str = "manual_adjustment";
 
     pub fn validate(value: &str) -> Result<(), CommerceServiceError> {
@@ -870,6 +877,55 @@ impl CommerceLedgerBusinessType {
         }
         Ok(())
     }
+}
+
+/// Canonical account owner types (subject kinds) for `acct_account.owner_type`.
+pub struct CommerceAccountOwnerType;
+
+impl CommerceAccountOwnerType {
+    pub const USER: &str = "USER";
+    pub const ORG: &str = "ORG";
+    pub const PROJECT: &str = "PROJECT";
+    pub const SERVICE: &str = "SERVICE";
+    pub const SYSTEM: &str = "SYSTEM";
+    /// Partner (agent/distributor) subject kind.
+    pub const PARTNER: &str = "PARTNER";
+
+    pub fn validate(value: &str) -> Result<(), CommerceServiceError> {
+        let value = value.trim();
+        if value.is_empty() {
+            return Err(CommerceServiceError::validation(
+                "owner_type is required",
+            ));
+        }
+        if value.len() > 32 {
+            return Err(CommerceServiceError::validation(
+                "owner_type must be at most 32 characters",
+            ));
+        }
+        if !value
+            .chars()
+            .all(|ch| ch.is_ascii_uppercase() || ch.is_ascii_digit() || ch == '_')
+        {
+            return Err(CommerceServiceError::validation(
+                "owner_type must use uppercase letters, digits, or underscores",
+            ));
+        }
+        Ok(())
+    }
+}
+
+/// Canonical account purposes for `acct_account.account_purpose`.
+pub struct CommerceAccountPurpose;
+
+impl CommerceAccountPurpose {
+    pub const GENERAL: &str = "GENERAL";
+    pub const BUDGET: &str = "BUDGET";
+    pub const RESERVE: &str = "RESERVE";
+    /// Settlement account used for commission/partner revenue.
+    pub const SETTLEMENT: &str = "SETTLEMENT";
+    pub const BURN: &str = "BURN";
+    pub const SUSPENSE: &str = "SUSPENSE";
 }
 
 fn is_non_negative_integer(value: &str) -> bool {

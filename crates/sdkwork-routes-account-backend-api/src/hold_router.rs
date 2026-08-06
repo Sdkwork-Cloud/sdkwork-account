@@ -6,9 +6,7 @@ use axum::extract::{Extension, Path, State};
 use axum::response::Response;
 use axum::routing::post;
 use axum::Router;
-use sdkwork_account_repository_sqlx::{
-    hold_request_hash, PostgresCommerceAccountStore, SqliteCommerceAccountStore,
-};
+use sdkwork_account_repository_sqlx::{hold_request_hash, PostgresCommerceAccountStore};
 use sdkwork_account_service::{
     AccountHoldItem, CreateAccountHoldCommand, CreateAccountTransferCommand,
     ExpireExpiredHoldsCommand, ExpireExpiredHoldsOutcome, HoldMutationOutcome,
@@ -21,7 +19,7 @@ use sdkwork_contract_service::{
 use sdkwork_iam_context_service::IamAppContext;
 use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, SqlitePool};
+use sqlx::PgPool;
 
 use crate::api_response::{
     map_service_error, success_created_item, success_item, unauthorized, validation,
@@ -88,6 +86,12 @@ struct CreateAccountHoldRequest {
     idempotency_key: String,
     #[serde(default)]
     expires_at: Option<String>,
+    /// Owner subject kind (defaults to USER). PARTNER opens settlement accounts.
+    #[serde(default)]
+    owner_type: Option<String>,
+    /// Account purpose (defaults to GENERAL). SETTLEMENT for partner revenue.
+    #[serde(default)]
+    account_purpose: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -263,48 +267,6 @@ struct WalletTransactionItemResponse {
     created_at: String,
 }
 
-impl CommerceAccountHoldWriteStore for SqliteCommerceAccountStore {
-    fn create_account_hold<'a>(
-        &'a self,
-        command: CreateAccountHoldCommand,
-        request_hash: CommerceRequestHash,
-    ) -> CommerceHoldWriteFuture<'a, HoldMutationOutcome> {
-        Box::pin(async move { self.create_account_hold(command, request_hash).await })
-    }
-
-    fn settle_account_hold<'a>(
-        &'a self,
-        command: SettleAccountHoldCommand,
-        request_hash: CommerceRequestHash,
-    ) -> CommerceHoldWriteFuture<'a, HoldMutationOutcome> {
-        Box::pin(async move { self.settle_account_hold(command, request_hash).await })
-    }
-
-    fn release_account_hold<'a>(
-        &'a self,
-        command: ReleaseAccountHoldCommand,
-        request_hash: CommerceRequestHash,
-    ) -> CommerceHoldWriteFuture<'a, HoldMutationOutcome> {
-        Box::pin(async move { self.release_account_hold(command, request_hash).await })
-    }
-
-    fn create_account_transfer<'a>(
-        &'a self,
-        command: CreateAccountTransferCommand,
-        request_hash: CommerceRequestHash,
-    ) -> CommerceHoldWriteFuture<'a, TransferMutationOutcome> {
-        Box::pin(async move { self.create_account_transfer(command, request_hash).await })
-    }
-
-    fn expire_expired_holds<'a>(
-        &'a self,
-        command: ExpireExpiredHoldsCommand,
-        request_hash: CommerceRequestHash,
-    ) -> CommerceHoldWriteFuture<'a, ExpireExpiredHoldsOutcome> {
-        Box::pin(async move { self.expire_expired_holds(command, request_hash).await })
-    }
-}
-
 impl CommerceAccountHoldWriteStore for PostgresCommerceAccountStore {
     fn create_account_hold<'a>(
         &'a self,
@@ -345,10 +307,6 @@ impl CommerceAccountHoldWriteStore for PostgresCommerceAccountStore {
     ) -> CommerceHoldWriteFuture<'a, ExpireExpiredHoldsOutcome> {
         Box::pin(async move { self.expire_expired_holds(command, request_hash).await })
     }
-}
-
-pub fn backend_hold_router_with_sqlite_pool(pool: SqlitePool) -> Router {
-    build_backend_hold_router(Arc::new(SqliteCommerceAccountStore::new(pool)))
 }
 
 pub fn backend_hold_router_with_postgres_pool(pool: PgPool) -> Router {
@@ -437,7 +395,7 @@ async fn create_account_hold(
             Ok(amount) => amount,
             Err(error) => return map_service_error(Some(&ctx), error),
         };
-    let command = match CreateAccountHoldCommand::new(
+    let mut command = match CreateAccountHoldCommand::new(
         body.tenant_id.trim(),
         body.organization_id.as_deref(),
         body.account_id.as_deref().unwrap_or(""),
@@ -455,6 +413,9 @@ async fn create_account_hold(
         Ok(command) => command,
         Err(error) => return map_service_error(Some(&ctx), error),
     };
+    if let (Some(owner_type), Some(account_purpose)) = (body.owner_type.as_deref(), body.account_purpose.as_deref()) {
+        command = command.with_account_subject(owner_type, account_purpose);
+    }
     let request_hash = match hold_request_hash(&serde_json::to_string(&body).unwrap_or_default()) {
         Ok(hash) => hash,
         Err(error) => return map_service_error(Some(&ctx), error),

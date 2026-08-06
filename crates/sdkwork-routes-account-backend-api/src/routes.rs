@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
-use sdkwork_account_repository_sqlx::{PostgresCommerceAccountStore, SqliteCommerceAccountStore};
+use sdkwork_account_repository_sqlx::PostgresCommerceAccountStore;
 use sdkwork_account_service_host::AccountServiceHost;
 use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_utils_rust::{SdkWorkApiResponse, SdkWorkResourceData};
@@ -10,9 +10,8 @@ use std::sync::Arc;
 
 use crate::web_bootstrap::wrap_router_with_web_framework_from_env;
 use crate::{
-    backend_hold_router_with_postgres_pool, backend_hold_router_with_sqlite_pool,
-    backend_outbox_router_with_postgres_pool, backend_outbox_router_with_sqlite_pool,
-    backend_wallet_router_with_postgres_pool, backend_wallet_router_with_sqlite_pool,
+    backend_hold_router_with_postgres_pool, backend_outbox_router_with_postgres_pool,
+    backend_wallet_router_with_postgres_pool,
 };
 
 #[derive(Debug, Serialize)]
@@ -30,21 +29,27 @@ async fn wallet_health(
     StatusCode,
     Json<SdkWorkApiResponse<SdkWorkResourceData<WalletHealthItemResponse>>>,
 ) {
-    let db_ok = match host.database_pool() {
-        DatabasePool::Postgres(pool, _) => sqlx::query("SELECT 1").execute(pool).await.is_ok(),
-        DatabasePool::Sqlite(pool, _) => sqlx::query("SELECT 1").execute(pool).await.is_ok(),
+    // 服务端权威持久化仅支持 PostgreSQL（DATABASE_SPEC：authoritative-server）
+    let DatabasePool::Postgres(pool, _) = host.database_pool() else {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(SdkWorkApiResponse::success(
+                SdkWorkResourceData {
+                    item: WalletHealthItemResponse {
+                        status: "degraded".to_owned(),
+                        database: "down".to_owned(),
+                        outbox_pending_lag: -1,
+                    },
+                },
+                sdkwork_utils_rust::uuid(),
+            )),
+        );
     };
-
-    let outbox_pending_lag = match host.database_pool() {
-        DatabasePool::Postgres(pool, _) => PostgresCommerceAccountStore::new(pool.clone())
-            .pending_outbox_lag()
-            .await
-            .unwrap_or(-1),
-        DatabasePool::Sqlite(pool, _) => SqliteCommerceAccountStore::new(pool.clone())
-            .pending_outbox_lag()
-            .await
-            .unwrap_or(-1),
-    };
+    let db_ok = sqlx::query("SELECT 1").execute(pool).await.is_ok();
+    let outbox_pending_lag = PostgresCommerceAccountStore::new(pool.clone())
+        .pending_outbox_lag()
+        .await
+        .unwrap_or(-1);
 
     let status = if db_ok {
         StatusCode::OK
@@ -73,20 +78,16 @@ pub fn build_account_backend_router(host: Arc<AccountServiceHost>) -> Router {
         get(wallet_health).with_state(host.clone()),
     );
 
-    router = router.merge(match host.database_pool() {
-        DatabasePool::Postgres(pool, _) => {
-            let pool = pool.clone();
-            backend_wallet_router_with_postgres_pool(pool.clone())
-                .merge(backend_hold_router_with_postgres_pool(pool.clone()))
-                .merge(backend_outbox_router_with_postgres_pool(pool))
-        }
-        DatabasePool::Sqlite(pool, _) => {
-            let pool = pool.clone();
-            backend_wallet_router_with_sqlite_pool(pool.clone())
-                .merge(backend_hold_router_with_sqlite_pool(pool.clone()))
-                .merge(backend_outbox_router_with_sqlite_pool(pool))
-        }
-    });
+    // 服务端权威持久化仅支持 PostgreSQL（DATABASE_SPEC：authoritative-server）
+    let DatabasePool::Postgres(pool, _) = host.database_pool() else {
+        panic!("account backend router requires a PostgreSQL database pool");
+    };
+    let pool = pool.clone();
+    router = router.merge(
+        backend_wallet_router_with_postgres_pool(pool.clone())
+            .merge(backend_hold_router_with_postgres_pool(pool.clone()))
+            .merge(backend_outbox_router_with_postgres_pool(pool)),
+    );
 
     router
 }

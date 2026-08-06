@@ -65,6 +65,7 @@ Allowed `owner_type` values:
 | `PROJECT` | Project/workspace budget account. |
 | `SERVICE` | Model, plugin, application, Agent, workflow, or provider settlement account. |
 | `SYSTEM` | Platform reserve, burn, grant, suspense, and reconciliation accounts. |
+| `PARTNER` | Partner (agent/distributor) commission settlement account. |
 
 Allowed `account_purpose` values:
 

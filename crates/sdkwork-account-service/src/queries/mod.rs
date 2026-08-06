@@ -13,6 +13,8 @@ pub struct AccountLedgerQuery {
     pub owner_user_id: String,
     pub organization_id: Option<String>,
     pub tenant_id: String,
+    /// Owner subject kind (defaults to USER when None).
+    pub owner_type: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -21,6 +23,8 @@ pub struct WalletAccountListQuery {
     pub organization_id: Option<String>,
     pub owner_user_id: String,
     pub tenant_id: String,
+    /// Owner subject kind (defaults to USER when None).
+    pub owner_type: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -33,6 +37,8 @@ pub struct WalletTransactionListQuery {
     pub page: Option<i64>,
     pub page_size: Option<i64>,
     pub tenant_id: String,
+    /// Owner subject kind (defaults to USER when None).
+    pub owner_type: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -138,6 +144,7 @@ impl AccountLedgerQuery {
             owner_user_id: required_text("owner_user_id", owner_user_id)?,
             organization_id: optional_text(organization_id),
             tenant_id: required_text("tenant_id", tenant_id)?,
+            owner_type: None,
         })
     }
 }
@@ -154,6 +161,7 @@ impl WalletAccountListQuery {
             organization_id: optional_text(organization_id),
             owner_user_id: required_text("owner_user_id", owner_user_id)?,
             tenant_id: required_text("tenant_id", tenant_id)?,
+            owner_type: None,
         })
     }
 }
@@ -193,7 +201,14 @@ impl WalletTransactionListQuery {
             page,
             page_size,
             tenant_id: required_text("tenant_id", tenant_id)?,
+            owner_type: None,
         })
+    }
+
+    /// Set the owner subject kind for non-user transactions (defaults USER).
+    pub fn with_owner_type(mut self, owner_type: &str) -> Self {
+        self.owner_type = Some(owner_type.to_string());
+        self
     }
 
     pub fn limit(&self) -> i64 {

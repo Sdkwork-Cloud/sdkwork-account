@@ -7,7 +7,7 @@ use axum::response::Response;
 use axum::routing::get;
 use axum::Router;
 use sdkwork_account_repository_sqlx::{
-    store::balance::sum_amount_strings, PostgresCommerceAccountStore, SqliteCommerceAccountStore,
+    store::balance::sum_amount_strings, PostgresCommerceAccountStore,
 };
 use sdkwork_account_service::{
     AccountConsumptionItem, AccountHoldDetailQuery, AccountHoldItem, AccountHoldListQuery,
@@ -22,7 +22,7 @@ use sdkwork_contract_service::{CommerceAccountAssetType, CommerceServiceError};
 use sdkwork_iam_context_service::IamAppContext;
 use sdkwork_web_core::WebRequestContext;
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, SqlitePool};
+use sqlx::PgPool;
 
 use crate::api_response::{not_found, success_item, success_items, unauthorized, validation};
 use crate::subject::{app_runtime_subject_from_extension, enrich_account_summary_from_iam};
@@ -323,103 +323,6 @@ struct AccountLoginLogResponse {
     status: String,
 }
 
-impl CommerceAccountWalletStore for SqliteCommerceAccountStore {
-    fn retrieve_account_summary<'a>(
-        &'a self,
-        query: AccountSummaryQuery,
-    ) -> CommerceWalletFuture<'a, AccountSummarySnapshot> {
-        Box::pin(async move { self.retrieve_account_summary_snapshot(query).await })
-    }
-
-    fn retrieve_wallet_overview<'a>(
-        &'a self,
-        query: WalletAccountListQuery,
-    ) -> CommerceWalletFuture<'a, WalletOverview> {
-        Box::pin(async move { self.retrieve_wallet_overview(query).await })
-    }
-
-    fn list_wallet_accounts<'a>(
-        &'a self,
-        query: WalletAccountListQuery,
-    ) -> CommerceWalletFuture<'a, Vec<WalletAccountItem>> {
-        Box::pin(async move { self.list_wallet_accounts(query).await })
-    }
-
-    fn list_wallet_transactions<'a>(
-        &'a self,
-        query: WalletTransactionListQuery,
-    ) -> CommerceWalletFuture<'a, StoreListPage<WalletTransactionItem>> {
-        Box::pin(async move { self.list_wallet_transactions(query).await })
-    }
-
-    fn retrieve_wallet_transaction<'a>(
-        &'a self,
-        query: WalletTransactionDetailQuery,
-    ) -> CommerceWalletFuture<'a, Option<WalletTransactionItem>> {
-        Box::pin(async move { self.retrieve_wallet_transaction(query).await })
-    }
-
-    fn retrieve_wallet_operation<'a>(
-        &'a self,
-        query: WalletOperationQuery,
-    ) -> CommerceWalletFuture<'a, Option<WalletOperation>> {
-        Box::pin(async move { self.retrieve_wallet_operation(query).await })
-    }
-
-    fn retrieve_points_account_snapshot<'a>(
-        &'a self,
-        query: WalletAccountListQuery,
-    ) -> CommerceWalletFuture<'a, PointsAccountSnapshot> {
-        Box::pin(async move { self.retrieve_points_account_snapshot(query).await })
-    }
-
-    fn retrieve_wallet_account_for_asset<'a>(
-        &'a self,
-        query: WalletAccountListQuery,
-        asset_type: CommerceAccountAssetType,
-    ) -> CommerceWalletFuture<'a, WalletAccountItem> {
-        Box::pin(async move {
-            self.retrieve_wallet_account_for_asset(query, asset_type)
-                .await
-        })
-    }
-
-    fn list_points_lots<'a>(
-        &'a self,
-        query: PointsLotListQuery,
-    ) -> CommerceWalletFuture<'a, StoreListPage<PointsLotItem>> {
-        Box::pin(async move { self.list_points_lots(query).await })
-    }
-
-    fn list_account_holds<'a>(
-        &'a self,
-        query: AccountHoldListQuery,
-    ) -> CommerceWalletFuture<'a, StoreListPage<AccountHoldItem>> {
-        Box::pin(async move { self.list_account_holds(query).await })
-    }
-
-    fn retrieve_account_hold<'a>(
-        &'a self,
-        query: AccountHoldDetailQuery,
-    ) -> CommerceWalletFuture<'a, Option<AccountHoldItem>> {
-        Box::pin(async move { self.retrieve_account_hold(query).await })
-    }
-
-    fn retrieve_points_summary<'a>(
-        &'a self,
-        query: WalletAccountListQuery,
-    ) -> CommerceWalletFuture<'a, PointsSummarySnapshot> {
-        Box::pin(async move { self.retrieve_points_summary(query).await })
-    }
-
-    fn list_points_lot_allocations<'a>(
-        &'a self,
-        query: PointsLotAllocationListQuery,
-    ) -> CommerceWalletFuture<'a, Vec<PointsLotAllocationItem>> {
-        Box::pin(async move { self.list_points_lot_allocations(query).await })
-    }
-}
-
 impl CommerceAccountWalletStore for PostgresCommerceAccountStore {
     fn retrieve_account_summary<'a>(
         &'a self,
@@ -515,10 +418,6 @@ impl CommerceAccountWalletStore for PostgresCommerceAccountStore {
     ) -> CommerceWalletFuture<'a, Vec<PointsLotAllocationItem>> {
         Box::pin(async move { self.list_points_lot_allocations(query).await })
     }
-}
-
-pub fn app_account_wallet_router_with_sqlite_pool(pool: SqlitePool) -> Router {
-    build_app_account_wallet_router(Arc::new(SqliteCommerceAccountStore::new(pool)))
 }
 
 pub fn app_account_wallet_router_with_postgres_pool(pool: PgPool) -> Router {

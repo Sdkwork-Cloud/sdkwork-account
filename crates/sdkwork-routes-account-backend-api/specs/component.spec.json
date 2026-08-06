@@ -69,11 +69,8 @@
     "requiredPorts": [],
     "runtimeEntrypoints": [
       "backend_hold_router_with_postgres_pool",
-      "backend_hold_router_with_sqlite_pool",
       "backend_outbox_router_with_postgres_pool",
-      "backend_outbox_router_with_sqlite_pool",
       "backend_wallet_router_with_postgres_pool",
-      "backend_wallet_router_with_sqlite_pool",
       "build_account_backend_router",
       "build_account_backend_router_with_framework",
       "build_backend_hold_router",

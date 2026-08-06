@@ -2,7 +2,7 @@ use sdkwork_account_service::AppendLedgerEntryCommand;
 use sdkwork_contract_service::CommerceServiceError;
 use sdkwork_utils_rust::sha256_hash;
 use serde::Serialize;
-use sqlx::{Executor, Sqlite};
+use sqlx::Executor;
 
 use super::{next_entity_id, next_entity_uuid, store_error};
 
@@ -95,66 +95,6 @@ pub struct OutboxEventInsert<'a> {
     pub payload: &'a str,
     pub payload_hash: &'a str,
     pub tenant_id: i64,
-}
-
-pub async fn insert_outbox_event_sqlite<'e, E>(
-    executor: E,
-    input: OutboxEventInsert<'_>,
-) -> Result<(), CommerceServiceError>
-where
-    E: Executor<'e, Database = Sqlite>,
-{
-    sqlx::query(
-        r#"
-        INSERT INTO acct_outbox_event
-            (id, uuid, tenant_id, aggregate_type, aggregate_id, event_type, event_version,
-             event_key, payload, payload_hash, status, retry_count, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
-        "#,
-    )
-    .bind(next_entity_id()?)
-    .bind(next_entity_uuid())
-    .bind(input.tenant_id)
-    .bind(OUTBOX_AGGREGATE_TYPE_ACCOUNT)
-    .bind(input.aggregate_id)
-    .bind(input.event_type)
-    .bind(OUTBOX_EVENT_VERSION)
-    .bind(input.event_key)
-    .bind(input.payload)
-    .bind(input.payload_hash)
-    .bind(OUTBOX_STATUS_PENDING)
-    .bind(input.now)
-    .bind(input.now)
-    .execute(executor)
-    .await
-    .map_err(|error| store_error("failed to insert outbox event", error))?;
-    Ok(())
-}
-
-pub async fn emit_domain_outbox_sqlite(
-    tx: &mut sqlx::Transaction<'_, Sqlite>,
-    tenant_id: i64,
-    aggregate_id: i64,
-    event_type: &str,
-    idempotency_key: &str,
-    payload: &impl Serialize,
-    now: &str,
-) -> Result<(), CommerceServiceError> {
-    let (event_key, payload_json, payload_hash) =
-        build_domain_outbox(tenant_id, event_type, idempotency_key, payload)?;
-    insert_outbox_event_sqlite(
-        &mut **tx,
-        OutboxEventInsert {
-            aggregate_id,
-            event_key: &event_key,
-            event_type,
-            now,
-            payload: &payload_json,
-            payload_hash: &payload_hash,
-            tenant_id,
-        },
-    )
-    .await
 }
 
 pub async fn emit_domain_outbox_postgres(
