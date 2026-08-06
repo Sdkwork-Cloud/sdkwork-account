@@ -120,6 +120,7 @@ Rules:
 | `PROJECT` | Project/workspace budget account. |
 | `SERVICE` | Model, plugin, application, Agent, workflow, or provider settlement account. |
 | `SYSTEM` | Platform reserve, grant, burn, suspense, and reconciliation accounts. |
+| `PARTNER` | Partner (agent/distributor) commission settlement account. |
 
 ### Account Purposes
 
