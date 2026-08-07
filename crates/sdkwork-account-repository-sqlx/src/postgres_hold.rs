@@ -119,15 +119,16 @@ impl PostgresCommerceAccountStore {
 
         let hold_id = next_entity_id()?;
         let hold_uuid = next_entity_uuid();
+        let hold_trace_id = next_entity_uuid();
         let source_id = parse_subject_i64("source_id", &command.source_id)?;
         sqlx::query(
             r#"
             INSERT INTO acct_hold
                 (id, uuid, tenant_id, organization_id, account_id, owner_type, owner_id, asset_code,
-                 amount, settled_amount, released_amount, status, business_type, business_no,
-                 source_type, source_id, idempotency_key, request_no, expires_at, version,
-                 created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::bigint, '0', '0', $10, $11, $12, $13, $14, $15, $16, $17::timestamptz, 0, $18::timestamptz, $19::timestamptz)
+                 currency_code, amount, settled_amount, released_amount, status, business_type,
+                 business_no, source_type, source_id, idempotency_key, request_no, expires_at,
+                 version, trace_id, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::bigint, '0', '0', $11, $12, $13, $14, $15, $16, $17, $18::timestamptz, 0, $19, $20::timestamptz, $21::timestamptz)
             "#,
         )
         .bind(hold_id)
@@ -138,6 +139,7 @@ impl PostgresCommerceAccountStore {
         .bind(command.owner_type.as_deref().unwrap_or(OWNER_TYPE_USER))
         .bind(account.owner_id)
         .bind(asset_code_from_type(&command.asset_type))
+        .bind(&account.currency_code)
         .bind(command.amount.as_str())
         .bind(HOLD_STATUS_HELD)
         .bind(&command.business_type)
@@ -147,6 +149,7 @@ impl PostgresCommerceAccountStore {
         .bind(&command.idempotency_key)
         .bind(&command.request_no)
         .bind(command.expires_at.as_deref())
+        .bind(&hold_trace_id)
         .bind(&now)
         .bind(&now)
         .execute(&mut *tx)
@@ -1138,7 +1141,7 @@ async fn complete_hold_expire_idempotency_postgres(
     sqlx::query(
         r#"
         UPDATE acct_idempotency_record
-        SET status = 'COMPLETED', target_id = 0, response_snapshot = $1, locked_until = NULL, updated_at = $2::timestamptz
+        SET status = 'COMPLETED', target_id = 0, response_snapshot = $1::jsonb, locked_until = NULL, updated_at = $2::timestamptz
         WHERE tenant_id = $3 AND scope = $4 AND idempotency_key = $5
         "#,
     )
@@ -1213,7 +1216,7 @@ async fn append_settlement_ledger(
              asset_code, currency_code, ledger_type, entry_type, direction, amount,
              balance_before, balance_after, business_type, business_no, request_no,
              idempotency_key, hold_id, trace_id, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', 'DEBIT', 'DEBIT', $11::bigint, $12::bigint, $13::bigint, $14::bigint, $15, $16, $17, $18, $19, $20::timestamptz)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'AVAILABLE', 'DEBIT', 'DEBIT', $11::bigint, $12::bigint, $13::bigint, $14, $15, $16, $17, $18, $19, $20::timestamptz)
         "#,
     )
     .bind(ledger_id)
@@ -1528,7 +1531,7 @@ async fn load_account_by_internal_id(
 ) -> Result<StoredAccount, CommerceServiceError> {
     let row = sqlx::query(
         r#"
-        SELECT id, uuid, tenant_id, organization_id, owner_id, asset_code, currency_code,
+        SELECT id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
                available_amount, frozen_amount, pending_amount, status, version
         FROM acct_account
         WHERE tenant_id = $1 AND id = $2
@@ -2009,7 +2012,7 @@ async fn complete_idempotency_scoped(
     sqlx::query(
         r#"
         UPDATE acct_idempotency_record
-        SET status = 'COMPLETED', target_id = $1, response_snapshot = $2, locked_until = NULL, updated_at = $3::timestamptz
+        SET status = 'COMPLETED', target_id = $1, response_snapshot = $2::jsonb, locked_until = NULL, updated_at = $3::timestamptz
         WHERE tenant_id = $4 AND scope = $5 AND idempotency_key = $6
         "#,
     )
@@ -2048,5 +2051,10 @@ fn optional_string_cell(row: &sqlx::postgres::PgRow, name: &str) -> Option<Strin
 }
 
 fn integer_cell(row: &sqlx::postgres::PgRow, name: &str) -> i64 {
-    row.try_get::<i64, _>(name).unwrap_or_default()
+    // `status`-style INT4 columns fail `try_get::<i64>`; fall back to i32 so
+    // both INT4 and INT8 cells decode.
+    row.try_get::<i32, _>(name)
+        .map(i64::from)
+        .or_else(|_| row.try_get::<i64, _>(name))
+        .unwrap_or_default()
 }

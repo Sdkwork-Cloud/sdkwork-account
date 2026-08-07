@@ -365,12 +365,15 @@ impl PostgresCommerceAccountStore {
         query: WalletAccountListQuery,
         asset_type: CommerceAccountAssetType,
     ) -> Result<WalletAccountItem, CommerceServiceError> {
-        let scoped = WalletAccountListQuery::new(
+        let mut scoped = WalletAccountListQuery::new(
             &query.tenant_id,
             query.organization_id.as_deref(),
             &query.owner_user_id,
             Some(asset_type.clone()),
         )?;
+        // Preserve the owner subject kind (PARTNER/ORG/...) so non-user
+        // wallets resolve to their own account instead of falling back to USER.
+        scoped.owner_type = query.owner_type.clone();
         let accounts = self.list_wallet_accounts(scoped).await?;
         let currency_code = default_currency_code(&asset_type);
         Ok(accounts.into_iter().next().unwrap_or_else(|| {
@@ -973,6 +976,7 @@ async fn load_or_create_account_for_append(
              account_purpose, available_amount, frozen_amount, pending_amount, status, version,
              created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '0', '0', '0', $10, 0, $11::timestamptz, $12::timestamptz)
+        ON CONFLICT ON CONSTRAINT uk_acct_account_owner_asset DO NOTHING
         "#,
     )
     .bind(account_id)
@@ -991,11 +995,18 @@ async fn load_or_create_account_for_append(
     .await
     .map_err(|error| store_error("failed to create commerce account", error))?;
 
-    load_account_by_id(tx, tenant_id, organization_id, owner_id, account_id)
-        .await?
-        .ok_or_else(|| {
-            CommerceServiceError::storage("created commerce account could not be loaded")
-        })
+    // A concurrent first append may have created the account between the load
+    // and this insert; the ON CONFLICT DO NOTHING insert waits for that
+    // transaction, so the winner's row is visible here. Reuse it instead of
+    // failing (mirrors the legacy recharge unique-key conflict guard).
+    if let Some(account) =
+        load_account_by_owner_asset(tx, command, tenant_id, organization_id, owner_id).await?
+    {
+        return Ok(account);
+    }
+    Err(CommerceServiceError::storage(
+        "created commerce account could not be loaded",
+    ))
 }
 
 fn parse_optional_account_id(value: &str) -> Result<Option<i64>, CommerceServiceError> {
