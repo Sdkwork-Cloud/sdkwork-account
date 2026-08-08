@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { AccountHoldListData, TokenBankBalanceItem, WalletAccountItem, WalletLedgerListData } from '../types';
 
@@ -19,14 +19,14 @@ export class TokenBankHoldsApi {
   }
 
 
-async list(params?: TokenBankHoldsListParams): Promise<AccountHoldListData> {
+async list(params?: TokenBankHoldsListParams, requestOptions?: ApiRequestOptions): Promise<AccountHoldListData> {
     const query = buildQueryString([
       { name: 'account_id', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<AccountHoldListData>(appendQueryString(appApiPath(`/token_bank/holds`), query));
+    return this.client.request<AccountHoldListData>(appendQueryString(appApiPath(`/token_bank/holds`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -45,14 +45,14 @@ export class TokenBankLedgerEntriesApi {
   }
 
 
-async list(params?: TokenBankLedgerEntriesListParams): Promise<WalletLedgerListData> {
+async list(params?: TokenBankLedgerEntriesListParams, requestOptions?: ApiRequestOptions): Promise<WalletLedgerListData> {
     const query = buildQueryString([
       { name: 'account_id', value: params?.accountId, style: 'form', explode: true, allowReserved: false },
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<WalletLedgerListData>(appendQueryString(appApiPath(`/token_bank/ledger_entries`), query));
+    return this.client.request<WalletLedgerListData>(appendQueryString(appApiPath(`/token_bank/ledger_entries`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -64,8 +64,8 @@ export class TokenBankOverviewApi {
   }
 
 
-async retrieve(): Promise<TokenBankBalanceItem> {
-    return this.client.get<TokenBankBalanceItem>(appApiPath(`/token_bank/overview`));
+async retrieve(requestOptions?: ApiRequestOptions): Promise<TokenBankBalanceItem> {
+    return this.client.request<TokenBankBalanceItem>(appApiPath(`/token_bank/overview`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -77,8 +77,8 @@ export class TokenBankAccountApi {
   }
 
 
-async retrieve(): Promise<WalletAccountItem> {
-    return this.client.get<WalletAccountItem>(appApiPath(`/token_bank/account`));
+async retrieve(requestOptions?: ApiRequestOptions): Promise<WalletAccountItem> {
+    return this.client.request<WalletAccountItem>(appApiPath(`/token_bank/account`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 

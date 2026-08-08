@@ -37,9 +37,6 @@ pub struct AccountSummarySnapshot {
     pub est_days_remaining: i64,
     pub monthly_points_consumed: String,
     pub consumption_by_service: Vec<AccountConsumptionItem>,
-    pub invoice_settings: AccountInvoiceSettings,
-    pub security: AccountSecuritySummary,
-    pub login_logs: Vec<AccountLoginLog>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -48,30 +45,6 @@ pub struct AccountConsumptionItem {
     pub points_consumed: String,
     pub color: String,
     pub percentage: f64,
-}
-
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct AccountInvoiceSettings {
-    pub org_full: String,
-    pub tax_id: String,
-    pub payment_method: String,
-    pub invoice_type: String,
-}
-
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct AccountSecuritySummary {
-    pub mfa_enabled: bool,
-    pub qps_limit: i64,
-    pub ip_whitelist_count: i64,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AccountLoginLog {
-    pub ip: String,
-    pub location: String,
-    pub device: String,
-    pub time: String,
-    pub status: String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -391,9 +364,6 @@ impl Default for AccountSummarySnapshot {
             est_days_remaining: 0,
             monthly_points_consumed: "0".to_owned(),
             consumption_by_service: Vec::new(),
-            invoice_settings: AccountInvoiceSettings::default(),
-            security: AccountSecuritySummary::default(),
-            login_logs: Vec::new(),
         }
     }
 }
@@ -482,29 +452,6 @@ impl WalletAccountItem {
             status: status.to_string(),
             version,
         })
-    }
-
-    pub fn zero_for_owner(
-        tenant_id: &str,
-        organization_id: Option<&str>,
-        owner_user_id: &str,
-        asset_type: CommerceAccountAssetType,
-        currency_code: Option<&str>,
-    ) -> Result<Self, CommerceServiceError> {
-        Self::new(
-            "0",
-            "00000000-0000-0000-0000-000000000000",
-            tenant_id,
-            organization_id,
-            owner_user_id,
-            asset_type,
-            currency_code,
-            "0",
-            "0",
-            "0",
-            "ACTIVE",
-            0,
-        )
     }
 }
 

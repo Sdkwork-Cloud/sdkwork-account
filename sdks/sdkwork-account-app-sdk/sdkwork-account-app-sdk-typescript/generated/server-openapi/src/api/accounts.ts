@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { AccountSummaryItem } from '../types';
 
@@ -12,8 +12,8 @@ export class AccountsCurrentSummaryApi {
   }
 
 
-async retrieve(): Promise<AccountSummaryItem> {
-    return this.client.get<AccountSummaryItem>(appApiPath(`/accounts/current/summary`));
+async retrieve(requestOptions?: ApiRequestOptions): Promise<AccountSummaryItem> {
+    return this.client.request<AccountSummaryItem>(appApiPath(`/accounts/current/summary`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 

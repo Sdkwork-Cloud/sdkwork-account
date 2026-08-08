@@ -86,9 +86,7 @@ pub(crate) fn enrich_account_summary_from_iam(
 
 #[cfg(test)]
 mod tests {
-    use sdkwork_account_service::{
-        AccountInvoiceSettings, AccountSecuritySummary, AccountSummarySnapshot,
-    };
+    use sdkwork_account_service::AccountSummarySnapshot;
     use sdkwork_iam_context_service::{AuthLevel, DeploymentMode, Environment, IamAppContext};
 
     use super::enrich_account_summary_from_iam;
@@ -105,9 +103,6 @@ mod tests {
             est_days_remaining: 0,
             monthly_points_consumed: "0".to_owned(),
             consumption_by_service: Vec::new(),
-            invoice_settings: AccountInvoiceSettings::default(),
-            security: AccountSecuritySummary::default(),
-            login_logs: Vec::new(),
         }
     }
 

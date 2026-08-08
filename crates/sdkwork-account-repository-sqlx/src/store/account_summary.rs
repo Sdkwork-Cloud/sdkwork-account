@@ -27,9 +27,6 @@ pub fn build_account_summary_snapshot(
         est_days_remaining: stats.est_days_remaining,
         monthly_points_consumed: stats.monthly_points_consumed.to_string(),
         consumption_by_service: stats.consumption_by_service,
-        invoice_settings: Default::default(),
-        security: Default::default(),
-        login_logs: Vec::new(),
     }
 }
 

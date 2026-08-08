@@ -4,7 +4,9 @@ use sdkwork_contract_service::{
 };
 use sqlx::{Executor, Postgres};
 
-use crate::store::{asset_code_from_type, next_entity_id, next_entity_uuid, store_error};
+use crate::store::{
+    asset_code_from_type, currency_code_for_command, next_entity_id, next_entity_uuid, store_error,
+};
 
 /// Writes a user-facing billing history row for a committed ledger append (Postgres).
 pub async fn insert_billing_history_for_ledger_append_postgres<'e, E>(
@@ -56,7 +58,7 @@ where
     .bind(&direction)
     .bind(asset_code_from_type(&command.asset_type))
     .bind(command.amount.as_str())
-    .bind(command.currency_code.as_deref().unwrap_or(""))
+    .bind(currency_code_for_command(command))
     .bind(points_delta)
     .bind(&title)
     .bind(&command.transaction_no)

@@ -16,11 +16,12 @@ use sqlx::{PgPool, Postgres, Row, Transaction};
 use crate::store::{
     account_guard::{ensure_points_lot_debit_complete, require_positive_amount},
     account_status_label, account_summary, asset_code_from_type, asset_type_from_code, balance,
-    billing_projection, currency_code_for_command, default_currency_code, finalize_list_page,
+    billing_projection, currency_code_for_command, finalize_list_page,
     format_i64, idempotency_lock_expires_at_rfc3339, map_idempotency_insert_error, next_entity_id,
     next_entity_uuid, optional_org_string, org_id_from_option,
     outbox::{build_ledger_appended_outbox, insert_outbox_event_postgres, OutboxEventInsert},
-    parse_subject_i64, points_lot_status_label, resolve_idempotency_from_row_fields,
+    parse_subject_i64, points_lot_status_label, provision_currency_code,
+    resolve_idempotency_from_row_fields,
     resolve_list_sql_paging, store_error, IdempotencyRecordAction, ACCOUNT_PURPOSE_GENERAL,
     ACCOUNT_STATUS_ACTIVE, LEDGER_APPEND_SCOPE, OWNER_TYPE_USER, POINTS_LOT_DEBIT_BATCH_SIZE,
     POINTS_LOT_STATUS_DEPLETED,
@@ -374,18 +375,103 @@ impl PostgresCommerceAccountStore {
         // Preserve the owner subject kind (PARTNER/ORG/...) so non-user
         // wallets resolve to their own account instead of falling back to USER.
         scoped.owner_type = query.owner_type.clone();
-        let accounts = self.list_wallet_accounts(scoped).await?;
-        let currency_code = default_currency_code(&asset_type);
-        Ok(accounts.into_iter().next().unwrap_or_else(|| {
-            WalletAccountItem::zero_for_owner(
-                &query.tenant_id,
-                query.organization_id.as_deref(),
-                &query.owner_user_id,
-                asset_type,
-                Some(currency_code),
-            )
-            .expect("zero wallet account")
-        }))
+        if let Some(account) = self
+            .list_wallet_accounts(scoped.clone())
+            .await?
+            .into_iter()
+            .next()
+        {
+            return Ok(account);
+        }
+        // Accounts are provisioned lazily on first ledger write, so a fresh
+        // owner has no row yet. Never fabricate a placeholder identity
+        // (id=0 / zero uuid): create the real account so every read surface
+        // (token bank, cash, points, summary, gateway balance) returns a
+        // genuine entity identity.
+        self.ensure_wallet_account_for_asset(scoped, &asset_type).await
+    }
+
+    /// Idempotently provisions the standard owner accounts (cash, points,
+    /// token bank) for an owner and returns them.
+    ///
+    /// Accounts are normally created lazily by write paths on first ledger
+    /// entry; this is the explicit provisioning entry used after user
+    /// registration so the owner's wallet (with zero initial balances)
+    /// exists immediately. Existing accounts are returned untouched.
+    pub async fn provision_owner_accounts(
+        &self,
+        tenant_id: &str,
+        organization_id: Option<&str>,
+        owner_user_id: &str,
+        owner_type: Option<&str>,
+    ) -> Result<Vec<WalletAccountItem>, CommerceServiceError> {
+        let mut accounts = Vec::with_capacity(3);
+        for asset_type in [
+            CommerceAccountAssetType::Cash,
+            CommerceAccountAssetType::Points,
+            CommerceAccountAssetType::TokenBank,
+        ] {
+            let mut query = WalletAccountListQuery::new(
+                tenant_id,
+                organization_id,
+                owner_user_id,
+                Some(asset_type.clone()),
+            )?;
+            query.owner_type = owner_type.map(str::to_owned);
+            accounts.push(self.ensure_wallet_account_for_asset(query, &asset_type).await?);
+        }
+        Ok(accounts)
+    }
+
+    /// Idempotently creates the owner's account for `asset_type` when no row
+    /// exists yet, then returns the stored account.
+    ///
+    /// Mirrors the lazy provisioning used by the ledger write paths; the
+    /// `uk_acct_account_owner_asset` unique constraint makes concurrent first
+    /// reads converge on a single row (insert, then re-read).
+    async fn ensure_wallet_account_for_asset(
+        &self,
+        query: WalletAccountListQuery,
+        asset_type: &CommerceAccountAssetType,
+    ) -> Result<WalletAccountItem, CommerceServiceError> {
+        let tenant_id = parse_subject_i64("tenant_id", &query.tenant_id)?;
+        let organization_id = org_id_from_option(query.organization_id.as_deref())?;
+        let owner_id = parse_subject_i64("owner_user_id", &query.owner_user_id)?;
+        let account_id = next_entity_id()?;
+        let account_uuid = next_entity_uuid();
+        let currency_code = provision_currency_code(asset_type);
+        let now = Utc::now().to_rfc3339();
+
+        sqlx::query(
+            r#"
+            INSERT INTO acct_account
+                (id, uuid, tenant_id, organization_id, owner_type, owner_id, asset_code, currency_code,
+                 account_purpose, available_amount, frozen_amount, pending_amount, status, version,
+                 created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '0', '0', '0', $10, 0, $11::timestamptz, $12::timestamptz)
+            ON CONFLICT ON CONSTRAINT uk_acct_account_owner_asset DO NOTHING
+            "#,
+        )
+        .bind(account_id)
+        .bind(&account_uuid)
+        .bind(tenant_id)
+        .bind(organization_id)
+        .bind(query.owner_type.as_deref().unwrap_or(OWNER_TYPE_USER))
+        .bind(owner_id)
+        .bind(asset_code_from_type(asset_type))
+        .bind(currency_code)
+        .bind(ACCOUNT_PURPOSE_GENERAL)
+        .bind(ACCOUNT_STATUS_ACTIVE)
+        .bind(&now)
+        .bind(&now)
+        .execute(&self.pool)
+        .await
+        .map_err(|error| store_error("failed to provision commerce account", error))?;
+
+        let accounts = self.list_wallet_accounts(query).await?;
+        accounts.into_iter().next().ok_or_else(|| {
+            CommerceServiceError::storage("provisioned commerce account could not be loaded")
+        })
     }
 
     pub async fn retrieve_points_account_snapshot(
@@ -396,14 +482,7 @@ impl PostgresCommerceAccountStore {
             .retrieve_wallet_account_for_asset(query.clone(), CommerceAccountAssetType::Points)
             .await?;
         let tenant_id = parse_subject_i64("tenant_id", &query.tenant_id)?;
-        let account_id = account.id.parse::<i64>().unwrap_or(0);
-        if account_id <= 0 {
-            return Ok(PointsAccountSnapshot {
-                account,
-                active_lot_count: 0,
-                expiring_points: 0,
-            });
-        }
+        let account_id = parse_subject_i64("account_id", &account.id)?;
 
         let stats = sqlx::query(
             r#"

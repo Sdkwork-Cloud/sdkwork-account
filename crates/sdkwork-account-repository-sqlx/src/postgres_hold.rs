@@ -1478,11 +1478,7 @@ async fn load_account_by_owner_asset(
 
     let account_id = next_entity_id()?;
     let account_uuid = next_entity_uuid();
-    let currency_code = match asset_type {
-        CommerceAccountAssetType::Cash => "",
-        CommerceAccountAssetType::Points => "POINT",
-        CommerceAccountAssetType::TokenBank => "TOKEN_BANK",
-    };
+    let currency_code = crate::store::provision_currency_code(&asset_type);
     sqlx::query(
         r#"
         INSERT INTO acct_account

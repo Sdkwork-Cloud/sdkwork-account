@@ -11,10 +11,9 @@ use sdkwork_account_repository_sqlx::{
 };
 use sdkwork_account_service::{
     AccountConsumptionItem, AccountHoldDetailQuery, AccountHoldItem, AccountHoldListQuery,
-    AccountHoldListQueryInput, AccountInvoiceSettings, AccountLoginLog, AccountSecuritySummary,
-    AccountSummaryQuery, AccountSummarySnapshot, PointsAccountSnapshot, PointsLotAllocationItem,
-    PointsLotAllocationListQuery, PointsLotItem, PointsLotListQuery, PointsSummarySnapshot,
-    StoreListPage, WalletAccountItem, WalletAccountListQuery, WalletOperation,
+    AccountHoldListQueryInput, AccountSummaryQuery, AccountSummarySnapshot, PointsAccountSnapshot,
+    PointsLotAllocationItem, PointsLotAllocationListQuery, PointsLotItem, PointsLotListQuery,
+    PointsSummarySnapshot, StoreListPage, WalletAccountItem, WalletAccountListQuery, WalletOperation,
     WalletOperationQuery, WalletOverview, WalletTransactionDetailQuery, WalletTransactionItem,
     WalletTransactionListQuery,
 };
@@ -280,9 +279,6 @@ struct AccountSummaryResponse {
     est_days_remaining: i64,
     monthly_points_consumed: String,
     consumption_by_service: Vec<AccountConsumptionItemResponse>,
-    invoice_settings: AccountInvoiceSettingsResponse,
-    security: AccountSecuritySummaryResponse,
-    login_logs: Vec<AccountLoginLogResponse>,
 }
 
 #[derive(Debug, Serialize)]
@@ -292,35 +288,6 @@ struct AccountConsumptionItemResponse {
     points_consumed: String,
     color: String,
     percentage: f64,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AccountInvoiceSettingsResponse {
-    org_full: String,
-    tax_id: String,
-    payment_method: String,
-    invoice_type: String,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AccountSecuritySummaryResponse {
-    mfa_enabled: bool,
-    #[serde(with = "sdkwork_utils_rust::serde_int64")]
-    qps_limit: i64,
-    #[serde(with = "sdkwork_utils_rust::serde_int64")]
-    ip_whitelist_count: i64,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct AccountLoginLogResponse {
-    ip: String,
-    location: String,
-    device: String,
-    time: String,
-    status: String,
 }
 
 impl CommerceAccountWalletStore for PostgresCommerceAccountStore {
@@ -1166,13 +1133,6 @@ fn map_account_summary(value: AccountSummarySnapshot) -> AccountSummaryResponse 
             .into_iter()
             .map(map_account_consumption_item)
             .collect(),
-        invoice_settings: map_account_invoice_settings(value.invoice_settings),
-        security: map_account_security_summary(value.security),
-        login_logs: value
-            .login_logs
-            .into_iter()
-            .map(map_account_login_log)
-            .collect(),
     }
 }
 
@@ -1182,33 +1142,6 @@ fn map_account_consumption_item(value: AccountConsumptionItem) -> AccountConsump
         points_consumed: value.points_consumed,
         color: value.color,
         percentage: value.percentage,
-    }
-}
-
-fn map_account_invoice_settings(value: AccountInvoiceSettings) -> AccountInvoiceSettingsResponse {
-    AccountInvoiceSettingsResponse {
-        org_full: value.org_full,
-        tax_id: value.tax_id,
-        payment_method: value.payment_method,
-        invoice_type: value.invoice_type,
-    }
-}
-
-fn map_account_security_summary(value: AccountSecuritySummary) -> AccountSecuritySummaryResponse {
-    AccountSecuritySummaryResponse {
-        mfa_enabled: value.mfa_enabled,
-        qps_limit: value.qps_limit,
-        ip_whitelist_count: value.ip_whitelist_count,
-    }
-}
-
-fn map_account_login_log(value: AccountLoginLog) -> AccountLoginLogResponse {
-    AccountLoginLogResponse {
-        ip: value.ip,
-        location: value.location,
-        device: value.device,
-        time: value.time,
-        status: value.status,
     }
 }
 
@@ -1423,24 +1356,13 @@ mod tests {
             est_days_remaining: 42,
             monthly_points_consumed: "500".to_owned(),
             consumption_by_service: Vec::new(),
-            invoice_settings: AccountInvoiceSettingsResponse {
-                org_full: "SDKWork".to_owned(),
-                tax_id: "tax-1".to_owned(),
-                payment_method: "bank".to_owned(),
-                invoice_type: "general".to_owned(),
-            },
-            security: AccountSecuritySummaryResponse {
-                mfa_enabled: true,
-                qps_limit: 1000,
-                ip_whitelist_count: 2,
-            },
-            login_logs: Vec::new(),
         })
         .unwrap();
 
         assert_eq!(summary["estDaysRemaining"], json!("42"));
-        assert_eq!(summary["security"]["qpsLimit"], json!("1000"));
-        assert_eq!(summary["security"]["ipWhitelistCount"], json!("2"));
+        assert_eq!(summary.get("security"), None);
+        assert_eq!(summary.get("invoiceSettings"), None);
+        assert_eq!(summary.get("loginLogs"), None);
 
         let points_lot = serde_json::to_value(PointsLotItemResponse {
             id: "lot-1".to_owned(),

@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { BillingHistoryListData } from '../types';
 
@@ -12,8 +12,8 @@ export class BillingHistoryApi {
   }
 
 
-async list(): Promise<BillingHistoryListData> {
-    return this.client.get<BillingHistoryListData>(appApiPath(`/billing/history`));
+async list(requestOptions?: ApiRequestOptions): Promise<BillingHistoryListData> {
+    return this.client.request<BillingHistoryListData>(appApiPath(`/billing/history`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 

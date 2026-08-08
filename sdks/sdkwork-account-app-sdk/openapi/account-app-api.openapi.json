@@ -1284,18 +1284,6 @@
             "items": {
               "$ref": "#/components/schemas/AccountConsumptionItem"
             }
-          },
-          "invoiceSettings": {
-            "$ref": "#/components/schemas/AccountInvoiceSettingsItem"
-          },
-          "security": {
-            "$ref": "#/components/schemas/AccountSecuritySummaryItem"
-          },
-          "loginLogs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AccountLoginLogItem"
-            }
           }
         }
       },
@@ -2202,83 +2190,6 @@
             "$ref": "#/components/schemas/TokenBankBalanceData"
           },
           "traceId": {
-            "type": "string"
-          }
-        }
-      },
-      "AccountInvoiceSettingsItem": {
-        "type": "object",
-        "required": [
-          "orgFull",
-          "taxId",
-          "paymentMethod",
-          "invoiceType"
-        ],
-        "properties": {
-          "orgFull": {
-            "type": "string"
-          },
-          "taxId": {
-            "type": "string"
-          },
-          "paymentMethod": {
-            "type": "string"
-          },
-          "invoiceType": {
-            "type": "string"
-          }
-        }
-      },
-      "AccountSecuritySummaryItem": {
-        "type": "object",
-        "required": [
-          "mfaEnabled",
-          "qpsLimit",
-          "ipWhitelistCount"
-        ],
-        "properties": {
-          "mfaEnabled": {
-            "type": "boolean"
-          },
-          "qpsLimit": {
-            "type": "string",
-            "format": "int64",
-            "pattern": "^-?[0-9]+$",
-            "x-sdkwork-int64-string": true,
-            "x-sdkwork-rust-type": "i64"
-          },
-          "ipWhitelistCount": {
-            "type": "string",
-            "format": "int64",
-            "pattern": "^-?[0-9]+$",
-            "x-sdkwork-int64-string": true,
-            "x-sdkwork-rust-type": "i64"
-          }
-        }
-      },
-      "AccountLoginLogItem": {
-        "type": "object",
-        "required": [
-          "ip",
-          "location",
-          "device",
-          "time",
-          "status"
-        ],
-        "properties": {
-          "ip": {
-            "type": "string"
-          },
-          "location": {
-            "type": "string"
-          },
-          "device": {
-            "type": "string"
-          },
-          "time": {
-            "type": "string"
-          },
-          "status": {
             "type": "string"
           }
         }

@@ -236,55 +236,45 @@ impl crate::postgres_account::PostgresCommerceAccountStore {
     ) -> Result<PointsSummarySnapshot, CommerceServiceError> {
         let snapshot = self.retrieve_points_account_snapshot(query.clone()).await?;
         let tenant_id = parse_subject_i64("tenant_id", &query.tenant_id)?;
-        let account_id = snapshot.account.id.parse::<i64>().unwrap_or(0);
+        let account_id = parse_subject_i64("account_id", &snapshot.account.id)?;
 
-        let (unswept_expired_points, month_credit_points, month_debit_points) = if account_id <= 0 {
-            (0, 0, 0)
-        } else {
-            let now = Utc::now().to_rfc3339();
-            let stats = sqlx::query(
-                r#"
-                SELECT
-                    COALESCE(SUM(CASE
-                        WHEN expires_at IS NOT NULL AND expires_at <= $1::timestamptz
-                        THEN remaining_amount ELSE 0
-                    END), 0) AS unswept_expired_points
-                FROM acct_points_lot
-                WHERE tenant_id = $2 AND account_id = $3 AND status = $4
-                "#,
-            )
-            .bind(&now)
-            .bind(tenant_id)
-            .bind(account_id)
-            .bind(ACCOUNT_STATUS_ACTIVE)
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|error| store_error("failed to load unswept expired points", error))?;
+        let now = Utc::now().to_rfc3339();
+        let stats = sqlx::query(
+            r#"
+            SELECT
+                COALESCE(SUM(CASE
+                    WHEN expires_at IS NOT NULL AND expires_at <= $1::timestamptz
+                    THEN remaining_amount ELSE 0
+                END), 0) AS unswept_expired_points
+            FROM acct_points_lot
+            WHERE tenant_id = $2 AND account_id = $3 AND status = $4
+            "#,
+        )
+        .bind(&now)
+        .bind(tenant_id)
+        .bind(account_id)
+        .bind(ACCOUNT_STATUS_ACTIVE)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|error| store_error("failed to load unswept expired points", error))?;
 
-            let month_stats = sqlx::query(
-                r#"
-                SELECT
-                    COALESCE(SUM(CASE WHEN direction = 'credit' THEN CAST(amount AS BIGINT) ELSE 0 END), 0) AS month_credit,
-                    COALESCE(SUM(CASE WHEN direction = 'debit' THEN CAST(amount AS BIGINT) ELSE 0 END), 0) AS month_debit
-                FROM acct_ledger_entry
-                WHERE tenant_id = $1
-                  AND account_id = $2
-                  AND asset_code = 'points'
-                  AND created_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC')
-                "#,
-            )
-            .bind(tenant_id)
-            .bind(account_id)
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|error| store_error("failed to load monthly points ledger stats", error))?;
-
-            (
-                integer_cell(&stats, "unswept_expired_points"),
-                integer_cell(&month_stats, "month_credit"),
-                integer_cell(&month_stats, "month_debit"),
-            )
-        };
+        let month_stats = sqlx::query(
+            r#"
+            SELECT
+                COALESCE(SUM(CASE WHEN direction = 'credit' THEN CAST(amount AS BIGINT) ELSE 0 END), 0) AS month_credit,
+                COALESCE(SUM(CASE WHEN direction = 'debit' THEN CAST(amount AS BIGINT) ELSE 0 END), 0) AS month_debit
+            FROM acct_ledger_entry
+            WHERE tenant_id = $1
+              AND account_id = $2
+              AND asset_code = 'points'
+              AND created_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC')
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(account_id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|error| store_error("failed to load monthly points ledger stats", error))?;
 
         let available = snapshot.account.available_amount.as_str().to_owned();
         let frozen = snapshot.account.frozen_amount.as_str().to_owned();
@@ -298,9 +288,9 @@ impl crate::postgres_account::PostgresCommerceAccountStore {
             total_points: sum_amount_strings(&available, &frozen, &pending),
             active_lot_count: snapshot.active_lot_count,
             expiring_points: snapshot.expiring_points,
-            unswept_expired_points,
-            month_credit_points,
-            month_debit_points,
+            unswept_expired_points: integer_cell(&stats, "unswept_expired_points"),
+            month_credit_points: integer_cell(&month_stats, "month_credit"),
+            month_debit_points: integer_cell(&month_stats, "month_debit"),
         })
     }
 
