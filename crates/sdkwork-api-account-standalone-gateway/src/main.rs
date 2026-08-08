@@ -1,7 +1,7 @@
 //! Account API server entrypoint.
 //!
 //! Production bootstrap:
-//! - CORS restricted to `ACCOUNT_CORS_ALLOW_ORIGINS` (fail-closed when unset).
+//! - CORS restricted to `SDKWORK_CORS_ALLOWED_ORIGINS` (fail-closed when unset).
 //! - Readiness reflects database health via `SELECT 1`.
 //! - Graceful shutdown drains in-flight requests on SIGINT / SIGTERM.
 
@@ -32,11 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .layer(TraceLayer::new_for_http())
         .layer(sdkwork_web_bootstrap::application_cors_layer_from_env(
             &["SDKWORK_ACCOUNT_ENVIRONMENT", "ACCOUNT_ENVIRONMENT"],
-            &[
-                "ACCOUNT_CORS_ALLOW_ORIGINS",
-                "SDKWORK_ACCOUNT_CORS_ALLOWED_ORIGINS",
-                "SDKWORK_CORS_ALLOWED_ORIGINS",
-            ],
+            &["SDKWORK_CORS_ALLOWED_ORIGINS"],
         ));
 
     let readiness = Arc::new(AccountReadiness { host: host.clone() });

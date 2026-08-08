@@ -11,7 +11,7 @@ export SDKWORK_DATABASE_URL=postgres://sdkwork_ai_dev:sdkworkdev123@127.0.0.1:54
 export ACCOUNT_SNOWFLAKE_WORKER_ID=1   # unique per instance (0-1023)
 
 # Recommended
-export ACCOUNT_CORS_ALLOW_ORIGINS=https://app.example.com
+export SDKWORK_CORS_ALLOWED_ORIGINS=https://app.example.com
 export ACCOUNT_API_BIND=0.0.0.0:18095
 
 pnpm db:migrate
@@ -21,7 +21,7 @@ pnpm start
 Local development CORS (never use in production):
 
 ```bash
-export ACCOUNT_CORS_ALLOW_ORIGINS=*
+export SDKWORK_CORS_ALLOWED_ORIGINS=*
 export ACCOUNT_CORS_PERMISSIVE_DEV=1
 ```
 
