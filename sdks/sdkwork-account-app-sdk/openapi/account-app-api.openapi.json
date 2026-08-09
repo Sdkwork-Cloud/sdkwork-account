@@ -1068,6 +1068,43 @@
         ],
         "description": "Lists current user Token Bank holds."
       }
+    },
+    "/app/v3/api/wallet/portfolio": {
+      "get": {
+        "operationId": "retrieveWalletPortfolio",
+        "summary": "Retrieve the aggregated wallet portfolio (cash account, token bank and compute points) in one call",
+        "tags": [
+          "wallet"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletPortfolioResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2427,6 +2464,59 @@
         "properties": {
           "item": {
             "$ref": "#/components/schemas/TokenBankBalanceItem"
+          }
+        }
+      },
+      "WalletPortfolioResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              0
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/WalletPortfolioData"
+          },
+          "traceId": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletPortfolioData": {
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/WalletPortfolioItem"
+          }
+        }
+      },
+      "WalletPortfolioItem": {
+        "type": "object",
+        "required": [
+          "cash",
+          "tokenBank",
+          "points"
+        ],
+        "properties": {
+          "cash": {
+            "$ref": "#/components/schemas/CashAccountItem"
+          },
+          "tokenBank": {
+            "$ref": "#/components/schemas/TokenBankBalanceItem"
+          },
+          "points": {
+            "$ref": "#/components/schemas/PointsSummaryItem"
           }
         }
       }

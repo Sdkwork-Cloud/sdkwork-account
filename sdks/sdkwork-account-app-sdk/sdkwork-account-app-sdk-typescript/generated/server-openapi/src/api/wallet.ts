@@ -1,8 +1,22 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AccountHoldItem, AccountHoldListData, CashAccountItem, PointsAccountItem, PointsLotAllocationListData, PointsLotListData, PointsSummaryItem, WalletAccountListData, WalletLedgerEntryItem, WalletLedgerListData, WalletOverviewItem } from '../types';
+import type { AccountHoldItem, AccountHoldListData, CashAccountItem, PointsAccountItem, PointsLotAllocationListData, PointsLotListData, PointsSummaryItem, WalletAccountListData, WalletLedgerEntryItem, WalletLedgerListData, WalletOverviewItem, WalletPortfolioItem } from '../types';
 
+
+export class WalletPortfolioApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** Retrieve the aggregated wallet portfolio (cash account, token bank and compute points) in one call */
+  async list(requestOptions?: ApiRequestOptions): Promise<WalletPortfolioItem> {
+    return this.client.request<WalletPortfolioItem>(appApiPath(`/wallet/portfolio`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+}
 
 export interface WalletHoldsListParams {
   accountId?: string;
@@ -263,6 +277,7 @@ export class WalletApi {
   public readonly ledgerEntries: WalletLedgerEntriesApi;
   public readonly points: WalletPointsApi;
   public readonly holds: WalletHoldsApi;
+  public readonly portfolio: WalletPortfolioApi;
 
   constructor(client: HttpClient) {
     this.client = client;
@@ -271,6 +286,7 @@ export class WalletApi {
     this.ledgerEntries = new WalletLedgerEntriesApi(client);
     this.points = new WalletPointsApi(client);
     this.holds = new WalletHoldsApi(client);
+    this.portfolio = new WalletPortfolioApi(client);
   }
 
 }

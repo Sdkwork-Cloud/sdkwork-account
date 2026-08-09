@@ -174,6 +174,20 @@ struct TokenBankBalanceResponse {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct WalletPortfolioResponse {
+    cash: CashAccountResponse,
+    token_bank: TokenBankBalanceResponse,
+    points: PointsSummaryResponse,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WalletPortfolioData {
+    item: WalletPortfolioResponse,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct CashAccountResponse {
     account_id: String,
     account_uuid: String,
@@ -398,6 +412,10 @@ pub fn build_app_account_wallet_router(store: Arc<dyn CommerceAccountWalletStore
             get(fetch_account_summary),
         )
         .route("/app/v3/api/wallet/overview", get(fetch_wallet_overview))
+        .route(
+            "/app/v3/api/wallet/portfolio",
+            get(fetch_wallet_portfolio),
+        )
         .route("/app/v3/api/wallet/accounts", get(fetch_wallet_accounts))
         .route("/app/v3/api/wallet/accounts/cash", get(fetch_cash_account))
         .route(
@@ -612,6 +630,53 @@ async fn fetch_wallet_transaction(
         Ok(None) => not_found(Some(&ctx), "wallet transaction was not found"),
         Err(error) => crate::api_response::map_service_error(Some(&ctx), error),
     }
+}
+
+async fn fetch_wallet_portfolio(
+    State(state): State<AppAccountWalletState>,
+    request_context: Extension<WebRequestContext>,
+    runtime_context: Option<Extension<IamAppContext>>,
+) -> Response {
+    let ctx = request_context.0;
+    let subject = match app_runtime_subject_from_extension(runtime_context) {
+        Ok(subject) => subject,
+        Err(message) => return unauthorized(Some(&ctx), message),
+    };
+    let query = match wallet_account_list_query(&subject, None) {
+        Ok(query) => query,
+        Err(error) => return validation(Some(&ctx), error.message()),
+    };
+
+    let cash = state
+        .store
+        .retrieve_wallet_account_for_asset(query.clone(), CommerceAccountAssetType::Cash)
+        .await;
+    let token_bank = state
+        .store
+        .retrieve_wallet_account_for_asset(query.clone(), CommerceAccountAssetType::TokenBank)
+        .await;
+    let points = state.store.retrieve_points_summary(query).await;
+
+    let (cash, token_bank, points) = match (cash, token_bank, points) {
+        (Ok(cash), Ok(token_bank), Ok(points)) => (cash, token_bank, points),
+        (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => {
+            return crate::api_response::map_service_error(Some(&ctx), error);
+        }
+    };
+
+    let token_bank_balance = match map_token_bank_balance(vec![token_bank]) {
+        Ok(balance) => balance,
+        Err(error) => return crate::api_response::map_service_error(Some(&ctx), error),
+    };
+
+    success_item(
+        Some(&ctx),
+        WalletPortfolioResponse {
+            cash: map_cash_account(cash),
+            token_bank: token_bank_balance,
+            points: map_points_summary(points),
+        },
+    )
 }
 
 async fn fetch_token_bank_overview(

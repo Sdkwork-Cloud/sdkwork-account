@@ -4,7 +4,10 @@
 mod bootstrap;
 mod generated;
 
-pub use bootstrap::{assemble_api_router, ApiAssembly};
+pub use bootstrap::{
+    assemble_api_router, assemble_app_api_contribution,
+    assemble_app_api_contribution_from_env, ApiAssembly, ApiAssemblyContribution,
+};
 
 pub async fn assemble_api_router_from_env() -> Result<ApiAssembly, String> {
     let host = sdkwork_account_service_host::AccountServiceHost::from_env().await?;

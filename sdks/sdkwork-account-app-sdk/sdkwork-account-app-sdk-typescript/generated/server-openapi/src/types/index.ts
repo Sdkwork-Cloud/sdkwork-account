@@ -45,3 +45,6 @@ export type { AccountHoldListData } from './account-hold-list-data';
 export type { AccountHoldDetailData } from './account-hold-detail-data';
 export type { TokenBankBalanceItem } from './token-bank-balance-item';
 export type { TokenBankBalanceData } from './token-bank-balance-data';
+export type { WalletPortfolioResponse } from './wallet-portfolio-response';
+export type { WalletPortfolioData } from './wallet-portfolio-data';
+export type { WalletPortfolioItem } from './wallet-portfolio-item';

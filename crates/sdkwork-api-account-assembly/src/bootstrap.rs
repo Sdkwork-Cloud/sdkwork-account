@@ -6,6 +6,10 @@
 
 use axum::Router;
 use sdkwork_account_service_host::AccountServiceHost;
+use sdkwork_database_sqlx::DatabasePool;
+pub use sdkwork_web_bootstrap::ApiAssemblyContribution;
+use sdkwork_web_bootstrap::{ReadinessCheck, ReadinessFuture};
+use sdkwork_web_core::HttpRouteManifest;
 use std::sync::Arc;
 
 pub struct ApiAssembly {
@@ -17,4 +21,49 @@ pub async fn assemble_api_router(host: Arc<AccountServiceHost>) -> ApiAssembly {
     router = router.merge(sdkwork_routes_account_app_api::gateway_mount(host.clone()).await);
     router = router.merge(sdkwork_routes_account_backend_api::gateway_mount(host.clone()).await);
     ApiAssembly { router }
+}
+
+#[derive(Clone)]
+struct AccountReadiness {
+    pool: DatabasePool,
+}
+
+impl ReadinessCheck for AccountReadiness {
+    fn check(&self) -> ReadinessFuture<'_> {
+        let pool = self.pool.clone();
+        Box::pin(async move {
+            match pool.test_connection().await {
+                Ok(true) => Ok(()),
+                Ok(false) => Err("account database readiness query returned no row".to_owned()),
+                Err(error) => Err(format!(
+                    "account database readiness check failed: {error}"
+                )),
+            }
+        })
+    }
+}
+
+/// Host-neutral App API contribution for embedding the account surface into a
+/// composed gateway (same pattern as order/membership/notary).
+pub async fn assemble_app_api_contribution_from_env(
+) -> Result<ApiAssemblyContribution, String> {
+    let host = Arc::new(AccountServiceHost::from_env().await?);
+    Ok(assemble_app_api_contribution(host).await)
+}
+
+pub async fn assemble_app_api_contribution(
+    host: Arc<AccountServiceHost>,
+) -> ApiAssemblyContribution {
+    let router = sdkwork_routes_account_app_api::gateway_mount(host.clone()).await;
+    ApiAssemblyContribution::from_manifest(
+        "sdkwork-account",
+        "SDKWork Account API",
+        router,
+        HttpRouteManifest::from_owned_routes(Vec::new()),
+        Vec::new(),
+        Arc::new(AccountReadiness {
+            pool: host.database_pool().clone(),
+        }),
+    )
+    .expect("account App API contribution should build")
 }
