@@ -47,13 +47,19 @@ export { SdkworkWalletCommerceDelegationError } from "./wallet-commerce-delegati
 
 export interface SdkworkWalletAccount {
 
+  activeLotCount: number | null;
+
   availablePoints: number;
 
   cashAvailable: number;
 
   cashFrozen: number;
 
+  cashPending: number;
+
   experience: number | null;
+
+  expiringPoints: number | null;
 
   frozenPoints: number;
 
@@ -62,6 +68,8 @@ export interface SdkworkWalletAccount {
   level: number | null;
 
   levelName?: string;
+
+  pointsPending: number;
 
   status?: string;
 
@@ -76,6 +84,8 @@ export interface SdkworkWalletAccount {
   totalPoints: number;
 
   totalSpent: number | null;
+
+  unsweptExpiredPoints: number | null;
 
 }
 
@@ -321,25 +331,13 @@ interface RemoteCashAccount {
 
 
 
-interface RemotePointsAccount {
-
-  availablePoints?: number | string;
-
-  frozenPoints?: number | string;
-
-  pendingPoints?: number | string;
-
-  status?: string;
-
-  totalPoints?: number | string;
-
-}
-
-
-
 interface RemotePointsSummary {
 
+  activeLotCount?: number | string;
+
   availablePoints?: number | string;
+
+  expiringPoints?: number | string;
 
   frozenPoints?: number | string;
 
@@ -353,6 +351,8 @@ interface RemotePointsSummary {
 
   totalPoints?: number | string;
 
+  unsweptExpiredPoints?: number | string;
+
 }
 
 
@@ -362,6 +362,18 @@ interface RemoteTokenBankAccount {
   availableAmount?: number | string;
 
   frozenAmount?: number | string;
+
+}
+
+
+
+interface RemotePortfolio {
+
+  cash?: RemoteCashAccount | null;
+
+  points?: RemotePointsSummary | null;
+
+  tokenBank?: RemoteTokenBankAccount | null;
 
 }
 
@@ -433,19 +445,27 @@ export function createEmptySdkworkWalletOverview(): SdkworkWalletOverview {
 
     account: {
 
+      activeLotCount: null,
+
       availablePoints: 0,
 
       cashAvailable: 0,
 
       cashFrozen: 0,
 
+      cashPending: 0,
+
       experience: null,
+
+      expiringPoints: null,
 
       frozenPoints: 0,
 
       hasPayPassword: false,
 
       level: null,
+
+      pointsPending: 0,
 
       tokenBankAvailable: 0,
 
@@ -456,6 +476,8 @@ export function createEmptySdkworkWalletOverview(): SdkworkWalletOverview {
       totalPoints: 0,
 
       totalSpent: null,
+
+      unsweptExpiredPoints: null,
 
     },
 
@@ -529,17 +551,13 @@ function signedAmount(entry: RemoteLedgerEntry): number {
 
 
 
-function mapAccount(
+function mapAccount(portfolio: RemotePortfolio | null | undefined): SdkworkWalletAccount {
 
-  cash: RemoteCashAccount | null | undefined,
+  const cash = portfolio?.cash;
 
-  points: RemotePointsAccount | null | undefined,
+  const points = portfolio?.points;
 
-  tokenBank: RemoteTokenBankAccount | null | undefined,
-
-  pointsSummary?: RemotePointsSummary | null,
-
-): SdkworkWalletAccount {
+  const tokenBank = portfolio?.tokenBank;
 
   const availablePoints = toSdkworkAccountNumber(points?.availablePoints);
 
@@ -551,13 +569,19 @@ function mapAccount(
 
   return {
 
+    activeLotCount: toNullableSdkworkAccountNumber(points?.activeLotCount),
+
     availablePoints,
 
     cashAvailable: toSdkworkAccountNumber(cash?.availableAmount),
 
     cashFrozen: toSdkworkAccountNumber(cash?.frozenAmount),
 
+    cashPending: toSdkworkAccountNumber(cash?.pendingAmount),
+
     experience: null,
+
+    expiringPoints: toNullableSdkworkAccountNumber(points?.expiringPoints),
 
     frozenPoints,
 
@@ -565,31 +589,27 @@ function mapAccount(
 
     level: null,
 
-    status: toSdkworkAccountOptionalString(points?.status ?? pointsSummary?.status),
+    pointsPending: pendingPoints,
+
+    status: toSdkworkAccountOptionalString(points?.status),
 
     tokenBankAvailable: toSdkworkAccountNumber(tokenBank?.availableAmount),
 
     tokenBankFrozen: toSdkworkAccountNumber(tokenBank?.frozenAmount),
 
-    totalEarned: pointsSummary
-
-      ? toSdkworkAccountNumber(pointsSummary.monthCreditPoints)
-
-      : null,
+    totalEarned: toNullableSdkworkAccountNumber(points?.monthCreditPoints),
 
     totalPoints: toSdkworkAccountNumber(
 
-      points?.totalPoints ?? pointsSummary?.totalPoints,
+      points?.totalPoints,
 
       availablePoints + frozenPoints + pendingPoints,
 
     ),
 
-    totalSpent: pointsSummary
+    totalSpent: toNullableSdkworkAccountNumber(points?.monthDebitPoints),
 
-      ? toSdkworkAccountNumber(pointsSummary.monthDebitPoints)
-
-      : null,
+    unsweptExpiredPoints: toNullableSdkworkAccountNumber(points?.unsweptExpiredPoints),
 
   };
 
@@ -747,13 +767,7 @@ export function createSdkworkWalletService(
 
       const [
 
-        cashPayload,
-
-        pointsPayload,
-
-        tokenBankPayload,
-
-        pointsSummaryPayload,
+        portfolioPayload,
 
         ledgerPayload,
 
@@ -761,13 +775,7 @@ export function createSdkworkWalletService(
 
       ] = await Promise.all([
 
-        accountAppService.wallet.accounts.cash.retrieve(),
-
-        accountAppService.wallet.accounts.points.retrieve(),
-
-        accountAppService.tokenBank.account.retrieve(),
-
-        accountAppService.wallet.points.summary.retrieve().catch(() => null),
+        accountAppService.wallet.portfolio.list(),
 
         accountAppService.wallet.ledgerEntries.list(ledgerQuery),
 
@@ -783,17 +791,7 @@ export function createSdkworkWalletService(
 
 
 
-      const cash = unwrapSdkworkAccountResource<RemoteCashAccount>(cashPayload);
-
-      const points = unwrapSdkworkAccountResource<RemotePointsAccount>(pointsPayload);
-
-      const tokenBank = unwrapSdkworkAccountResource<RemoteTokenBankAccount>(tokenBankPayload);
-
-      const pointsSummary = pointsSummaryPayload
-
-        ? unwrapSdkworkAccountResource<RemotePointsSummary>(pointsSummaryPayload)
-
-        : null;
+      const portfolio = unwrapSdkworkAccountResource<RemotePortfolio>(portfolioPayload);
 
       const ledgerPage = unwrapSdkworkAccountListPage<RemoteLedgerEntry>(ledgerPayload);
 
@@ -831,7 +829,7 @@ export function createSdkworkWalletService(
 
       return {
 
-        account: mapAccount(cash, points, tokenBank, pointsSummary),
+        account: mapAccount(portfolio),
 
         holds: holdsPage.items.map(mapHold),
 

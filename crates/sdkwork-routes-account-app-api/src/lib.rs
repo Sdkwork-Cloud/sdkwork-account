@@ -1,6 +1,7 @@
 pub mod account_router;
 pub mod api_response;
 pub mod billing_router;
+pub mod http_route_manifest;
 pub mod routes;
 pub mod subject;
 pub mod web_bootstrap;
@@ -13,6 +14,8 @@ pub use billing_router::{
     app_billing_history_router_with_postgres_pool, build_app_billing_history_router,
     CommerceBillingHistoryFuture, CommerceBillingHistoryStore,
 };
+pub use http_route_manifest::gateway_route_manifest;
+pub use routes::build_account_app_router;
 pub use routes::build_account_app_router_with_framework;
 pub use web_bootstrap::wrap_router_with_web_framework_from_env;
 

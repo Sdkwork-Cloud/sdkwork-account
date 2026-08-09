@@ -15,36 +15,45 @@ describe("sdkwork-account-pc-wallet service", () => {
     resetAccountServiceMockSession();
   });
 
-  it("maps dedicated cash, points, Token Bank, and unified ledger endpoints into a wallet overview", async () => {
+  it("maps the aggregated wallet portfolio and unified ledger endpoints into a wallet overview", async () => {
     const accountAppService = createAccountAppServiceMock({
       wallet: {
-        accounts: {
-          cash: {
-            retrieve: vi.fn().mockResolvedValue({
-              code: 0,
-              data: {
-                item: {
+        portfolio: {
+          list: vi.fn().mockResolvedValue({
+            code: 0,
+            data: {
+              item: {
+                cash: {
                   availableAmount: "88.50",
                   frozenAmount: "10.00",
-                  pendingAmount: "0",
+                  pendingAmount: "2.00",
                 },
-              },
-            }),
-          },
-          points: {
-            retrieve: vi.fn().mockResolvedValue({
-              code: 0,
-              data: {
-                item: {
+                points: {
+                  activeLotCount: "3",
                   availablePoints: "1200",
+                  expiringPoints: "50",
                   frozenPoints: "30",
+                  monthCreditPoints: "9600",
+                  monthDebitPoints: "7200",
                   pendingPoints: "0",
-                  totalPoints: "1230",
                   status: "active",
+                  totalPoints: "1230",
+                  unsweptExpiredPoints: "5",
+                },
+                tokenBank: {
+                  availableAmount: "4200",
+                  frozenAmount: "200",
                 },
               },
-            }),
-          },
+            },
+          }),
+        },
+        accounts: {
+          cash: { retrieve: vi.fn() },
+          points: { retrieve: vi.fn() },
+        },
+        points: {
+          summary: { retrieve: vi.fn() },
         },
         ledgerEntries: {
           list: vi.fn().mockResolvedValue({
@@ -78,34 +87,10 @@ describe("sdkwork-account-pc-wallet service", () => {
             },
           }),
         },
-        points: {
-          summary: {
-            retrieve: vi.fn().mockResolvedValue({
-              code: 0,
-              data: {
-                item: {
-                  monthCreditPoints: "9600",
-                  monthDebitPoints: "7200",
-                  totalPoints: "1230",
-                },
-              },
-            }),
-          },
-        },
         holds: { list: vi.fn() },
       },
       tokenBank: {
-        account: {
-          retrieve: vi.fn().mockResolvedValue({
-            code: 0,
-            data: {
-              item: {
-                availableAmount: "4200",
-                frozenAmount: "200",
-              },
-            },
-          }),
-        },
+        account: { retrieve: vi.fn() },
         holds: {
           list: vi.fn().mockResolvedValue({
             code: 0,
@@ -144,10 +129,15 @@ describe("sdkwork-account-pc-wallet service", () => {
     expect(overview.isAuthenticated).toBe(true);
     expect(overview.account.availablePoints).toBe(1200);
     expect(overview.account.cashAvailable).toBe(88.5);
+    expect(overview.account.cashPending).toBe(2);
+    expect(overview.account.pointsPending).toBe(0);
     expect(overview.account.tokenBankAvailable).toBe(4200);
     expect(overview.account.tokenBankFrozen).toBe(200);
     expect(overview.account.totalEarned).toBe(9600);
     expect(overview.account.totalSpent).toBe(7200);
+    expect(overview.account.activeLotCount).toBe(3);
+    expect(overview.account.expiringPoints).toBe(50);
+    expect(overview.account.unsweptExpiredPoints).toBe(5);
     expect(overview.transactions).toHaveLength(2);
     expect(overview.transactions[0]).toMatchObject({
       id: "history-2",
@@ -168,7 +158,11 @@ describe("sdkwork-account-pc-wallet service", () => {
       holdId: "token-bank-hold-1",
       status: "held",
     });
-    expect(accountAppService.tokenBank.account.retrieve).toHaveBeenCalledTimes(1);
+    expect(accountAppService.wallet.portfolio.list).toHaveBeenCalledTimes(1);
+    expect(accountAppService.wallet.accounts.cash.retrieve).not.toHaveBeenCalled();
+    expect(accountAppService.wallet.accounts.points.retrieve).not.toHaveBeenCalled();
+    expect(accountAppService.wallet.points.summary.retrieve).not.toHaveBeenCalled();
+    expect(accountAppService.tokenBank.account.retrieve).not.toHaveBeenCalled();
     expect(accountAppService.tokenBank.holds.list).toHaveBeenCalledWith({
       page: 1,
       pageSize: 20,
@@ -212,22 +206,18 @@ describe("sdkwork-account-pc-wallet service", () => {
   it("maps recharge packages from order SDK into wallet overview", async () => {
     const accountAppService = createAccountAppServiceMock({
       wallet: {
-        accounts: {
-          cash: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
-          points: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
+        portfolio: {
+          list: vi.fn().mockResolvedValue({
+            code: 0,
+            data: { item: { cash: {}, points: {}, tokenBank: {} } },
+          }),
         },
         ledgerEntries: {
           list: vi.fn().mockResolvedValue({ code: 0, data: { items: [], pageInfo: { mode: "offset", hasMore: false } } }),
         },
-        points: {
-          summary: {
-            retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }),
-          },
-        },
         holds: { list: vi.fn() },
       },
       tokenBank: {
-        account: { retrieve: vi.fn().mockResolvedValue({ code: 0, data: { item: {} } }) },
         holds: {
           list: vi.fn().mockResolvedValue({
             code: 0,

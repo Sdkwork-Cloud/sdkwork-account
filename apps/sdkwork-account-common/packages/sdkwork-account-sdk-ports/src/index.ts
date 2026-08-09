@@ -9,6 +9,7 @@ export const APP_ACCOUNT_METHOD_TREE = {
   },
   wallet: {
     overview: { retrieve: true },
+    portfolio: { list: true },
     accounts: {
       list: true,
       cash: { retrieve: true },

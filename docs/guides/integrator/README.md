@@ -57,6 +57,7 @@ List pagination:
 Recommended app reads:
 
 - `GET .../accounts/current/summary`
+- `GET .../wallet/portfolio` — aggregated wallet balance (cash account, Token Bank balance and points summary) in one call; prefer this over the dedicated balance resources below
 - `GET .../wallet/accounts/cash`
 - `GET .../wallet/accounts/points`
 - `GET .../wallet/ledger_entries`

@@ -42,6 +42,7 @@ describe("sdkwork account service Token Bank facade", () => {
               retrieve: vi.fn(),
             },
             overview: { retrieve: vi.fn() },
+            portfolio: { list: vi.fn() },
             points: {
               lots: { list: vi.fn() },
               summary: { retrieve: vi.fn() },

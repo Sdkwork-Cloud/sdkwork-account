@@ -36,6 +36,7 @@ function createMissingWalletTree(): SdkworkAccountAppService["wallet"] {
   const tree: Record<string, unknown> = {};
   for (const method of [
     "overview.retrieve",
+    "portfolio.list",
     "ledgerEntries.list",
     "accounts.cash.retrieve",
     "accounts.points.retrieve",

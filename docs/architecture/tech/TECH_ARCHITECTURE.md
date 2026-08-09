@@ -298,6 +298,7 @@ Failed or canceled tasks release the hold. Completed-but-wrong tasks use reversa
 
 Standard app-api resource groups:
 
+- `/app/v3/api/wallet/portfolio` — aggregated wallet balance (cash account, Token Bank balance and points summary) in one call
 - `/app/v3/api/wallet/accounts/cash`
 - `/app/v3/api/wallet/accounts/points`
 - `/app/v3/api/token_bank/overview`

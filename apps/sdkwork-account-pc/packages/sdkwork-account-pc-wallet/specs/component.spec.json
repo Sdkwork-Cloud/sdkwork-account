@@ -47,11 +47,8 @@
         "surface": "app",
         "required": true,
         "methods": [
-          "wallet.accounts.cash.retrieve",
-          "wallet.accounts.points.retrieve",
+          "wallet.portfolio.list",
           "wallet.ledgerEntries.list",
-          "wallet.points.summary.retrieve",
-          "tokenBank.account.retrieve",
           "tokenBank.holds.list",
           "tokenBank.ledgerEntries.list",
           "tokenBank.overview.retrieve",
