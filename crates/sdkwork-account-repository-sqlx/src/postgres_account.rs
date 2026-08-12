@@ -1,10 +1,10 @@
 use chrono::{DateTime, Utc};
 use sdkwork_account_service::{
-    AccountBalance, AccountSummary, AccountSummaryQuery, AccountSummarySnapshot,
-    AppendLedgerEntryCommand, AppendLedgerEntryOutcome, OutboxDispatchOutcome,
-    PointsAccountSnapshot, PointsLotItem, PointsLotListQuery, StoreListPage, WalletAccountItem,
-    WalletAccountListQuery, WalletOperation, WalletOperationQuery, WalletOverview,
-    WalletTransactionDetailQuery, WalletTransactionItem, WalletTransactionListQuery,
+    AccountBalance, AccountLedgerAppendPort, AccountSummary, AccountSummaryQuery,
+    AccountSummarySnapshot, AppendLedgerEntryCommand, AppendLedgerEntryOutcome,
+    OutboxDispatchOutcome, PointsAccountSnapshot, PointsLotItem, PointsLotListQuery, StoreListPage,
+    WalletAccountItem, WalletAccountListQuery, WalletOperation, WalletOperationQuery,
+    WalletOverview, WalletTransactionDetailQuery, WalletTransactionItem, WalletTransactionListQuery,
 };
 use sdkwork_contract_service::{
     CommerceAccountAssetType, CommerceLedgerDirection, CommerceMoney, CommercePoints,
@@ -30,6 +30,18 @@ use crate::store::{
 #[derive(Debug, Clone)]
 pub struct PostgresCommerceAccountStore {
     pub(crate) pool: PgPool,
+}
+
+impl AccountLedgerAppendPort for PostgresCommerceAccountStore {
+    fn append_ledger_entry<'a>(
+        &'a self,
+        command: AppendLedgerEntryCommand,
+        request_hash: CommerceRequestHash,
+    ) -> sdkwork_account_service::AccountLedgerAppendFuture<'a> {
+        Box::pin(PostgresCommerceAccountStore::append_ledger_entry(
+            self, command, request_hash,
+        ))
+    }
 }
 
 #[derive(Debug, Clone)]
