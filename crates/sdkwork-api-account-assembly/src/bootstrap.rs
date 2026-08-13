@@ -90,6 +90,15 @@ pub async fn assemble_app_api_contribution_from_env(
     Ok(assemble_app_api_contribution(host).await)
 }
 
+/// Same-origin dependency composition: build the account App API contribution
+/// on a shared pool owned by the consuming host.
+pub async fn assemble_app_api_contribution_with_pool(
+    pool: &DatabasePool,
+) -> Result<ApiAssemblyContribution, String> {
+    let host = Arc::new(AccountServiceHost::from_pool(pool).await?);
+    Ok(assemble_app_api_contribution(host).await)
+}
+
 pub async fn assemble_app_api_contribution(
     host: Arc<AccountServiceHost>,
 ) -> ApiAssemblyContribution {

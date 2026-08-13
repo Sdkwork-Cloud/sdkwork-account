@@ -27,6 +27,27 @@ pub async fn bootstrap_account_database_from_env() -> Result<AccountDatabaseHost
     let pool = create_pool_from_config(config)
         .await
         .map_err(|error| format!("create account database pool failed: {error}"))?;
+    bootstrap_account_database_host_with_pool(&pool).await
+}
+
+/// Bootstrap the account database schema and migrations using an externally
+/// provided pool.
+///
+/// This is used when account is integrated as a federated capability inside a
+/// host application (e.g. sdkwork-cloudrouter) that already owns a shared
+/// database pool. The function loads the account database module from the
+/// account repository's `database/` assets, runs the DDL baseline, and
+/// optionally applies migrations — all controlled by the same manifest/env
+/// options as the standalone bootstrap (mirrors
+/// `bootstrap_membership_database_host_with_pool`).
+pub async fn bootstrap_account_database_host_with_pool(
+    pool: &DatabasePool,
+) -> Result<AccountDatabaseHost, String> {
+    if pool.as_postgres().is_none() {
+        return Err(
+            "account authoritative-server assembly requires a shared PostgreSQL pool".to_owned(),
+        );
+    }
     let app_root = std::env::var("SDKWORK_ACCOUNT_APP_ROOT")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
@@ -43,5 +64,8 @@ pub async fn bootstrap_account_database_from_env() -> Result<AccountDatabaseHost
     if options.auto_migrate {
         orchestrator.migrate().await.map_err(|e| format!("{e}"))?;
     }
-    Ok(AccountDatabaseHost { pool, module })
+    Ok(AccountDatabaseHost {
+        pool: pool.clone(),
+        module,
+    })
 }
