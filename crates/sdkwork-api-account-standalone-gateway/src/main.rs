@@ -5,41 +5,38 @@
 //! - Readiness reflects database health via `SELECT 1`.
 //! - Graceful shutdown drains in-flight requests on SIGINT / SIGTERM.
 
-use std::sync::Arc;
-use std::time::Duration;
-
-use sdkwork_account_service_host::AccountServiceHost;
-use sdkwork_api_account_assembly::assemble_api_router;
-use sdkwork_database_sqlx::DatabasePool;
-use sdkwork_web_bootstrap::{service_router, ReadinessCheck, ReadinessFuture, ServiceRouterConfig};
+use sdkwork_api_account_assembly::assemble_api_router_from_env;
+use sdkwork_iam_web_adapter::{
+    build_web_framework_builder, iam_web_request_context_resolver_from_env,
+};
+use sdkwork_web_bootstrap::{infra_public_path_prefixes, ComposedApiAssembly};
 use tower_http::trace::TraceLayer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let host = match AccountServiceHost::from_env().await {
-        Ok(host) => Arc::new(host),
+    let assembly = match assemble_api_router_from_env().await {
+        Ok(assembly) => assembly,
         Err(error) => {
-            tracing::error!(target = "account.bootstrap", error = %error, "account service host bootstrap failed");
+            tracing::error!(target = "account.bootstrap", error = %error, "account API assembly bootstrap failed");
             return Err(error.into());
         }
     };
-
-    let business = assemble_api_router(host.clone())
-        .await
+    let framework = build_web_framework_builder(
+        iam_web_request_context_resolver_from_env().await,
+        assembly.route_manifest.clone(),
+        infra_public_path_prefixes(),
+    );
+    let app = ComposedApiAssembly::try_compose("SDKWork Account API", vec![assembly])
+        .map_err(std::io::Error::other)?
+        .into_hosted(framework)
         .router
         .layer(TraceLayer::new_for_http())
         .layer(sdkwork_web_bootstrap::application_cors_layer_from_env(
             &["SDKWORK_ACCOUNT_ENVIRONMENT", "ACCOUNT_ENVIRONMENT"],
             &["SDKWORK_CORS_ALLOWED_ORIGINS"],
         ));
-
-    let readiness = Arc::new(AccountReadiness { host: host.clone() });
-    let app = service_router(
-        business,
-        ServiceRouterConfig::default().with_readiness_check(readiness),
-    );
 
     let addr = std::env::var("ACCOUNT_API_BIND").unwrap_or_else(|_| "0.0.0.0:18095".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
@@ -52,37 +49,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err(error.into());
     }
 
-    tokio::time::timeout(Duration::from_secs(30), host.database_pool().close())
-        .await
-        .map_err(|_| std::io::Error::other("database pool close timed out after 30s"))?;
     tracing::info!(target = "account.runtime", "account api server stopped");
     Ok(())
-}
-
-#[derive(Clone)]
-struct AccountReadiness {
-    host: Arc<AccountServiceHost>,
-}
-
-impl ReadinessCheck for AccountReadiness {
-    fn check(&self) -> ReadinessFuture<'_> {
-        Box::pin(async move {
-            // 服务端权威持久化仅支持 PostgreSQL（DATABASE_SPEC：authoritative-server）
-            let DatabasePool::Postgres(pool, _) = self.host.database_pool() else {
-                return Err("database is not ready (PostgreSQL pool required)".to_owned());
-            };
-            let result = sqlx::query_scalar::<_, i64>("SELECT 1")
-                .fetch_one(pool)
-                .await;
-            match result {
-                Ok(_) => Ok(()),
-                Err(error) => {
-                    tracing::error!(target = "account.readiness", error = %error, "database readiness probe failed");
-                    Err("database is not ready".to_owned())
-                }
-            }
-        })
-    }
 }
 
 async fn shutdown_signal() {

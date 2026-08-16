@@ -11,6 +11,14 @@ pub use bootstrap::{
     assemble_app_api_contribution_with_pool, ApiAssembly, ApiAssemblyContribution,
 };
 
+/// Account app-surface route inventory for host applications that compose the
+/// account contribution into their own app surface (API_ASSEMBLY_SPEC §3/§6.1:
+/// dependency manifests enter through the dependency assembly entrypoint, not
+/// through direct `sdkwork-routes-*` imports).
+pub fn app_api_route_manifest() -> sdkwork_web_core::HttpRouteManifest {
+    sdkwork_routes_account_app_api::gateway_route_manifest()
+}
+
 pub fn assembly_route_count() -> usize {
     generated::ROUTE_CRATE_COUNT
 }

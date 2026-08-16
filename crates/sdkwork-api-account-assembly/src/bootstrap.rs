@@ -10,7 +10,7 @@ use axum::Router;
 use sdkwork_account_service_host::AccountServiceHost;
 use sdkwork_database_sqlx::DatabasePool;
 pub use sdkwork_web_bootstrap::ApiAssemblyContribution;
-use sdkwork_web_bootstrap::{DatabasePoolReadinessCheck, ReadinessCheck, ReadinessFuture};
+use sdkwork_web_bootstrap::{ReadinessCheck, ReadinessFuture};
 use sdkwork_web_core::HttpRouteManifest;
 use std::sync::Arc;
 
@@ -46,8 +46,11 @@ fn contribution_from(
 
 pub async fn assemble_api_router(host: Arc<AccountServiceHost>) -> ApiAssembly {
     let mut router = Router::new();
-    router = router.merge(sdkwork_routes_account_app_api::build_account_app_router(host.clone()));
-    router = router.merge(sdkwork_routes_account_backend_api::build_account_backend_router(host.clone()));
+    router = router.merge(sdkwork_routes_account_app_api::build_account_app_router(
+        host.clone(),
+    ));
+    router = router
+        .merge(sdkwork_routes_account_backend_api::build_account_backend_router(host.clone()));
     contribution_from(
         router,
         Arc::new(AccountReadiness {
@@ -74,9 +77,7 @@ impl ReadinessCheck for AccountReadiness {
             match pool.test_connection().await {
                 Ok(true) => Ok(()),
                 Ok(false) => Err("account database readiness query returned no row".to_owned()),
-                Err(error) => Err(format!(
-                    "account database readiness check failed: {error}"
-                )),
+                Err(error) => Err(format!("account database readiness check failed: {error}")),
             }
         })
     }
@@ -84,8 +85,7 @@ impl ReadinessCheck for AccountReadiness {
 
 /// Host-neutral App API contribution for embedding the account surface into a
 /// composed gateway (same pattern as order/membership/notary).
-pub async fn assemble_app_api_contribution_from_env(
-) -> Result<ApiAssemblyContribution, String> {
+pub async fn assemble_app_api_contribution_from_env() -> Result<ApiAssemblyContribution, String> {
     let host = Arc::new(AccountServiceHost::from_env().await?);
     Ok(assemble_app_api_contribution(host).await)
 }
@@ -119,12 +119,6 @@ pub async fn assemble_app_api_contribution(
 /// Assemble the Account contribution against a caller-provided database pool so
 /// the platform cloud gateway can share its process-wide PostgreSQL pool.
 pub async fn assemble_api_router_with_pool(pool: DatabasePool) -> Result<ApiAssembly, String> {
-    let host = Arc::new(AccountServiceHost::from_env().await?);
-    let mut router = Router::new();
-    router = router.merge(sdkwork_routes_account_app_api::build_account_app_router(host.clone()));
-    router = router.merge(sdkwork_routes_account_backend_api::build_account_backend_router(host));
-    contribution_from(
-        router,
-        Arc::new(DatabasePoolReadinessCheck::new(pool)),
-    )
+    let host = Arc::new(AccountServiceHost::from_pool(&pool).await?);
+    Ok(assemble_api_router(host).await)
 }
