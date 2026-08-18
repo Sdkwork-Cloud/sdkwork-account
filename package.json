@@ -35,7 +35,9 @@
     "sync:openapi": "node scripts/sync-account-openapi-to-sdks.mjs",
     "sdk:generate": "node sdks/sdkwork-account-app-sdk/bin/generate-sdk.mjs && node sdks/sdkwork-account-backend-sdk/bin/generate-sdk.mjs",
     "sdk:generate:app": "node sdks/sdkwork-account-app-sdk/bin/generate-sdk.mjs",
-    "sdk:generate:backend": "node sdks/sdkwork-account-backend-sdk/bin/generate-sdk.mjs"
+    "sdk:generate:backend": "node sdks/sdkwork-account-backend-sdk/bin/generate-sdk.mjs",
+    "db:postgres:plan": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . plan --engine postgres",
+    "db:postgres:init": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . init --engine postgres"
   },
   "devDependencies": {
     "@sdkwork/appbase-pc-react": "workspace:*",
