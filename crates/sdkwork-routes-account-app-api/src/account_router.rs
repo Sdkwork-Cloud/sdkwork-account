@@ -13,9 +13,9 @@ use sdkwork_account_service::{
     AccountConsumptionItem, AccountHoldDetailQuery, AccountHoldItem, AccountHoldListQuery,
     AccountHoldListQueryInput, AccountSummaryQuery, AccountSummarySnapshot, PointsAccountSnapshot,
     PointsLotAllocationItem, PointsLotAllocationListQuery, PointsLotItem, PointsLotListQuery,
-    PointsSummarySnapshot, StoreListPage, WalletAccountItem, WalletAccountListQuery, WalletOperation,
-    WalletOperationQuery, WalletOverview, WalletTransactionDetailQuery, WalletTransactionItem,
-    WalletTransactionListQuery,
+    PointsSummarySnapshot, StoreListPage, WalletAccountItem, WalletAccountListQuery,
+    WalletOperation, WalletOperationQuery, WalletOverview, WalletTransactionDetailQuery,
+    WalletTransactionItem, WalletTransactionListQuery,
 };
 use sdkwork_contract_service::{CommerceAccountAssetType, CommerceServiceError};
 use sdkwork_iam_context_service::IamAppContext;
@@ -412,10 +412,7 @@ pub fn build_app_account_wallet_router(store: Arc<dyn CommerceAccountWalletStore
             get(fetch_account_summary),
         )
         .route("/app/v3/api/wallet/overview", get(fetch_wallet_overview))
-        .route(
-            "/app/v3/api/wallet/portfolio",
-            get(fetch_wallet_portfolio),
-        )
+        .route("/app/v3/api/wallet/portfolio", get(fetch_wallet_portfolio))
         .route("/app/v3/api/wallet/accounts", get(fetch_wallet_accounts))
         .route("/app/v3/api/wallet/accounts/cash", get(fetch_cash_account))
         .route(

@@ -413,7 +413,9 @@ async fn create_account_hold(
         Ok(command) => command,
         Err(error) => return map_service_error(Some(&ctx), error),
     };
-    if let (Some(owner_type), Some(account_purpose)) = (body.owner_type.as_deref(), body.account_purpose.as_deref()) {
+    if let (Some(owner_type), Some(account_purpose)) =
+        (body.owner_type.as_deref(), body.account_purpose.as_deref())
+    {
         command = command.with_account_subject(owner_type, account_purpose);
     }
     let request_hash = match hold_request_hash(&serde_json::to_string(&body).unwrap_or_default()) {
