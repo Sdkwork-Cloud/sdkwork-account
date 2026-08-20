@@ -14,7 +14,7 @@ export class WalletPortfolioApi {
 
 /** Retrieve the aggregated wallet portfolio (cash account, token bank and compute points) in one call */
   async list(requestOptions?: ApiRequestOptions): Promise<WalletPortfolioItem> {
-    return this.client.request<WalletPortfolioItem>(appApiPath(`/wallet/portfolio`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletPortfolioItem>(appApiPath(`/wallet/portfolio`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -42,11 +42,11 @@ async list(params?: WalletHoldsListParams, requestOptions?: ApiRequestOptions): 
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<AccountHoldListData>(appendQueryString(appApiPath(`/wallet/holds`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<AccountHoldListData>(appendQueryString(appApiPath(`/wallet/holds`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 async retrieve(holdId: string, requestOptions?: ApiRequestOptions): Promise<AccountHoldItem> {
-    return this.client.request<AccountHoldItem>(appApiPath(`/wallet/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<AccountHoldItem>(appApiPath(`/wallet/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -74,7 +74,7 @@ async list(params?: WalletPointsLotsListParams, requestOptions?: ApiRequestOptio
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<PointsLotListData>(appendQueryString(appApiPath(`/wallet/points/lots`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<PointsLotListData>(appendQueryString(appApiPath(`/wallet/points/lots`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -87,17 +87,15 @@ export class WalletPointsSummaryApi {
 
 
 async retrieve(requestOptions?: ApiRequestOptions): Promise<PointsSummaryItem> {
-    return this.client.request<PointsSummaryItem>(appApiPath(`/wallet/points/summary`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<PointsSummaryItem>(appApiPath(`/wallet/points/summary`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class WalletPointsApi {
-  private client: HttpClient;
   public readonly summary: WalletPointsSummaryApi;
   public readonly lots: WalletPointsLotsApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.summary = new WalletPointsSummaryApi(client);
     this.lots = new WalletPointsLotsApi(client);
   }
@@ -113,7 +111,7 @@ export class WalletLedgerEntriesAllocationsApi {
 
 
 async list(ledgerEntryId: string, requestOptions?: ApiRequestOptions): Promise<PointsLotAllocationListData> {
-    return this.client.request<PointsLotAllocationListData>(appApiPath(`/wallet/ledger_entries/${serializePathParameter(ledgerEntryId, { name: 'ledgerEntryId', style: 'simple', explode: false })}/allocations`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<PointsLotAllocationListData>(appApiPath(`/wallet/ledger_entries/${serializePathParameter(ledgerEntryId, { name: 'ledgerEntryId', style: 'simple', explode: false })}/allocations`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -139,7 +137,7 @@ async list(params?: WalletLedgerEntriesPointsListParams, requestOptions?: ApiReq
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<WalletLedgerListData>(appendQueryString(appApiPath(`/wallet/ledger_entries/points`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<WalletLedgerListData>(appendQueryString(appApiPath(`/wallet/ledger_entries/points`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -165,7 +163,7 @@ async list(params?: WalletLedgerEntriesCashListParams, requestOptions?: ApiReque
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<WalletLedgerListData>(appendQueryString(appApiPath(`/wallet/ledger_entries/cash`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<WalletLedgerListData>(appendQueryString(appApiPath(`/wallet/ledger_entries/cash`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -199,11 +197,11 @@ async list(params?: WalletLedgerEntriesListParams, requestOptions?: ApiRequestOp
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<WalletLedgerListData>(appendQueryString(appApiPath(`/wallet/ledger_entries`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<WalletLedgerListData>(appendQueryString(appApiPath(`/wallet/ledger_entries`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 async retrieve(ledgerEntryId: string, requestOptions?: ApiRequestOptions): Promise<WalletLedgerEntryItem> {
-    return this.client.request<WalletLedgerEntryItem>(appApiPath(`/wallet/ledger_entries/${serializePathParameter(ledgerEntryId, { name: 'ledgerEntryId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletLedgerEntryItem>(appApiPath(`/wallet/ledger_entries/${serializePathParameter(ledgerEntryId, { name: 'ledgerEntryId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -216,7 +214,7 @@ export class WalletAccountsPointsApi {
 
 
 async retrieve(requestOptions?: ApiRequestOptions): Promise<PointsAccountItem> {
-    return this.client.request<PointsAccountItem>(appApiPath(`/wallet/accounts/points`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<PointsAccountItem>(appApiPath(`/wallet/accounts/points`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -229,7 +227,7 @@ export class WalletAccountsCashApi {
 
 
 async retrieve(requestOptions?: ApiRequestOptions): Promise<CashAccountItem> {
-    return this.client.request<CashAccountItem>(appApiPath(`/wallet/accounts/cash`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<CashAccountItem>(appApiPath(`/wallet/accounts/cash`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -253,7 +251,7 @@ async list(params?: WalletAccountsListParams, requestOptions?: ApiRequestOptions
     const query = buildQueryString([
       { name: 'asset_type', value: params?.assetType, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<WalletAccountListData>(appendQueryString(appApiPath(`/wallet/accounts`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<WalletAccountListData>(appendQueryString(appApiPath(`/wallet/accounts`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -266,12 +264,11 @@ export class WalletOverviewApi {
 
 
 async retrieve(requestOptions?: ApiRequestOptions): Promise<WalletOverviewItem> {
-    return this.client.request<WalletOverviewItem>(appApiPath(`/wallet/overview`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletOverviewItem>(appApiPath(`/wallet/overview`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class WalletApi {
-  private client: HttpClient;
   public readonly overview: WalletOverviewApi;
   public readonly accounts: WalletAccountsApi;
   public readonly ledgerEntries: WalletLedgerEntriesApi;
@@ -280,7 +277,6 @@ export class WalletApi {
   public readonly portfolio: WalletPortfolioApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.overview = new WalletOverviewApi(client);
     this.accounts = new WalletAccountsApi(client);
     this.ledgerEntries = new WalletLedgerEntriesApi(client);

@@ -13,7 +13,7 @@ export class WalletTransfersApi {
 
 
 async create(body: CreateAccountTransferRequest, requestOptions?: ApiRequestOptions): Promise<WalletTransferMutationResult> {
-    return this.client.request<WalletTransferMutationResult>(backendApiPath(`/wallet/transfers`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletTransferMutationResult>(backendApiPath(`/wallet/transfers`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -26,19 +26,19 @@ export class WalletHoldsApi {
 
 
 async create(body: CreateAccountHoldRequest, requestOptions?: ApiRequestOptions): Promise<WalletHoldMutationResult> {
-    return this.client.request<WalletHoldMutationResult>(backendApiPath(`/wallet/holds`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletHoldMutationResult>(backendApiPath(`/wallet/holds`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 async settle(holdId: string, body: SettleAccountHoldRequest, requestOptions?: ApiRequestOptions): Promise<WalletHoldMutationResult> {
-    return this.client.request<WalletHoldMutationResult>(backendApiPath(`/wallet/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/settle`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletHoldMutationResult>(backendApiPath(`/wallet/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/settle`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 async release(holdId: string, body: ReleaseAccountHoldRequest, requestOptions?: ApiRequestOptions): Promise<WalletHoldMutationResult> {
-    return this.client.request<WalletHoldMutationResult>(backendApiPath(`/wallet/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/release`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletHoldMutationResult>(backendApiPath(`/wallet/holds/${serializePathParameter(holdId, { name: 'holdId', style: 'simple', explode: false })}/release`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 async expire(body: ExpireExpiredHoldsRequest, requestOptions?: ApiRequestOptions): Promise<ExpireExpiredHoldsResult> {
-    return this.client.request<ExpireExpiredHoldsResult>(backendApiPath(`/wallet/holds/expire`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<ExpireExpiredHoldsResult>(backendApiPath(`/wallet/holds/expire`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -51,7 +51,7 @@ export class WalletPointsLotsApi {
 
 
 async expire(body: ExpirePointsLotsRequest, requestOptions?: ApiRequestOptions): Promise<ExpirePointsLotsResult> {
-    return this.client.request<ExpirePointsLotsResult>(backendApiPath(`/wallet/points/lots/expire`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<ExpirePointsLotsResult>(backendApiPath(`/wallet/points/lots/expire`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -66,7 +66,7 @@ export class WalletPointsApi {
 
 
 async reconciliation(body: PointsReconciliationRequest, requestOptions?: ApiRequestOptions): Promise<PointsReconciliationResult> {
-    return this.client.request<PointsReconciliationResult>(backendApiPath(`/wallet/points/reconciliation`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<PointsReconciliationResult>(backendApiPath(`/wallet/points/reconciliation`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -79,7 +79,7 @@ export class WalletAdjustmentsPointsApi {
 
 
 async create(body: CreateWalletAdjustmentRequest, requestOptions?: ApiRequestOptions): Promise<WalletAdjustmentResult> {
-    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/wallet/adjustments/points`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/wallet/adjustments/points`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -92,7 +92,7 @@ export class WalletAdjustmentsCashApi {
 
 
 async create(body: CreateWalletAdjustmentRequest, requestOptions?: ApiRequestOptions): Promise<WalletAdjustmentResult> {
-    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/wallet/adjustments/cash`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/wallet/adjustments/cash`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -109,7 +109,7 @@ export class WalletAdjustmentsApi {
 
 
 async create(body: CreateWalletAdjustmentRequest, requestOptions?: ApiRequestOptions): Promise<WalletAdjustmentResult> {
-    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/wallet/adjustments`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletAdjustmentResult>(backendApiPath(`/wallet/adjustments`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -122,7 +122,7 @@ export class WalletOutboxApi {
 
 
 async dispatch(body?: DispatchOutboxRequest, requestOptions?: ApiRequestOptions): Promise<DispatchOutboxResult> {
-    return this.client.request<DispatchOutboxResult>(backendApiPath(`/wallet/outbox/dispatch`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<DispatchOutboxResult>(backendApiPath(`/wallet/outbox/dispatch`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, ...(body !== undefined ? { body, contentType: 'application/json' } : {}), sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -135,12 +135,11 @@ export class WalletHealthApi {
 
 
 async retrieve(requestOptions?: ApiRequestOptions): Promise<WalletHealthItem> {
-    return this.client.request<WalletHealthItem>(backendApiPath(`/wallet/health`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<WalletHealthItem>(backendApiPath(`/wallet/health`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class WalletApi {
-  private client: HttpClient;
   public readonly health: WalletHealthApi;
   public readonly outbox: WalletOutboxApi;
   public readonly adjustments: WalletAdjustmentsApi;
@@ -149,7 +148,6 @@ export class WalletApi {
   public readonly transfers: WalletTransfersApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.health = new WalletHealthApi(client);
     this.outbox = new WalletOutboxApi(client);
     this.adjustments = new WalletAdjustmentsApi(client);
@@ -164,13 +162,7 @@ export function createWalletApi(client: HttpClient): WalletApi {
   return new WalletApi(client);
 }
 
-function appendQueryString(path: string, rawQueryString: string): string {
-  const query = rawQueryString.replace(/^\?+/, '');
-  if (!query) {
-    return path;
-  }
-  return path.includes('?') ? `${path}&${query}` : `${path}?${query}`;
-}
+
 
 interface PathParameterSpec {
   name: string;
