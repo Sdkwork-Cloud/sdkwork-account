@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 3,
+  "kind": "sdkwork.app",
+  "app": {
+    "key": "sdkwork-account",
+    "name": "Account",
+    "displayName": "SDKWork Account",
+    "description": "SDKWork Account application (bootstrap deploy layout).",
+    "appType": "SDK"
+  },
+  "backend": {
+    "primaryLanguage": "rust",
+    "framework": "axum",
+    "appId": "sdkwork-account",
+    "serviceId": "sdkwork-account",
+    "owner": "sdkwork-account",
+    "domain": "account"
+  },
+  "runtime": {
+    "family": "server",
+    "framework": "rust-axum",
+    "supportedDeploymentProfiles": [
+      "standalone",
+      "cloud"
+    ],
+    "defaultDeploymentProfile": "standalone"
+  }
+}

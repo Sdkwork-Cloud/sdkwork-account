@@ -1,0 +1,5 @@
+specVersion = 1
+kind = "sdkwork.webserver.server"
+id = "account"
+enabled = false
+description = "sdkwork-account webserver placeholder (align-application-deploy-layout)"
