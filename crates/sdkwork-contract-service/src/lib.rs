@@ -299,12 +299,55 @@ impl CommerceExchangeStatus {
     }
 }
 
+/// Shared amount precision used across commerce money/points values.
+/// Token Bank points are carried with up to 6 decimal places so fractional
+/// usage debits and balances stay precise; settlement rounds up at this scale
+/// so the merchant never underpays (no merchant loss).
+pub struct CommercePrecision;
+
+impl CommercePrecision {
+    pub const POINTS_SCALE: usize = 6;
+}
+
+/// Validates an amount string as a non-negative decimal with at most
+/// `max_scale` fractional digits (e.g. `12` or `12.000001`).
+pub fn is_non_negative_amount(value: &str, max_scale: usize) -> bool {
+    let value = value.trim();
+    if value.is_empty() || value.starts_with('-') || value.starts_with('+') {
+        return false;
+    }
+
+    let mut parts = value.split('.');
+    let whole = parts.next().unwrap_or_default();
+    let fraction = parts.next();
+    if parts.next().is_some() {
+        // More than one '.' present.
+        return false;
+    }
+
+    let whole_ok = whole.is_empty()
+        || (whole.chars().all(|ch| ch.is_ascii_digit())
+            && (whole.len() == 1 || !whole.starts_with('0')));
+
+    let fraction_ok = match fraction {
+        Some(fraction) => {
+            !value.ends_with('.')
+                && !fraction.is_empty()
+                && fraction.chars().all(|ch| ch.is_ascii_digit())
+                && fraction.len() <= max_scale
+        }
+        None => true,
+    };
+
+    whole_ok && fraction_ok
+}
+
 impl CommerceMoney {
     pub fn new(value: &str) -> Result<Self, &'static str> {
-        if is_non_negative_integer(value) {
+        if is_non_negative_amount(value, CommercePrecision::POINTS_SCALE) {
             Ok(Self(value.to_string()))
         } else {
-            Err("money amount must be a non-negative integer smallest-unit amount")
+            Err("money amount must be a non-negative number with up to 6 decimal places")
         }
     }
 
@@ -315,10 +358,10 @@ impl CommerceMoney {
 
 impl CommercePoints {
     pub fn new(value: &str) -> Result<Self, &'static str> {
-        if is_non_negative_integer(value) {
+        if is_non_negative_amount(value, CommercePrecision::POINTS_SCALE) {
             Ok(Self(value.to_string()))
         } else {
-            Err("points amount must be a non-negative integer")
+            Err("points amount must be a non-negative number with up to 6 decimal places")
         }
     }
 
@@ -928,14 +971,4 @@ impl CommerceAccountPurpose {
     pub const SUSPENSE: &str = "SUSPENSE";
 }
 
-fn is_non_negative_integer(value: &str) -> bool {
-    if value.is_empty() || value.starts_with('-') || value.starts_with('+') {
-        return false;
-    }
 
-    if value.len() > 1 && value.starts_with('0') {
-        return false;
-    }
-
-    value.chars().all(|value| value.is_ascii_digit())
-}
