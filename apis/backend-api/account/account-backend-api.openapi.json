@@ -28,7 +28,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.health.retrieve",
+        "operationId": "health.retrieve",
         "responses": {
           "200": {
             "description": "OK",
@@ -56,7 +56,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/wallet/outbox/dispatch": {
@@ -64,7 +65,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.outbox.dispatch",
+        "operationId": "outbox.dispatch",
         "description": "Claims a batch of pending acct_outbox_event rows, marks them PUBLISHED, and returns payloads for downstream relay workers.",
         "requestBody": {
           "required": false,
@@ -103,7 +104,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/wallet/adjustments": {
@@ -111,7 +113,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.adjustments.create",
+        "operationId": "adjustments.create",
         "requestBody": {
           "required": true,
           "content": {
@@ -149,7 +151,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/wallet/adjustments/cash": {
@@ -157,7 +160,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.adjustments.cash.create",
+        "operationId": "adjustments.cash.create",
         "description": "Creates a cash ledger adjustment. `assetType` is forced to `cash`.",
         "requestBody": {
           "required": true,
@@ -196,7 +199,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/wallet/adjustments/points": {
@@ -204,7 +208,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.adjustments.points.create",
+        "operationId": "adjustments.points.create",
         "description": "Creates a points ledger adjustment and applies FIFO lot movement.",
         "requestBody": {
           "required": true,
@@ -243,7 +247,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/wallet/points/lots/expire": {
@@ -251,7 +256,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.points.lots.expire",
+        "operationId": "points.lots.expire",
         "description": "Sweeps expired points lots, debits account balances, and writes ledger plus allocation rows.",
         "requestBody": {
           "required": true,
@@ -290,7 +295,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/wallet/points/reconciliation": {
@@ -298,7 +304,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.points.reconciliation",
+        "operationId": "points.reconciliation",
         "description": "Checks points accounts for lot remaining vs available mismatches.",
         "requestBody": {
           "required": true,
@@ -337,7 +343,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/wallet/holds": {
@@ -345,7 +352,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.holds.create",
+        "operationId": "holds.create",
         "description": "Creates a hold moving balance from available to frozen.",
         "requestBody": {
           "required": true,
@@ -384,7 +391,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/wallet/holds/{holdId}/settle": {
@@ -392,7 +400,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.holds.settle",
+        "operationId": "holds.settle",
         "parameters": [
           {
             "name": "holdId",
@@ -448,7 +456,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.holds.release",
+        "operationId": "holds.release",
         "parameters": [
           {
             "name": "holdId",
@@ -504,7 +512,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.holds.expire",
+        "operationId": "holds.expire",
         "description": "Sweeps expired holds and restores frozen balance to available.",
         "requestBody": {
           "required": true,
@@ -543,7 +551,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/wallet/transfers": {
@@ -551,7 +560,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.transfers.create",
+        "operationId": "transfers.create",
         "description": "Atomically transfers available balance between two accounts of the same asset type.",
         "requestBody": {
           "required": true,
@@ -590,7 +599,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/token_bank/credits": {
@@ -598,7 +608,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.credits.create",
+        "operationId": "credits.create",
         "description": "Credits Token Bank balance after governed purchase, issuance, or service income.",
         "requestBody": {
           "required": true,
@@ -637,7 +647,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/token_bank/debits": {
@@ -645,7 +656,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.debits.create",
+        "operationId": "debits.create",
         "description": "Debits Token Bank balance for direct AI consumption or burn.",
         "requestBody": {
           "required": true,
@@ -684,7 +695,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/token_bank/grants": {
@@ -692,7 +704,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.grants.create",
+        "operationId": "grants.create",
         "description": "Credits Token Bank balance for platform, subscription, compensation, or campaign grants.",
         "requestBody": {
           "required": true,
@@ -731,7 +743,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/token_bank/reversals": {
@@ -739,7 +752,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.reversals.create",
+        "operationId": "reversals.create",
         "description": "Appends a Token Bank reversal ledger entry for a previous movement.",
         "requestBody": {
           "required": true,
@@ -778,7 +791,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/token_bank/holds": {
@@ -786,7 +800,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.holds.create",
+        "operationId": "holds.create",
         "description": "Creates a Token Bank hold moving balance from available to frozen.",
         "requestBody": {
           "required": true,
@@ -825,7 +839,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/backend/v3/api/token_bank/holds/{holdId}/settle": {
@@ -833,7 +848,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.holds.settle",
+        "operationId": "holds.settle",
         "parameters": [
           {
             "name": "holdId",
@@ -890,7 +905,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.holds.release",
+        "operationId": "holds.release",
         "parameters": [
           {
             "name": "holdId",
@@ -947,7 +962,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.transfers.create",
+        "operationId": "transfers.create",
         "description": "Transfers Token Bank balance between accounts of the same asset type.",
         "requestBody": {
           "required": true,
@@ -986,7 +1001,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     }
   },

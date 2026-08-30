@@ -16,5 +16,5 @@ sdkwork-web-bootstrap.workspace = true
 sdkwork-web-core.workspace = true
 sdkwork-database-sqlx.workspace = true
 sdkwork_account_service_host.workspace = true
-sdkwork_routes_account_app_api.workspace = true
-sdkwork_routes_account_backend_api.workspace = true
+sdkwork_routes_account_app_api = { workspace = true }
+sdkwork_routes_account_backend_api = { workspace = true }

@@ -82,12 +82,14 @@ fn exposes_standard_promotion_recharge_payment_and_exchange_status_names() {
 #[test]
 fn validates_money_and_points_amount_precision() {
     assert_eq!(CommerceMoney::new("1990").unwrap().as_str(), "1990");
-    assert!(CommerceMoney::new("19.90").is_err());
+    assert_eq!(CommerceMoney::new("19.90").unwrap().as_str(), "19.90");
     assert!(CommerceMoney::new("-1").is_err());
+    assert!(CommerceMoney::new("1.1234567").is_err());
 
     assert_eq!(CommercePoints::new("1000").unwrap().as_str(), "1000");
-    assert!(CommercePoints::new("1.5").is_err());
+    assert_eq!(CommercePoints::new("1.5").unwrap().as_str(), "1.5");
     assert!(CommercePoints::new("-1").is_err());
+    assert!(CommercePoints::new("1.1234567").is_err());
 }
 
 #[test]

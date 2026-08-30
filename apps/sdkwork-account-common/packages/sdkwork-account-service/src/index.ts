@@ -8,6 +8,7 @@ import {
 } from "@sdkwork/account-sdk-ports";
 import type { SdkworkAccountMutationStatus } from "@sdkwork/account-contracts";
 import { formatMoney } from "@sdkwork/utils/money";
+import { TOKEN_POINTS_SCALE, microToDecimalString } from "@sdkwork/utils";
 import {
   createAccountBackendSdkClientFromTransport,
   createAccountBackendTransportClient,
@@ -294,7 +295,22 @@ export function formatSdkworkAccountCurrencyCny(value: number | null | undefined
 }
 
 export function formatSdkworkAccountPoints(value: number, language = "en-US"): string {
-  return new Intl.NumberFormat(language).format(value);
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+  return new Intl.NumberFormat(language, {
+    maximumFractionDigits: TOKEN_POINTS_SCALE,
+  }).format(value);
+}
+
+export function toSdkworkAccountPointsFromMicro(value: unknown): number {
+  const raw = toSdkworkAccountNumber(value);
+  if (!Number.isFinite(raw) || raw === 0) {
+    return 0;
+  }
+  const sign = raw < 0 ? -1 : 1;
+  const micro = BigInt(Math.round(Math.abs(raw)));
+  return Number(microToDecimalString(micro)) * sign;
 }
 
 export function formatSdkworkAccountPointsRate(points: number, language = "en-US"): string {

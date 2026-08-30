@@ -10,6 +10,8 @@
 
   toSdkworkAccountNumber,
 
+  toSdkworkAccountPointsFromMicro,
+
   toSdkworkAccountOptionalString,
 
   unwrapSdkworkAccountListPage,
@@ -559,11 +561,11 @@ function mapAccount(portfolio: RemotePortfolio | null | undefined): SdkworkWalle
 
   const tokenBank = portfolio?.tokenBank;
 
-  const availablePoints = toSdkworkAccountNumber(points?.availablePoints);
+  const availablePoints = toSdkworkAccountPointsFromMicro(points?.availablePoints);
 
-  const frozenPoints = toSdkworkAccountNumber(points?.frozenPoints);
+  const frozenPoints = toSdkworkAccountPointsFromMicro(points?.frozenPoints);
 
-  const pendingPoints = toSdkworkAccountNumber(points?.pendingPoints);
+  const pendingPoints = toSdkworkAccountPointsFromMicro(points?.pendingPoints);
 
 
 
@@ -581,7 +583,7 @@ function mapAccount(portfolio: RemotePortfolio | null | undefined): SdkworkWalle
 
     experience: null,
 
-    expiringPoints: toNullableSdkworkAccountNumber(points?.expiringPoints),
+    expiringPoints: points?.expiringPoints == null ? null : toSdkworkAccountPointsFromMicro(points.expiringPoints),
 
     frozenPoints,
 
@@ -593,23 +595,20 @@ function mapAccount(portfolio: RemotePortfolio | null | undefined): SdkworkWalle
 
     status: toSdkworkAccountOptionalString(points?.status),
 
-    tokenBankAvailable: toSdkworkAccountNumber(tokenBank?.availableAmount),
+    tokenBankAvailable: toSdkworkAccountPointsFromMicro(tokenBank?.availableAmount),
 
-    tokenBankFrozen: toSdkworkAccountNumber(tokenBank?.frozenAmount),
+    tokenBankFrozen: toSdkworkAccountPointsFromMicro(tokenBank?.frozenAmount),
 
-    totalEarned: toNullableSdkworkAccountNumber(points?.monthCreditPoints),
+    totalEarned: points?.monthCreditPoints == null ? null : toSdkworkAccountPointsFromMicro(points.monthCreditPoints),
 
-    totalPoints: toSdkworkAccountNumber(
+    totalPoints:
+      points?.totalPoints == null
+        ? availablePoints + frozenPoints + pendingPoints
+        : toSdkworkAccountPointsFromMicro(points.totalPoints),
 
-      points?.totalPoints,
+    totalSpent: points?.monthDebitPoints == null ? null : toSdkworkAccountPointsFromMicro(points.monthDebitPoints),
 
-      availablePoints + frozenPoints + pendingPoints,
-
-    ),
-
-    totalSpent: toNullableSdkworkAccountNumber(points?.monthDebitPoints),
-
-    unsweptExpiredPoints: toNullableSdkworkAccountNumber(points?.unsweptExpiredPoints),
+    unsweptExpiredPoints: points?.unsweptExpiredPoints == null ? null : toSdkworkAccountPointsFromMicro(points.unsweptExpiredPoints),
 
   };
 
@@ -633,13 +632,13 @@ function mapTransaction(entry: RemoteLedgerEntry): SdkworkWalletTransaction {
 
     id: toSdkworkAccountOptionalString(entry.uuid) || toSdkworkAccountOptionalString(entry.id) || `wallet-${Date.now()}`,
 
-    pointsAfter: assetType === "points" ? toNullableSdkworkAccountNumber(entry.balanceAfter) : null,
+    pointsAfter: assetType === "points" ? (entry.balanceAfter == null ? null : toSdkworkAccountPointsFromMicro(entry.balanceAfter)) : null,
 
-    pointsBefore: assetType === "points" ? toNullableSdkworkAccountNumber(entry.balanceBefore) : null,
+    pointsBefore: assetType === "points" ? (entry.balanceBefore == null ? null : toSdkworkAccountPointsFromMicro(entry.balanceBefore)) : null,
 
-    pointsDelta: assetType === "points" ? delta : 0,
+    pointsDelta: assetType === "points" ? toSdkworkAccountPointsFromMicro(delta) : 0,
 
-    tokenBankDelta: assetType === "token_bank" ? delta : 0,
+    tokenBankDelta: assetType === "token_bank" ? toSdkworkAccountPointsFromMicro(delta) : 0,
 
     title: toSdkworkAccountOptionalString(entry.businessType) || "Wallet transaction",
 
@@ -659,6 +658,10 @@ function mapHold(entry: RemoteHoldEntry): SdkworkWalletHold {
 
   const holdId = toSdkworkAccountOptionalString(entry.uuid) || toSdkworkAccountOptionalString(entry.id) || "";
 
+  const holdAssetType = toSdkworkAccountOptionalString(entry.assetType)?.toLowerCase() || "";
+
+  const isMicroHold = holdAssetType === "points" || holdAssetType === "token_bank";
+
 
 
   return {
@@ -671,11 +674,11 @@ function mapHold(entry: RemoteHoldEntry): SdkworkWalletHold {
 
     assetType: toSdkworkAccountOptionalString(entry.assetType) || "",
 
-    amount: toSdkworkAccountNumber(entry.amount),
+    amount: isMicroHold ? toSdkworkAccountPointsFromMicro(entry.amount) : toSdkworkAccountNumber(entry.amount),
 
-    settledAmount: toSdkworkAccountNumber(entry.settledAmount),
+    settledAmount: isMicroHold ? toSdkworkAccountPointsFromMicro(entry.settledAmount) : toSdkworkAccountNumber(entry.settledAmount),
 
-    releasedAmount: toSdkworkAccountNumber(entry.releasedAmount),
+    releasedAmount: isMicroHold ? toSdkworkAccountPointsFromMicro(entry.releasedAmount) : toSdkworkAccountNumber(entry.releasedAmount),
 
     status: toSdkworkAccountOptionalString(entry.status) || "held",
 

@@ -1,5 +1,7 @@
 import {
   toSdkworkAccountNumber,
+
+  toSdkworkAccountPointsFromMicro,
   toSdkworkAccountOptionalString,
   unwrapSdkworkAccountListPage,
   unwrapSdkworkAccountResource,
@@ -111,7 +113,7 @@ function readRemotePriceCny(item: RemoteRechargePackage): number {
 function mapRechargePackage(item: RemoteRechargePackage, index: number): SdkworkWalletRechargePackage {
   const idValue = item.id ?? index + 1;
   const numericId = typeof idValue === "number" ? idValue : Number.parseInt(String(idValue), 10);
-  const points = toSdkworkAccountNumber(item.points ?? item.grantAmount ?? item.grant_amount);
+  const points = toSdkworkAccountPointsFromMicro(item.points ?? item.grantAmount ?? item.grant_amount);
   const bonus = toSdkworkAccountNumber(item.bonusPoints ?? item.bonus_points);
   const title =
     toSdkworkAccountOptionalString(item.title)
@@ -142,7 +144,7 @@ function mapRechargeOutcome(outcome: RemoteRechargeOrderOutcome, input: SdkworkW
   return {
     cashAmountCny: toSdkworkAccountNumber(outcome.amount),
     paymentMethod: toSdkworkAccountOptionalString(outcome.paymentMethod ?? outcome.payment_method) ?? input.paymentMethod,
-    points: toSdkworkAccountNumber(outcome.points, input.points),
+    points: outcome.points == null || outcome.points === "" ? input.points : toSdkworkAccountPointsFromMicro(outcome.points),
     processedAt: undefined,
     remainingPoints: null,
     requestNo:

@@ -36,7 +36,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.overview.retrieve",
+        "operationId": "overview.retrieve",
         "responses": {
           "200": {
             "description": "OK",
@@ -64,7 +64,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/app/v3/api/wallet/accounts": {
@@ -72,7 +73,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.accounts.list",
+        "operationId": "accounts.list",
         "parameters": [
           {
             "name": "asset_type",
@@ -122,7 +123,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.accounts.cash.retrieve",
+        "operationId": "accounts.cash.retrieve",
         "responses": {
           "200": {
             "description": "OK",
@@ -150,7 +151,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/app/v3/api/wallet/accounts/points": {
@@ -158,7 +160,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.accounts.points.retrieve",
+        "operationId": "accounts.points.retrieve",
         "responses": {
           "200": {
             "description": "OK",
@@ -186,7 +188,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/app/v3/api/wallet/ledger_entries": {
@@ -194,7 +197,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.ledgerEntries.list",
+        "operationId": "ledgerEntries.list",
         "parameters": [
           {
             "name": "account_id",
@@ -281,7 +284,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.ledgerEntries.cash.list",
+        "operationId": "ledgerEntries.cash.list",
         "parameters": [
           {
             "name": "account_id",
@@ -356,7 +359,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.ledgerEntries.points.list",
+        "operationId": "ledgerEntries.points.list",
         "parameters": [
           {
             "name": "account_id",
@@ -431,7 +434,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.ledgerEntries.retrieve",
+        "operationId": "ledgerEntries.retrieve",
         "parameters": [
           {
             "name": "ledgerEntryId",
@@ -477,7 +480,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.ledgerEntries.allocations.list",
+        "operationId": "ledgerEntries.allocations.list",
         "description": "Lists FIFO points lot allocations for a ledger entry owned by the current user.",
         "parameters": [
           {
@@ -524,7 +527,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.points.summary.retrieve",
+        "operationId": "points.summary.retrieve",
         "description": "Returns the current user's points summary including unswept expired lots and month-to-date ledger stats.",
         "responses": {
           "200": {
@@ -553,7 +556,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/app/v3/api/wallet/points/lots": {
@@ -561,7 +565,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.points.lots.list",
+        "operationId": "points.lots.list",
         "parameters": [
           {
             "name": "account_id",
@@ -643,7 +647,7 @@
         "tags": [
           "billing"
         ],
-        "operationId": "billing.history.list",
+        "operationId": "history.list",
         "responses": {
           "200": {
             "description": "OK",
@@ -671,7 +675,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/app/v3/api/wallet/holds": {
@@ -679,7 +684,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.holds.list",
+        "operationId": "holds.list",
         "parameters": [
           {
             "name": "account_id",
@@ -766,7 +771,7 @@
         "tags": [
           "wallet"
         ],
-        "operationId": "wallet.holds.retrieve",
+        "operationId": "holds.retrieve",
         "parameters": [
           {
             "name": "holdId",
@@ -812,7 +817,7 @@
         "tags": [
           "accounts"
         ],
-        "operationId": "accounts.current.summary.retrieve",
+        "operationId": "current.summary.retrieve",
         "responses": {
           "200": {
             "description": "OK",
@@ -840,7 +845,8 @@
             "AuthToken": [],
             "AccessToken": []
           }
-        ]
+        ],
+        "parameters": []
       }
     },
     "/app/v3/api/token_bank/account": {
@@ -848,7 +854,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.account.retrieve",
+        "operationId": "account.retrieve",
         "responses": {
           "200": {
             "description": "OK",
@@ -877,7 +883,8 @@
             "AccessToken": []
           }
         ],
-        "description": "Retrieves the current user Token Bank account."
+        "description": "Retrieves the current user Token Bank account.",
+        "parameters": []
       }
     },
     "/app/v3/api/token_bank/overview": {
@@ -885,7 +892,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.overview.retrieve",
+        "operationId": "overview.retrieve",
         "responses": {
           "200": {
             "description": "OK",
@@ -914,7 +921,8 @@
             "AccessToken": []
           }
         ],
-        "description": "Retrieves current user Token Bank available and frozen balances."
+        "description": "Retrieves current user Token Bank available and frozen balances.",
+        "parameters": []
       }
     },
     "/app/v3/api/token_bank/ledger_entries": {
@@ -922,7 +930,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.ledgerEntries.list",
+        "operationId": "ledgerEntries.list",
         "parameters": [
           {
             "name": "account_id",
@@ -998,7 +1006,7 @@
         "tags": [
           "tokenBank"
         ],
-        "operationId": "tokenBank.holds.list",
+        "operationId": "holds.list",
         "parameters": [
           {
             "name": "account_id",
@@ -1071,7 +1079,7 @@
     },
     "/app/v3/api/wallet/portfolio": {
       "get": {
-        "operationId": "retrieveWalletPortfolio",
+        "operationId": "list",
         "summary": "Retrieve the aggregated wallet portfolio (cash account, token bank and compute points) in one call",
         "tags": [
           "wallet"
@@ -1103,7 +1111,8 @@
               }
             }
           }
-        }
+        },
+        "parameters": []
       }
     }
   },

@@ -30,19 +30,19 @@ describe("sdkwork-account-pc-wallet service", () => {
                 },
                 points: {
                   activeLotCount: "3",
-                  availablePoints: "1200",
-                  expiringPoints: "50",
-                  frozenPoints: "30",
-                  monthCreditPoints: "9600",
-                  monthDebitPoints: "7200",
+                  availablePoints: "1200000000",
+                  expiringPoints: "50000000",
+                  frozenPoints: "30000000",
+                  monthCreditPoints: "9600000000",
+                  monthDebitPoints: "7200000000",
                   pendingPoints: "0",
                   status: "active",
-                  totalPoints: "1230",
-                  unsweptExpiredPoints: "5",
+                  totalPoints: "1230000000",
+                  unsweptExpiredPoints: "5000000",
                 },
                 tokenBank: {
-                  availableAmount: "4200",
-                  frozenAmount: "200",
+                  availableAmount: "4200000000",
+                  frozenAmount: "200000000",
                 },
               },
             },
@@ -61,10 +61,10 @@ describe("sdkwork-account-pc-wallet service", () => {
             data: {
               items: [
                 {
-                  amount: "240",
+                  amount: "240000000",
                   assetType: "points",
-                  balanceAfter: "1200",
-                  balanceBefore: "1440",
+                  balanceAfter: "1200000000",
+                  balanceBefore: "1440000000",
                   businessType: "POINTS_USAGE",
                   createdAt: "2026-04-01T12:00:00.000Z",
                   direction: "debit",
@@ -97,7 +97,7 @@ describe("sdkwork-account-pc-wallet service", () => {
             data: {
               items: [
                 {
-                  amount: "1500",
+                  amount: "1500000000",
                   assetType: "token_bank",
                   businessNo: "AI-JOB-1001",
                   businessType: "token_bank.hold",
@@ -243,7 +243,7 @@ describe("sdkwork-account-pc-wallet service", () => {
               items: [
                 {
                   id: "pkg-1",
-                  points: "1000",
+                  points: "1000000000", // 1000 points as integer micro-points (1 point = 1e6 micro)
                   priceAmount: "10.00",
                   currencyCode: "CNY",
                   title: "Starter pack",
