@@ -1,4 +1,4 @@
-﻿import {
+import {
 
   getSdkworkAccountService,
 
@@ -639,6 +639,10 @@ function mapTransaction(entry: RemoteLedgerEntry): SdkworkWalletTransaction {
     pointsDelta: assetType === "points" ? toSdkworkAccountPointsFromMicro(delta) : 0,
 
     tokenBankDelta: assetType === "token_bank" ? toSdkworkAccountPointsFromMicro(delta) : 0,
+
+    status: "success",
+
+    statusName: "completed",
 
     title: toSdkworkAccountOptionalString(entry.businessType) || "Wallet transaction",
 

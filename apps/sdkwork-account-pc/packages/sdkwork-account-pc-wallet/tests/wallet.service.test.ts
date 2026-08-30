@@ -1,4 +1,4 @@
-﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   configureAccountServiceMockSession,
   createAccountAppServiceMock,
@@ -166,6 +166,65 @@ describe("sdkwork-account-pc-wallet service", () => {
     expect(accountAppService.tokenBank.holds.list).toHaveBeenCalledWith({
       page: 1,
       pageSize: 20,
+    });
+  });
+
+  it("maps token_bank ledger entries with a committed status and signed delta", async () => {
+    const accountAppService = createAccountAppServiceMock({
+      wallet: {
+        portfolio: {
+          list: vi.fn().mockResolvedValue({
+            code: 0,
+            data: {
+              item: {
+                cash: {},
+                points: { availablePoints: "1200000000" },
+                tokenBank: { availableAmount: "4200000000" },
+              },
+            },
+          }),
+        },
+        ledgerEntries: {
+          list: vi.fn().mockResolvedValue({
+            code: 0,
+            data: {
+              items: [
+                {
+                  amount: "7000000",
+                  assetType: "token_bank",
+                  businessType: "gateway_invocation_billing",
+                  createdAt: "2026-04-01T12:00:00.000Z",
+                  direction: "debit",
+                  uuid: "token-bank-debit-1",
+                },
+              ],
+              pageInfo: { mode: "cursor", pageSize: 20, hasMore: false },
+            },
+          }),
+        },
+        holds: { list: vi.fn() },
+      },
+      tokenBank: {
+        holds: {
+          list: vi.fn().mockResolvedValue({
+            code: 0,
+            data: { items: [], pageInfo: { mode: "offset", hasMore: false } },
+          }),
+        },
+      },
+    } as any);
+
+    const service = createSdkworkWalletService({ accountAppService });
+    const overview = await service.getOverview({ pageSize: 20 });
+
+    expect(overview.transactions[0]).toMatchObject({
+      id: "token-bank-debit-1",
+      status: "success",
+      statusName: "completed",
+      tokenBankDelta: -7,
+      pointsDelta: 0,
+      title: "gateway_invocation_billing",
+      transactionType: "gateway_invocation_billing",
     });
   });
 
