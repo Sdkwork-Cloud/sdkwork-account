@@ -13,6 +13,7 @@ sdkwork_contract_service.workspace = true
 sdkwork_account_service.workspace = true
 sdkwork-utils-rust.workspace = true
 sdkwork-database-id.workspace = true
+sdkwork-database-sqlx.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 sqlx = { workspace = true }
